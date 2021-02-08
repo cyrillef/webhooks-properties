@@ -140,7 +140,7 @@ Blogs:
 - [Forge Blog](https://forge.autodesk.com/categories/bim-360-api)
 - [Field of View](https://fieldofviewblog.wordpress.com/), a BIM focused blog
 
-![thumbnail](/thumbnail.png)
+![thumbnail](img/thumbnail.png)
 
 ## License
 
