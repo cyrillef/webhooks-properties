@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "es2020", // es2017 is await/async
+		
+		"composite": true,
+		"sourceMap": true,
+		"watch": true,
+		"alwaysStrict": true,
+		"noImplicitAny": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		//"esModuleInterop": true,
+	}
+}
