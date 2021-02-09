@@ -38,10 +38,11 @@
 
 interface URN_Config {
 	urn: string;
+	view?: Autodesk.Viewing.BubbleNodeSearchProps,
 	xform?: THREE.Matrix4;
 	offset?: THREE.Vector3;
 	ids?: number[];
-};
+}
 function isURN_Config(object: any): object is URN_Config {
 	return ('urn' in object);
 }
@@ -92,9 +93,50 @@ interface Intersection {
 	model: Autodesk.Viewing.Model
 }
 
+interface BasicInfo {
+	target: Autodesk.Viewing.Viewer3D | Autodesk.Viewing.GuiViewer3D,
+	type: string,
+}
+
+interface ModelLoadingInfo extends BasicInfo {
+	model: Autodesk.Viewing.Model,
+	isOverlay?: boolean,
+	preserveTools?: any,
+	svf: any,
+}
+
+interface ExtensionInfo extends BasicInfo {
+	extensionId: string;
+	mode?: MouseEvent;
+}
+interface UIButton {
+	id: string,
+	iconClass: string | string[],
+	tooltip?: string,
+	handler: string | Function,
+	index?: number
+}
+
+/*export*/ type UnitType =
+	| 'decimal-ft'
+	| 'ft'
+	| 'ft-and-decimal-in'
+	| 'decimal-in'
+	| 'fractional-in'
+	| 'm'
+	| 'cm'
+	| 'mm'
+	| 'm-and-cm';
+
 interface VisualClustersExtensionOptions {
 	attribName: string;
 	searchAncestors: boolean;
+}
+
+interface MeasureExtensionOptions {
+	units: UnitType;
+	precision: number;
+	//calibrationFactor?: number;
 }
 
 class LocalViewer {
@@ -107,12 +149,21 @@ class LocalViewer {
 	private proxy: { path: string, mode: string } = null;
 
 	private viewer: Autodesk.Viewing.GuiViewer3D = null;
-	private configuration: object = null;
+	private configuration: any = null;
+	private modelBrowserExcludeRoot: boolean = true;
 	private extensions: (string | { id: string, options: object })[] = null;
+	private ui_definition: { [index: string]: UIButton[] } = null;
+	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control } = {};
+	private tb_definition: { [index: string]: any } = null;
 	private documents: { [index: string]: Autodesk.Viewing.Document } = {};
 	private models: Autodesk.Viewing.Model[] = null;
 	private startAt: Date = null;
 	private darkmode: MutationObserver = null;
+
+	public static NAVTOOLBAR: string = 'navTools';
+	public static MEASURETOOLBAR: string = 'measureTools';
+	public static MODELTOOLBAR: string = 'modelTools';
+	public static SETTINGSTOOLBAR: string = 'settingsTools';
 
 	/**
 	 * 
@@ -139,12 +190,55 @@ class LocalViewer {
 			this.region = 'EMEA';
 	}
 
-	public loadExtensions(extensions: (string | { id: string, options: object })[]) {
+	public configureExtensions(extensions: (string | { id: string, options: object })[]) {
 		this.extensions = extensions;
 	}
 
-	public enableWorkersDebugging() {
+	private loadExtensions() {
+		this.extensions.map((elt: string | { id: string, options: object }) => {
+			if (typeof elt === 'string') {
+				this.viewer.loadExtension(elt);
+			} else {
+				const pr = this.viewer.loadExtension(elt.id, elt.options);
+				switch (elt.id) {
+					case 'Autodesk.Measure': {
+						pr.then((ext: Autodesk.Extensions.Measure.MeasureExtension) => {
+							ext.setUnits((elt.options as MeasureExtensionOptions).units);
+							ext.setPrecision((elt.options as MeasureExtensionOptions).precision);
+						});
+					}
+				}
+			}
+		});
+	}
+
+	private reconfigureExtensions(extensionInfo?: ExtensionInfo) {
+		if (extensionInfo && extensionInfo.extensionId !== 'Autodesk.Measure')
+			return;
+		const result = this.extensions.filter((elt: string | { id: string, options: object }) => typeof elt !== 'string' && elt.id === 'Autodesk.Measure');
+		if (result && result.length === 1) {
+			const ext: Autodesk.Extensions.Measure.MeasureExtension = this.viewer.getExtension('Autodesk.Measure') as Autodesk.Extensions.Measure.MeasureExtension;
+			if (!ext)
+				return;
+			const extOptions: { id: string, options: object } = result[0] as { id: string, options: object };
+			//setTimeout(() => { // Let a change to the extension code to cope with default behavior
+				ext.setUnits((extOptions.options as MeasureExtensionOptions).units);
+				ext.setPrecision((extOptions.options as MeasureExtensionOptions).precision);
+			//}, 1000);
+		}
+	}
+
+	public configureUI(ui: { [index: string]: UIButton[] }, tb: { [index: string]: any }) {
+		this.ui_definition = ui;
+		this.tb_definition = tb;
+	}
+
+	public enableWorkersDebugging(): void {
 		(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER = false;
+	}
+
+	public setModelBrowserExcludeRoot(flag: boolean = true): void {
+		this.modelBrowserExcludeRoot = flag;
 	}
 
 	public run(config: ResourceType = 'svf'): void {
@@ -157,6 +251,7 @@ class LocalViewer {
 		const self = this;
 		// Autodesk.Viewing.Private.ENABLE_DEBUG =true;
 		// Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
+		this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
 		this.viewer = new Autodesk.Viewing.GuiViewer3D(
 			typeof this.div === 'string' ?
 				document.getElementById(this.div as string)
@@ -184,8 +279,8 @@ class LocalViewer {
 
 		//self.viewer.removeEventListener(Autodesk.Viewing.EVENT, arguments.callee);
 		// or this.viewer.addEventListener(EVENT, callback, { once: true });
-		this.viewer.addEventListener(Autodesk.Viewing.TOOLBAR_CREATED_EVENT, self.onToolbarCreated.bind(self));
-		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_ACTIVATED_EVENT, self.onExtensionActivated.bind(self));
+		this.viewer.addEventListener(Autodesk.Viewing.TOOLBAR_CREATED_EVENT, self.onToolbarCreatedInternal.bind(self));
+		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_ACTIVATED_EVENT, self.onExtensionActivatedInternal.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_DEACTIVATED_EVENT, self.onExtensionDeactivated.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_LOADED_EVENT, self.onExtensionLoaded.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_PRE_ACTIVATED_EVENT, self.onExtensionPreActivated.bind(self));
@@ -194,7 +289,8 @@ class LocalViewer {
 		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_PRE_UNLOADED_EVENT, self.onExtensionPreUnloaded.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_UNLOADED_EVENT, self.onExtensionUnloaded.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.PREF_CHANGED_EVENT, self.onPrefChanged.bind(self));
-		this.viewer.addEventListener(Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT, self.onModelRootLoaded.bind(self));
+		// MODEL_ADDED_EVENT, MODEL_REMOVED_EVENT, MODEL_ROOT_LOADED_EVENT (see below)
+		//Autodesk.Viewing.Private.Prefs.DISPLAY_UNITS
 
 		this.viewer.disableHighlight(true);
 		this.viewer.autocam.shotParams.destinationPercent = 1;
@@ -206,28 +302,26 @@ class LocalViewer {
 			this.activateProxy();
 
 		this.startAt = new Date();
-		const jobs = this.urn.map((elt: URN_Config) => this.addViewable(elt.urn, elt.xform, elt.offset, elt.ids));
+		const jobs = this.urn.map((elt: URN_Config) => this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids));
 		const models = await Promise.all(jobs);
 		this.onModelsLoaded(models);
 
 		this.viewer.addEventListener(Autodesk.Viewing.MODEL_ADDED_EVENT, self.onModelAddedInternal.bind(self));
 		this.viewer.addEventListener(Autodesk.Viewing.MODEL_REMOVED_EVENT, self.onModelRemovedInternal.bind(self));
+		this.viewer.addEventListener(Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT, self.onModelRootLoadedInternal.bind(self));
 
 		// Load extensions
-		this.extensions.map((elt: string | { id: string, options: object }) => {
-			if (typeof elt === 'string')
-				this.viewer.loadExtension(elt);
-			else
-				this.viewer.loadExtension(elt.id, elt.options);
-		});
+		this.loadExtensions();
 	}
 
-	protected async addViewable(urn: string, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model> {
+	protected async addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model> {
 		const self = this;
 		return (new Promise(function (resolve, reject) {
 			const onDocumentLoadSuccess = (doc: Autodesk.Viewing.Document) => {
 				self.documents[urn.replace('urn:', '')] = doc;
-				const viewable = doc.getRoot().getDefaultGeometry();
+				const viewable = view ?
+					doc.getRoot().search(view)[0]
+					: doc.getRoot().getDefaultGeometry();
 				let options: { preserveView: Boolean, keepCurrentModels: Boolean, placementTransform?: THREE.Matrix4, globalOffset?: THREE.Vector3, ids?: number[] } = {
 					preserveView: (Object.keys(self.documents).length !== 1),
 					keepCurrentModels: true
@@ -346,7 +440,6 @@ class LocalViewer {
 	// LOAD_MISSING_GEOMETRY
 	// MODEL_LAYERS_LOADED_EVENT
 	// MODEL_PLACEMENT_CHANGED_EVENT
-	// MODEL_ROOT_LOADED_EVENT
 	// MODEL_TRANSFORM_CHANGED_EVENT
 	// MODEL_UNLOADED_EVENT: "modelUnloaded"
 	// MODEL_VIEWPORT_BOUNDS_CHANGED_EVENT
@@ -381,27 +474,44 @@ class LocalViewer {
 
 	public onGeometryLoaded(event?: any) { }
 	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any) { }
-	public onToolbarCreated(event?: any) { }
-	private onModelAddedInternal(modelInfo: { model: Autodesk.Viewing.Model, isOverlay: boolean, preserveTools?: any, target: Autodesk.Viewing.GuiViewer3D, type: string }) {
+	private onToolbarCreatedInternal(info: BasicInfo) {
+		const self = this;
+		Object.keys(this.ui_definition).forEach((toolbar: string) => {
+			self.ui_definition[toolbar].forEach((elt: UIButton) => {
+				self.ui_references[elt.id] = self.createButtonInToolbar(toolbar, elt.id, elt.iconClass, elt.tooltip, elt.handler, elt.index);
+			});
+		});
+		this.onToolbarCreated(info);
+	}
+	public onToolbarCreated(info: BasicInfo) { }
+	private onModelAddedInternal(modelInfo: ModelLoadingInfo) {
 		this.models.push(modelInfo.model);
 		this.onModelAdded(modelInfo);
 	}
-	public onModelAdded(modelInfo: { model: Autodesk.Viewing.Model, isOverlay: boolean, preserveTools?: any, target: Autodesk.Viewing.GuiViewer3D, type: string }) { }
-	private onModelRemovedInternal(modelInfo: { model: Autodesk.Viewing.Model, target: Autodesk.Viewing.GuiViewer3D, type: string }) {
+	public onModelAdded(modelInfo: ModelLoadingInfo) { }
+	private onModelRemovedInternal(modelInfo: ModelLoadingInfo) {
 		const lastModelRemoved = !this.viewer.getVisibleModels().length;
 		this.models = this.models.filter((elt: Autodesk.Viewing.Model) => elt !== modelInfo.model);
 		this.onModelRemoved(modelInfo);
 	}
-	public onModelRemoved(modelInfo: { model: Autodesk.Viewing.Model, target: Autodesk.Viewing.GuiViewer3D, type: string }) { }
-	public onModelRootLoaded(event?: any) { }
-	public onExtensionActivated(event?: any) { }
-	public onExtensionDeactivated(event?: any) { }
-	public onExtensionLoaded(event?: any) { }
-	public onExtensionPreActivated(event?: any) { }
-	public onExtensionPreDeactivated(event?: any) { }
-	public onExtensionPreLoaded(event?: any) { }
-	public onExtensionPreUnloaded(event?: any) { }
-	public onExtensionUnloaded(event?: any) { }
+	public onModelRemoved(modelInfo: ModelLoadingInfo) { }
+	private onModelRootLoadedInternal(modelInfo: ModelLoadingInfo) {
+		//this.reconfigureExtensions();
+		this.onModelRootLoaded(modelInfo);
+	}
+	public onModelRootLoaded(modelInfo: ModelLoadingInfo) { }
+	public onExtensionActivatedInternal(extensionInfo: ExtensionInfo) {
+		this.reconfigureExtensions(extensionInfo);
+		this.onExtensionActivated(extensionInfo);
+	}
+	public onExtensionActivated(extensionInfo: ExtensionInfo) { }
+	public onExtensionDeactivated(extensionInfo: ExtensionInfo) { }
+	public onExtensionLoaded(extensionInfo: ExtensionInfo) { }
+	public onExtensionPreActivated(extensionInfo: ExtensionInfo) { }
+	public onExtensionPreDeactivated(extensionInfo: ExtensionInfo) { }
+	public onExtensionPreLoaded(extensionInfo: ExtensionInfo) { }
+	public onExtensionPreUnloaded(extensionInfo: ExtensionInfo) { }
+	public onExtensionUnloaded(extensionInfo: ExtensionInfo) { }
 	public onPrefChanged(event?: any) { }
 
 	// Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
@@ -775,6 +885,70 @@ class LocalViewer {
 	 */
 	public refresh(): void {
 		this.viewer.impl.invalidate(true, true, true);
+	}
+
+	// UI
+
+	protected createControlGroup(groupName: string, verticalDirection: boolean = false): Autodesk.Viewing.UI.ControlGroup {
+		const viewerToolbar: Autodesk.Viewing.UI.ToolBar = this.viewer.getToolbar(true);
+		if (viewerToolbar.getControl(groupName))
+			return (viewerToolbar.getControl(groupName) as Autodesk.Viewing.UI.ControlGroup);
+		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = new Autodesk.Viewing.UI.ControlGroup(groupName);
+		if (verticalDirection)
+			(ctrlGroup as any).container.classList.add('toolbar-vertical-group');
+		viewerToolbar.addControl(ctrlGroup);
+		return (ctrlGroup);
+	}
+
+	protected createRadioButtonGroup(groupName: string): Autodesk.Viewing.UI.RadioButtonGroup {
+		const viewerToolbar: Autodesk.Viewing.UI.ToolBar = this.viewer.getToolbar(true);
+		if (viewerToolbar.getControl(groupName))
+			return (viewerToolbar.getControl(groupName) as Autodesk.Viewing.UI.RadioButtonGroup);
+		const ctrlGroup: Autodesk.Viewing.UI.RadioButtonGroup = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
+		viewerToolbar.addControl(ctrlGroup);
+		return (ctrlGroup);
+	}
+
+	protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button {
+		const button: Autodesk.Viewing.UI.Button = new Autodesk.Viewing.UI.Button(id);
+		button.setToolTip(tooltip);
+		//button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+		if (typeof iconClass === 'string')
+			iconClass = [iconClass];
+		iconClass.forEach((elt: string) => (button as any).icon.classList.add(elt));
+		if (handler)
+			button.onClick = handler;
+		return (button);
+	}
+
+	protected createButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button {
+		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = typeof groupNameOrCtrl === 'string' ?
+			this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
+			: groupNameOrCtrl;
+		const button: Autodesk.Viewing.UI.Button = this.createButton(id, iconClass, tooltip, handler);
+		ctrlGroup.addControl(button, { index: (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+		return (button);
+	}
+
+	protected createComboButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.ComboButton {
+		const combo: Autodesk.Viewing.UI.ComboButton = new Autodesk.Viewing.UI.ComboButton(id);
+		combo.setToolTip(tooltip);
+		///button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+		if (typeof iconClass === 'string')
+			iconClass = [iconClass];
+		iconClass.forEach((elt: string) => (combo as any).icon.classList.add(elt));
+		if (handler)
+			combo.onClick = handler;
+		return (combo);
+	}
+
+	protected createComboButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton {
+		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = typeof groupNameOrCtrl === 'string' ?
+			this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
+			: groupNameOrCtrl;
+		const combo: Autodesk.Viewing.UI.ComboButton = this.createComboButton(id, iconClass, tooltip, handler);
+		ctrlGroup.addControl(combo, { 'index': (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+		return (combo);
 	}
 
 	// Viewer options

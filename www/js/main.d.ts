@@ -3,6 +3,7 @@ declare type Region = 'US' | 'EMEA';
 declare type ResourceType = 'svf' | 'svf2' | 'otg' | 'svf_local' | 'svf2_local' | 'otg_local';
 interface URN_Config {
     urn: string;
+    view?: Autodesk.Viewing.BubbleNodeSearchProps;
     xform?: THREE.Matrix4;
     offset?: THREE.Vector3;
     ids?: number[];
@@ -53,9 +54,35 @@ interface Intersection {
     point: THREE.Vector3;
     model: Autodesk.Viewing.Model;
 }
+interface BasicInfo {
+    target: Autodesk.Viewing.Viewer3D | Autodesk.Viewing.GuiViewer3D;
+    type: string;
+}
+interface ModelLoadingInfo extends BasicInfo {
+    model: Autodesk.Viewing.Model;
+    isOverlay?: boolean;
+    preserveTools?: any;
+    svf: any;
+}
+interface ExtensionInfo extends BasicInfo {
+    extensionId: string;
+    mode?: MouseEvent;
+}
+interface UIButton {
+    id: string;
+    iconClass: string | string[];
+    tooltip?: string;
+    handler: string | Function;
+    index?: number;
+}
+declare type UnitType = 'decimal-ft' | 'ft' | 'ft-and-decimal-in' | 'decimal-in' | 'fractional-in' | 'm' | 'cm' | 'mm' | 'm-and-cm';
 interface VisualClustersExtensionOptions {
     attribName: string;
     searchAncestors: boolean;
+}
+interface MeasureExtensionOptions {
+    units: UnitType;
+    precision: number;
 }
 declare class LocalViewer {
     private div;
@@ -66,11 +93,19 @@ declare class LocalViewer {
     private proxy;
     private viewer;
     private configuration;
+    private modelBrowserExcludeRoot;
     private extensions;
+    private ui_definition;
+    private ui_references;
+    private tb_definition;
     private documents;
     private models;
     private startAt;
     private darkmode;
+    static NAVTOOLBAR: string;
+    static MEASURETOOLBAR: string;
+    static MODELTOOLBAR: string;
+    static SETTINGSTOOLBAR: string;
     /**
      *
      * @param div {HTMLElement|string} Point to the HTML element hosting the viewer
@@ -80,14 +115,22 @@ declare class LocalViewer {
      * @param endpoint {string?} (Optional) When using OTG|SVF2 with a local server, provide the endpoint to use to access the OTG|SVF2 CDN server
      */
     constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string);
-    loadExtensions(extensions: (string | {
+    configureExtensions(extensions: (string | {
         id: string;
         options: object;
     })[]): void;
+    private loadExtensions;
+    private reconfigureExtensions;
+    configureUI(ui: {
+        [index: string]: UIButton[];
+    }, tb: {
+        [index: string]: any;
+    }): void;
     enableWorkersDebugging(): void;
+    setModelBrowserExcludeRoot(flag?: boolean): void;
     run(config?: ResourceType): void;
     protected loadModels(): Promise<void>;
-    protected addViewable(urn: string, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model>;
+    protected addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model>;
     protected onModelsLoaded(models: Autodesk.Viewing.Model[]): void;
     switchToDarkMode(): void;
     protected unloadModel(model: Autodesk.Viewing.Model): void;
@@ -97,30 +140,23 @@ declare class LocalViewer {
     private activateProxy;
     onGeometryLoaded(event?: any): void;
     onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any): void;
-    onToolbarCreated(event?: any): void;
+    private onToolbarCreatedInternal;
+    onToolbarCreated(info: BasicInfo): void;
     private onModelAddedInternal;
-    onModelAdded(modelInfo: {
-        model: Autodesk.Viewing.Model;
-        isOverlay: boolean;
-        preserveTools?: any;
-        target: Autodesk.Viewing.GuiViewer3D;
-        type: string;
-    }): void;
+    onModelAdded(modelInfo: ModelLoadingInfo): void;
     private onModelRemovedInternal;
-    onModelRemoved(modelInfo: {
-        model: Autodesk.Viewing.Model;
-        target: Autodesk.Viewing.GuiViewer3D;
-        type: string;
-    }): void;
-    onModelRootLoaded(event?: any): void;
-    onExtensionActivated(event?: any): void;
-    onExtensionDeactivated(event?: any): void;
-    onExtensionLoaded(event?: any): void;
-    onExtensionPreActivated(event?: any): void;
-    onExtensionPreDeactivated(event?: any): void;
-    onExtensionPreLoaded(event?: any): void;
-    onExtensionPreUnloaded(event?: any): void;
-    onExtensionUnloaded(event?: any): void;
+    onModelRemoved(modelInfo: ModelLoadingInfo): void;
+    private onModelRootLoadedInternal;
+    onModelRootLoaded(modelInfo: ModelLoadingInfo): void;
+    onExtensionActivatedInternal(extensionInfo: ExtensionInfo): void;
+    onExtensionActivated(extensionInfo: ExtensionInfo): void;
+    onExtensionDeactivated(extensionInfo: ExtensionInfo): void;
+    onExtensionLoaded(extensionInfo: ExtensionInfo): void;
+    onExtensionPreActivated(extensionInfo: ExtensionInfo): void;
+    onExtensionPreDeactivated(extensionInfo: ExtensionInfo): void;
+    onExtensionPreLoaded(extensionInfo: ExtensionInfo): void;
+    onExtensionPreUnloaded(extensionInfo: ExtensionInfo): void;
+    onExtensionUnloaded(extensionInfo: ExtensionInfo): void;
     onPrefChanged(event?: any): void;
     private throwObjectTreeError;
     /**
@@ -374,5 +410,11 @@ declare class LocalViewer {
      * of multiple fragments using {@link setFragmentAuxiliaryTransform}.
      */
     refresh(): void;
+    protected createControlGroup(groupName: string, verticalDirection?: boolean): Autodesk.Viewing.UI.ControlGroup;
+    protected createRadioButtonGroup(groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
+    protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button;
+    protected createButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button;
+    protected createComboButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.ComboButton;
+    protected createComboButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton;
     private options;
 }

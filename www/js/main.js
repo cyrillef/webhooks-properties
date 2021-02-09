@@ -51,7 +51,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-;
 function isURN_Config(object) {
     return ('urn' in object);
 }
@@ -77,7 +76,11 @@ var LocalViewer = /** @class */ (function () {
         this.proxy = null;
         this.viewer = null;
         this.configuration = null;
+        this.modelBrowserExcludeRoot = true;
         this.extensions = null;
+        this.ui_definition = null;
+        this.ui_references = {};
+        this.tb_definition = null;
         this.documents = {};
         this.models = null;
         this.startAt = null;
@@ -94,11 +97,53 @@ var LocalViewer = /** @class */ (function () {
             && atob(this.urn[0].urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1)
             this.region = 'EMEA';
     }
-    LocalViewer.prototype.loadExtensions = function (extensions) {
+    LocalViewer.prototype.configureExtensions = function (extensions) {
         this.extensions = extensions;
+    };
+    LocalViewer.prototype.loadExtensions = function () {
+        var _this = this;
+        this.extensions.map(function (elt) {
+            if (typeof elt === 'string') {
+                _this.viewer.loadExtension(elt);
+            }
+            else {
+                var pr = _this.viewer.loadExtension(elt.id, elt.options);
+                switch (elt.id) {
+                    case 'Autodesk.Measure': {
+                        pr.then(function (ext) {
+                            ext.setUnits(elt.options.units);
+                            ext.setPrecision(elt.options.precision);
+                        });
+                    }
+                }
+            }
+        });
+    };
+    LocalViewer.prototype.reconfigureExtensions = function (extensionInfo) {
+        if (extensionInfo && extensionInfo.extensionId !== 'Autodesk.Measure')
+            return;
+        var result = this.extensions.filter(function (elt) { return typeof elt !== 'string' && elt.id === 'Autodesk.Measure'; });
+        if (result && result.length === 1) {
+            var ext = this.viewer.getExtension('Autodesk.Measure');
+            if (!ext)
+                return;
+            var extOptions = result[0];
+            //setTimeout(() => { // Let a change to the extension code to cope with default behavior
+            ext.setUnits(extOptions.options.units);
+            ext.setPrecision(extOptions.options.precision);
+            //}, 1000);
+        }
+    };
+    LocalViewer.prototype.configureUI = function (ui, tb) {
+        this.ui_definition = ui;
+        this.tb_definition = tb;
     };
     LocalViewer.prototype.enableWorkersDebugging = function () {
         Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
+    };
+    LocalViewer.prototype.setModelBrowserExcludeRoot = function (flag) {
+        if (flag === void 0) { flag = true; }
+        this.modelBrowserExcludeRoot = flag;
     };
     LocalViewer.prototype.run = function (config) {
         if (config === void 0) { config = 'svf'; }
@@ -116,6 +161,7 @@ var LocalViewer = /** @class */ (function () {
                         self = this;
                         // Autodesk.Viewing.Private.ENABLE_DEBUG =true;
                         // Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
+                        this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
                         this.viewer = new Autodesk.Viewing.GuiViewer3D(typeof this.div === 'string' ?
                             document.getElementById(this.div)
                             : this.div, this.configuration);
@@ -137,8 +183,8 @@ var LocalViewer = /** @class */ (function () {
                         });
                         //self.viewer.removeEventListener(Autodesk.Viewing.EVENT, arguments.callee);
                         // or this.viewer.addEventListener(EVENT, callback, { once: true });
-                        this.viewer.addEventListener(Autodesk.Viewing.TOOLBAR_CREATED_EVENT, self.onToolbarCreated.bind(self));
-                        this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_ACTIVATED_EVENT, self.onExtensionActivated.bind(self));
+                        this.viewer.addEventListener(Autodesk.Viewing.TOOLBAR_CREATED_EVENT, self.onToolbarCreatedInternal.bind(self));
+                        this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_ACTIVATED_EVENT, self.onExtensionActivatedInternal.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_DEACTIVATED_EVENT, self.onExtensionDeactivated.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_LOADED_EVENT, self.onExtensionLoaded.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_PRE_ACTIVATED_EVENT, self.onExtensionPreActivated.bind(self));
@@ -147,7 +193,8 @@ var LocalViewer = /** @class */ (function () {
                         this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_PRE_UNLOADED_EVENT, self.onExtensionPreUnloaded.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.EXTENSION_UNLOADED_EVENT, self.onExtensionUnloaded.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.PREF_CHANGED_EVENT, self.onPrefChanged.bind(self));
-                        this.viewer.addEventListener(Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT, self.onModelRootLoaded.bind(self));
+                        // MODEL_ADDED_EVENT, MODEL_REMOVED_EVENT, MODEL_ROOT_LOADED_EVENT (see below)
+                        //Autodesk.Viewing.Private.Prefs.DISPLAY_UNITS
                         this.viewer.disableHighlight(true);
                         this.viewer.autocam.shotParams.destinationPercent = 1;
                         this.viewer.autocam.shotParams.duration = 3;
@@ -156,26 +203,22 @@ var LocalViewer = /** @class */ (function () {
                         if (this.proxy !== null)
                             this.activateProxy();
                         this.startAt = new Date();
-                        jobs = this.urn.map(function (elt) { return _this.addViewable(elt.urn, elt.xform, elt.offset, elt.ids); });
+                        jobs = this.urn.map(function (elt) { return _this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids); });
                         return [4 /*yield*/, Promise.all(jobs)];
                     case 1:
                         models = _a.sent();
                         this.onModelsLoaded(models);
                         this.viewer.addEventListener(Autodesk.Viewing.MODEL_ADDED_EVENT, self.onModelAddedInternal.bind(self));
                         this.viewer.addEventListener(Autodesk.Viewing.MODEL_REMOVED_EVENT, self.onModelRemovedInternal.bind(self));
+                        this.viewer.addEventListener(Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT, self.onModelRootLoadedInternal.bind(self));
                         // Load extensions
-                        this.extensions.map(function (elt) {
-                            if (typeof elt === 'string')
-                                _this.viewer.loadExtension(elt);
-                            else
-                                _this.viewer.loadExtension(elt.id, elt.options);
-                        });
+                        this.loadExtensions();
                         return [2 /*return*/];
                 }
             });
         });
     };
-    LocalViewer.prototype.addViewable = function (urn, xform, offset, ids) {
+    LocalViewer.prototype.addViewable = function (urn, view, xform, offset, ids) {
         return __awaiter(this, void 0, void 0, function () {
             var self;
             return __generator(this, function (_a) {
@@ -183,7 +226,9 @@ var LocalViewer = /** @class */ (function () {
                 return [2 /*return*/, (new Promise(function (resolve, reject) {
                         var onDocumentLoadSuccess = function (doc) {
                             self.documents[urn.replace('urn:', '')] = doc;
-                            var viewable = doc.getRoot().getDefaultGeometry();
+                            var viewable = view ?
+                                doc.getRoot().search(view)[0]
+                                : doc.getRoot().getDefaultGeometry();
                             var options = {
                                 preserveView: (Object.keys(self.documents).length !== 1),
                                 keepCurrentModels: true
@@ -294,7 +339,6 @@ var LocalViewer = /** @class */ (function () {
     // LOAD_MISSING_GEOMETRY
     // MODEL_LAYERS_LOADED_EVENT
     // MODEL_PLACEMENT_CHANGED_EVENT
-    // MODEL_ROOT_LOADED_EVENT
     // MODEL_TRANSFORM_CHANGED_EVENT
     // MODEL_UNLOADED_EVENT: "modelUnloaded"
     // MODEL_VIEWPORT_BOUNDS_CHANGED_EVENT
@@ -328,7 +372,16 @@ var LocalViewer = /** @class */ (function () {
     // WEBGL_CONTEXT_RESTORED_EVENT
     LocalViewer.prototype.onGeometryLoaded = function (event) { };
     LocalViewer.prototype.onObjectTreeCreated = function (tree, event) { };
-    LocalViewer.prototype.onToolbarCreated = function (event) { };
+    LocalViewer.prototype.onToolbarCreatedInternal = function (info) {
+        var self = this;
+        Object.keys(this.ui_definition).forEach(function (toolbar) {
+            self.ui_definition[toolbar].forEach(function (elt) {
+                self.ui_references[elt.id] = self.createButtonInToolbar(toolbar, elt.id, elt.iconClass, elt.tooltip, elt.handler, elt.index);
+            });
+        });
+        this.onToolbarCreated(info);
+    };
+    LocalViewer.prototype.onToolbarCreated = function (info) { };
     LocalViewer.prototype.onModelAddedInternal = function (modelInfo) {
         this.models.push(modelInfo.model);
         this.onModelAdded(modelInfo);
@@ -340,15 +393,23 @@ var LocalViewer = /** @class */ (function () {
         this.onModelRemoved(modelInfo);
     };
     LocalViewer.prototype.onModelRemoved = function (modelInfo) { };
-    LocalViewer.prototype.onModelRootLoaded = function (event) { };
-    LocalViewer.prototype.onExtensionActivated = function (event) { };
-    LocalViewer.prototype.onExtensionDeactivated = function (event) { };
-    LocalViewer.prototype.onExtensionLoaded = function (event) { };
-    LocalViewer.prototype.onExtensionPreActivated = function (event) { };
-    LocalViewer.prototype.onExtensionPreDeactivated = function (event) { };
-    LocalViewer.prototype.onExtensionPreLoaded = function (event) { };
-    LocalViewer.prototype.onExtensionPreUnloaded = function (event) { };
-    LocalViewer.prototype.onExtensionUnloaded = function (event) { };
+    LocalViewer.prototype.onModelRootLoadedInternal = function (modelInfo) {
+        //this.reconfigureExtensions();
+        this.onModelRootLoaded(modelInfo);
+    };
+    LocalViewer.prototype.onModelRootLoaded = function (modelInfo) { };
+    LocalViewer.prototype.onExtensionActivatedInternal = function (extensionInfo) {
+        this.reconfigureExtensions(extensionInfo);
+        this.onExtensionActivated(extensionInfo);
+    };
+    LocalViewer.prototype.onExtensionActivated = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionDeactivated = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionLoaded = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionPreActivated = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionPreDeactivated = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionPreLoaded = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionPreUnloaded = function (extensionInfo) { };
+    LocalViewer.prototype.onExtensionUnloaded = function (extensionInfo) { };
     LocalViewer.prototype.onPrefChanged = function (event) { };
     // Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
     LocalViewer.prototype.throwObjectTreeError = function (errorCode, errorMsg, statusCode, statusText) { throw new Error(errorMsg); };
@@ -712,6 +773,64 @@ var LocalViewer = /** @class */ (function () {
     LocalViewer.prototype.refresh = function () {
         this.viewer.impl.invalidate(true, true, true);
     };
+    // UI
+    LocalViewer.prototype.createControlGroup = function (groupName, verticalDirection) {
+        if (verticalDirection === void 0) { verticalDirection = false; }
+        var viewerToolbar = this.viewer.getToolbar(true);
+        if (viewerToolbar.getControl(groupName))
+            return viewerToolbar.getControl(groupName);
+        var ctrlGroup = new Autodesk.Viewing.UI.ControlGroup(groupName);
+        if (verticalDirection)
+            ctrlGroup.container.classList.add('toolbar-vertical-group');
+        viewerToolbar.addControl(ctrlGroup);
+        return (ctrlGroup);
+    };
+    LocalViewer.prototype.createRadioButtonGroup = function (groupName) {
+        var viewerToolbar = this.viewer.getToolbar(true);
+        if (viewerToolbar.getControl(groupName))
+            return viewerToolbar.getControl(groupName);
+        var ctrlGroup = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
+        viewerToolbar.addControl(ctrlGroup);
+        return (ctrlGroup);
+    };
+    LocalViewer.prototype.createButton = function (id, iconClass, tooltip, handler) {
+        var button = new Autodesk.Viewing.UI.Button(id);
+        button.setToolTip(tooltip);
+        //button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+        if (typeof iconClass === 'string')
+            iconClass = [iconClass];
+        iconClass.forEach(function (elt) { return button.icon.classList.add(elt); });
+        if (handler)
+            button.onClick = handler;
+        return (button);
+    };
+    LocalViewer.prototype.createButtonInToolbar = function (groupNameOrCtrl, id, iconClass, tooltip, handler, index) {
+        var ctrlGroup = typeof groupNameOrCtrl === 'string' ?
+            this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
+            : groupNameOrCtrl;
+        var button = this.createButton(id, iconClass, tooltip, handler);
+        ctrlGroup.addControl(button, { index: (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+        return (button);
+    };
+    LocalViewer.prototype.createComboButton = function (id, iconClass, tooltip, handler) {
+        var combo = new Autodesk.Viewing.UI.ComboButton(id);
+        combo.setToolTip(tooltip);
+        ///button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+        if (typeof iconClass === 'string')
+            iconClass = [iconClass];
+        iconClass.forEach(function (elt) { return combo.icon.classList.add(elt); });
+        if (handler)
+            combo.onClick = handler;
+        return (combo);
+    };
+    LocalViewer.prototype.createComboButtonInToolbar = function (groupNameOrCtrl, id, iconClass, tooltip, handler, index) {
+        var ctrlGroup = typeof groupNameOrCtrl === 'string' ?
+            this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
+            : groupNameOrCtrl;
+        var combo = this.createComboButton(id, iconClass, tooltip, handler);
+        ctrlGroup.addControl(combo, { 'index': (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+        return (combo);
+    };
     // Viewer options
     LocalViewer.prototype.options = function (config) {
         var getAccessToken = typeof this.getAccessToken === 'string' ?
@@ -775,6 +894,10 @@ var LocalViewer = /** @class */ (function () {
         return (options[config]);
     };
     ;
+    LocalViewer.NAVTOOLBAR = 'navTools';
+    LocalViewer.MEASURETOOLBAR = 'measureTools';
+    LocalViewer.MODELTOOLBAR = 'modelTools';
+    LocalViewer.SETTINGSTOOLBAR = 'settingsTools';
     return LocalViewer;
 }());
 //# sourceMappingURL=main.js.map
