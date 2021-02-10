@@ -865,6 +865,7 @@ var LocalViewer = /** @class */ (function () {
     };
     LocalViewer.prototype.createButton = function (id, def) {
         var _this = this;
+        var self = this;
         var ctrl = def.children ?
             new Autodesk.Viewing.UI.ComboButton(id, { collapsible: (def.collapsible || def.children || false) })
             : new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
@@ -872,15 +873,12 @@ var LocalViewer = /** @class */ (function () {
         //ctrl.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
         if (typeof def.iconClass === 'string')
             def.iconClass = [def.iconClass];
-        def.iconClass.forEach(function (elt) { return ctrl.icon.classList.add(elt); });
+        (def.iconClass || []).forEach(function (elt) { return ctrl.icon.classList.add(elt); });
         ctrl.setVisible(def.visible ? def.visible : true);
         ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
-        if (def.onClick)
-            ctrl.onClick = def.onClick;
-        if (def.onMouseOut)
-            ctrl.onMouseOut = def.onMouseOut;
-        if (def.onMouseOver)
-            ctrl.onMouseOver = def.onMouseOver;
+        ctrl.onClick = def.onClick || this._dumb_.bind(this);
+        ctrl.onMouseOut = def.onMouseOut || this._dumb_.bind(this);
+        ctrl.onMouseOver = def.onMouseOver || this._dumb_.bind(this);
         if (def.onVisibiltyChanged)
             ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
         if (def.onStateChanged)
@@ -891,6 +889,14 @@ var LocalViewer = /** @class */ (function () {
             var combo_1 = ctrl;
             var ctrls = def.children.map(function (child) { return (_this.createButton(child.id, child)); });
             ctrls.map(function (button) { return combo_1.addControl(button); });
+            ctrls.map(function (button) {
+                button._clientOnClick = button.onClick;
+                button._parentCtrl = combo_1;
+                button.onClick = self.onClickComboChild.bind(self);
+            });
+            if (def.iconClass)
+                this.assignComboButton(combo_1, ctrls[0]);
+            combo_1.saveAsDefault();
         }
         this.ui_references[id] = ctrl;
         return (ctrl);
@@ -900,36 +906,26 @@ var LocalViewer = /** @class */ (function () {
         groupCtrl.addControl(button, { index: (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
         return (button);
     };
-    // protected createComboButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.ComboButton {
-    // 	const ctrl: Autodesk.Viewing.UI.ComboButton = new Autodesk.Viewing.UI.ComboButton(id);
-    // 	ctrl.setToolTip(def.tooltip || '');
-    // 	//combo.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
-    // 	if (typeof def.iconClass === 'string')
-    // 		def.iconClass = [def.iconClass];
-    // 	def.iconClass.forEach((elt: string) => (ctrl as any).icon.classList.add(elt));
-    // 	ctrl.setVisible(def.visible ? def.visible : true);
-    // 	ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
-    // 	if (def.onClick)
-    // 		ctrl.onClick = def.onClick;
-    // 	if (def.onMouseOut)
-    // 		ctrl.onMouseOut = def.onMouseOut;
-    // 	if (def.onMouseOver)
-    // 		ctrl.onMouseOver = def.onMouseOver;
-    // 	if (def.onVisibiltyChanged)
-    // 		ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
-    // 	if (def.onStateChanged)
-    // 		ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, def.onStateChanged);
-    // 	if (def.onCollapseChanged)
-    // 		ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
-    // 	this.ui_references[id] = ctrl;
-    // 	//combo.setVisible(true);
-    // 	return (ctrl);
-    // }
-    // protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.ComboButton {
-    // 	const combo: Autodesk.Viewing.UI.ComboButton = this.createComboButton(id, def);
-    // 	groupCtrl.addControl(combo, { 'index': (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
-    // 	return (combo);
-    // }
+    LocalViewer.prototype.assignComboButton = function (combo, button) {
+        combo.setToolTip(button.getToolTip() || '');
+        combo.setVisible(button.isVisible() !== undefined ? button.isVisible() : true);
+        combo.setState(button.getState() || Autodesk.Viewing.UI.Button.State.INACTIVE);
+        combo.onClick = button._clientOnClick || this._dumb_.bind(this);
+        //ctrl.setIcon = ctrls[0].?;
+        combo.icon.classList.forEach(function (element) { return combo.icon.classList.remove(element); });
+        button.icon.classList.forEach(function (element) { return combo.icon.classList.add(element); });
+        //(combo as any)._activeButton = button;
+    };
+    LocalViewer.prototype.onClickComboChild = function (evt) {
+        var button = this.ui_references[evt.currentTarget.id];
+        var radioCtrl = button.parent;
+        var combo = button._parentCtrl;
+        this.assignComboButton(combo, button);
+        radioCtrl._activeButton = button;
+        if (button._clientOnClick)
+            button._clientOnClick.call(self, evt);
+    };
+    LocalViewer.prototype._dumb_ = function (evt) { };
     // Viewer options
     LocalViewer.prototype.options = function (config) {
         var getAccessToken = typeof this.getAccessToken === 'string' ?

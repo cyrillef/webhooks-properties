@@ -87,7 +87,7 @@ interface UIButtonDefinition {
     collapsible?: boolean;
     index?: number;
     children?: UIButtonDefinition[];
-    onClick: (event: Event) => void;
+    onClick?: (event: Event) => void;
     onMouseOut?: (event: Event) => void;
     onMouseOver?: (event: Event) => void;
     onVisibiltyChanged?: (event: Event) => void;
@@ -445,5 +445,8 @@ declare class LocalViewer {
     protected createRadioButtonGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
     protected createButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
     protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
+    protected assignComboButton(combo: Autodesk.Viewing.UI.ComboButton, button: Autodesk.Viewing.UI.Button): void;
+    protected onClickComboChild(evt: Event): void;
+    protected _dumb_(evt: Event): void;
     private options;
 }
