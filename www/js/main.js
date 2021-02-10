@@ -80,11 +80,10 @@ var LocalViewer = /** @class */ (function () {
         this.extensions = null;
         this.ui_definition = null;
         this.ui_references = {};
-        this.tb_definition = null;
         this.documents = {};
         this.models = null;
         this.startAt = null;
-        this.darkmode = null;
+        this.darkmode = null; // dark-theme, light-theme, bim-theme, acs-theme
         this.div = div;
         var temp = Array.isArray(urn) ? urn : [urn];
         this.urn = temp.map(function (elt) { return typeof elt === 'string' ? { urn: elt } : (isURN_Config(elt) ? elt : null); });
@@ -134,9 +133,8 @@ var LocalViewer = /** @class */ (function () {
             //}, 1000);
         }
     };
-    LocalViewer.prototype.configureUI = function (ui, tb) {
+    LocalViewer.prototype.configureUI = function (ui) {
         this.ui_definition = ui;
-        this.tb_definition = tb;
     };
     LocalViewer.prototype.enableWorkersDebugging = function () {
         Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
@@ -271,6 +269,9 @@ var LocalViewer = /** @class */ (function () {
             localStorage.getItem('darkSwitch') === 'dark';
         this.viewer.setLightPreset(0);
         this.viewer.setLightPreset(darkmode ? 2 : 6);
+        this.viewer.container.classList.remove('dark-theme');
+        this.viewer.container.classList.remove('bim-theme');
+        this.viewer.container.classList.add(darkmode ? 'dark-theme' : 'bim-theme');
         if (this.darkmode)
             return;
         var self = this;
@@ -374,9 +375,18 @@ var LocalViewer = /** @class */ (function () {
     LocalViewer.prototype.onObjectTreeCreated = function (tree, event) { };
     LocalViewer.prototype.onToolbarCreatedInternal = function (info) {
         var self = this;
-        Object.keys(this.ui_definition).forEach(function (toolbar) {
-            self.ui_definition[toolbar].forEach(function (elt) {
-                self.ui_references[elt.id] = self.createButtonInToolbar(toolbar, elt.id, elt.iconClass, elt.tooltip, elt.handler, elt.index);
+        Object.keys(this.ui_definition).map(function (tbId) {
+            var tbDef = self.ui_definition[tbId];
+            var tb = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+            Object.keys(tbDef).map(function (grpId) {
+                var grpDef = tbDef[grpId];
+                if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
+                    return;
+                var groupCtrl = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+                Object.keys(grpDef).map(function (ctrlId) {
+                    var ctrlDef = grpDef[ctrlId];
+                    var ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef.iconClass, ctrlDef.tooltip, ctrlDef.handler, ctrlDef.index);
+                });
             });
         });
         this.onToolbarCreated(info);
@@ -774,24 +784,53 @@ var LocalViewer = /** @class */ (function () {
         this.viewer.impl.invalidate(true, true, true);
     };
     // UI
-    LocalViewer.prototype.createControlGroup = function (groupName, verticalDirection) {
-        if (verticalDirection === void 0) { verticalDirection = false; }
-        var viewerToolbar = this.viewer.getToolbar(true);
-        if (viewerToolbar.getControl(groupName))
-            return viewerToolbar.getControl(groupName);
-        var ctrlGroup = new Autodesk.Viewing.UI.ControlGroup(groupName);
-        if (verticalDirection)
-            ctrlGroup.container.classList.add('toolbar-vertical-group');
-        viewerToolbar.addControl(ctrlGroup);
-        return (ctrlGroup);
+    LocalViewer.prototype.getToolbar = function (id) {
+        if (id === void 0) { id = 'default'; }
+        return (id === 'default' ? this.viewer.getToolbar(true) : this.ui_references[id]);
     };
-    LocalViewer.prototype.createRadioButtonGroup = function (groupName) {
-        var viewerToolbar = this.viewer.getToolbar(true);
+    LocalViewer.prototype.createToolbar = function (id, def) {
+        if (this.ui_references[id])
+            return this.ui_references[id];
+        var tb = new Autodesk.Viewing.UI.ToolBar(id);
+        if (def.isVertical)
+            tb.container.classList.add('adsk-toolbar-vertical');
+        var offsetV = '10px';
+        var offsetH = '15px';
+        if (def.top || def.docking === 'top')
+            tb.container.style.top = def.top || offsetV;
+        if (def.bottom || def.docking === 'bottom')
+            tb.container.style.bottom = def.bottom || offsetV;
+        if (def.left || def.docking === 'left')
+            tb.container.style.left = def.left || offsetH;
+        if (def.right || def.docking === 'right')
+            tb.container.style.right = def.right || offsetH;
+        //tb.setGlobalManager(this.viewer.getGlobalManager);
+        //tb.setVisible(true);
+        this.viewer.container.appendChild(tb.container);
+        this.ui_references[id] = tb;
+        return (tb);
+    };
+    LocalViewer.prototype.getGroupCtrl = function (tb, id) {
+        return tb.getControl(id);
+    };
+    LocalViewer.prototype.createControlGroup = function (viewerToolbar, groupName) {
         if (viewerToolbar.getControl(groupName))
             return viewerToolbar.getControl(groupName);
-        var ctrlGroup = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
-        viewerToolbar.addControl(ctrlGroup);
-        return (ctrlGroup);
+        var groupCtrl = new Autodesk.Viewing.UI.ControlGroup(groupName);
+        //groupCtrl.setVisible(true);
+        //groupCtrl.container.classList.add('toolbar-vertical-group');
+        viewerToolbar.addControl(groupCtrl);
+        this.ui_references[groupName] = groupCtrl;
+        return (groupCtrl);
+    };
+    LocalViewer.prototype.createRadioButtonGroup = function (viewerToolbar, groupName) {
+        if (viewerToolbar.getControl(groupName))
+            return viewerToolbar.getControl(groupName);
+        var groupCtrl = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
+        groupCtrl.setVisible(true);
+        viewerToolbar.addControl(groupCtrl);
+        this.ui_references[groupName] = groupCtrl;
+        return (groupCtrl);
     };
     LocalViewer.prototype.createButton = function (id, iconClass, tooltip, handler) {
         var button = new Autodesk.Viewing.UI.Button(id);
@@ -802,14 +841,13 @@ var LocalViewer = /** @class */ (function () {
         iconClass.forEach(function (elt) { return button.icon.classList.add(elt); });
         if (handler)
             button.onClick = handler;
+        this.ui_references[id] = button;
+        //button.setVisible(true);
         return (button);
     };
-    LocalViewer.prototype.createButtonInToolbar = function (groupNameOrCtrl, id, iconClass, tooltip, handler, index) {
-        var ctrlGroup = typeof groupNameOrCtrl === 'string' ?
-            this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
-            : groupNameOrCtrl;
+    LocalViewer.prototype.createButtonInGroup = function (groupCtrl, id, iconClass, tooltip, handler, index) {
         var button = this.createButton(id, iconClass, tooltip, handler);
-        ctrlGroup.addControl(button, { index: (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+        groupCtrl.addControl(button, { index: (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
         return (button);
     };
     LocalViewer.prototype.createComboButton = function (id, iconClass, tooltip, handler) {
@@ -821,14 +859,13 @@ var LocalViewer = /** @class */ (function () {
         iconClass.forEach(function (elt) { return combo.icon.classList.add(elt); });
         if (handler)
             combo.onClick = handler;
+        this.ui_references[id] = combo;
+        //combo.setVisible(true);
         return (combo);
     };
-    LocalViewer.prototype.createComboButtonInToolbar = function (groupNameOrCtrl, id, iconClass, tooltip, handler, index) {
-        var ctrlGroup = typeof groupNameOrCtrl === 'string' ?
-            this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
-            : groupNameOrCtrl;
+    LocalViewer.prototype.createComboButtonInGroup = function (groupCtrl, id, iconClass, tooltip, handler, index) {
         var combo = this.createComboButton(id, iconClass, tooltip, handler);
-        ctrlGroup.addControl(combo, { 'index': (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+        groupCtrl.addControl(combo, { 'index': (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
         return (combo);
     };
     // Viewer options

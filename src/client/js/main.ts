@@ -109,12 +109,35 @@ interface ExtensionInfo extends BasicInfo {
 	extensionId: string;
 	mode?: MouseEvent;
 }
+
+interface UIToolbar {
+	id?: string,
+	isVertical?: boolean,
+	left?: string,
+	top?: string;
+	bottom?: string;
+	right?: string;
+	docking?: string, // left, right, top, bottom
+
+	[key: string]: any,
+}
+
 interface UIButton {
 	id: string,
 	iconClass: string | string[],
 	tooltip?: string,
-	handler: string | Function,
-	index?: number
+	visible?: boolean,
+	state?: Autodesk.Viewing.UI.Button.State,
+	collapsible?: boolean,
+	index?: number,
+
+	onClick: string | Function,
+	onMouseOut?: string | Function,
+	onMouseOver?: string | Function,
+}
+
+interface UIConfiguration {
+	[key: string]: UIToolbar;
 }
 
 /*export*/ type UnitType =
@@ -152,13 +175,13 @@ class LocalViewer {
 	private configuration: any = null;
 	private modelBrowserExcludeRoot: boolean = true;
 	private extensions: (string | { id: string, options: object })[] = null;
-	private ui_definition: { [index: string]: UIButton[] } = null;
-	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control } = {};
-	private tb_definition: { [index: string]: any } = null;
+	private ui_definition: UIConfiguration = null;
+	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control | Autodesk.Viewing.UI.ToolBar } = {};
+
 	private documents: { [index: string]: Autodesk.Viewing.Document } = {};
 	private models: Autodesk.Viewing.Model[] = null;
 	private startAt: Date = null;
-	private darkmode: MutationObserver = null;
+	private darkmode: MutationObserver = null; // dark-theme, light-theme, bim-theme, acs-theme
 
 	public static NAVTOOLBAR: string = 'navTools';
 	public static MEASURETOOLBAR: string = 'measureTools';
@@ -222,15 +245,14 @@ class LocalViewer {
 				return;
 			const extOptions: { id: string, options: object } = result[0] as { id: string, options: object };
 			//setTimeout(() => { // Let a change to the extension code to cope with default behavior
-				ext.setUnits((extOptions.options as MeasureExtensionOptions).units);
-				ext.setPrecision((extOptions.options as MeasureExtensionOptions).precision);
+			ext.setUnits((extOptions.options as MeasureExtensionOptions).units);
+			ext.setPrecision((extOptions.options as MeasureExtensionOptions).precision);
 			//}, 1000);
 		}
 	}
 
-	public configureUI(ui: { [index: string]: UIButton[] }, tb: { [index: string]: any }) {
+	public configureUI(ui: UIConfiguration) {
 		this.ui_definition = ui;
-		this.tb_definition = tb;
 	}
 
 	public enableWorkersDebugging(): void {
@@ -369,6 +391,10 @@ class LocalViewer {
 		this.viewer.setLightPreset(0);
 		this.viewer.setLightPreset(darkmode ? 2 : 6);
 
+		this.viewer.container.classList.remove('dark-theme');
+		this.viewer.container.classList.remove('bim-theme');
+		this.viewer.container.classList.add(darkmode ? 'dark-theme' : 'bim-theme');
+
 		if (this.darkmode)
 			return;
 		const self = this;
@@ -476,11 +502,22 @@ class LocalViewer {
 	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any) { }
 	private onToolbarCreatedInternal(info: BasicInfo) {
 		const self = this;
-		Object.keys(this.ui_definition).forEach((toolbar: string) => {
-			self.ui_definition[toolbar].forEach((elt: UIButton) => {
-				self.ui_references[elt.id] = self.createButtonInToolbar(toolbar, elt.id, elt.iconClass, elt.tooltip, elt.handler, elt.index);
+		Object.keys(this.ui_definition as any).map((tbId: string) => {
+			const tbDef: UIToolbar = self.ui_definition[tbId];
+			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+			Object.keys(tbDef as any).map((grpId: string) => {
+				const grpDef: any = tbDef[grpId];
+				if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
+					return;
+				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+				Object.keys(grpDef as any).map((ctrlId: string) => {
+					const ctrlDef: any = grpDef[ctrlId];
+					const ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef.iconClass, ctrlDef.tooltip, ctrlDef.handler, ctrlDef.index);
+
+				});
 			});
 		});
+
 		this.onToolbarCreated(info);
 	}
 	public onToolbarCreated(info: BasicInfo) { }
@@ -889,24 +926,57 @@ class LocalViewer {
 
 	// UI
 
-	protected createControlGroup(groupName: string, verticalDirection: boolean = false): Autodesk.Viewing.UI.ControlGroup {
-		const viewerToolbar: Autodesk.Viewing.UI.ToolBar = this.viewer.getToolbar(true);
-		if (viewerToolbar.getControl(groupName))
-			return (viewerToolbar.getControl(groupName) as Autodesk.Viewing.UI.ControlGroup);
-		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = new Autodesk.Viewing.UI.ControlGroup(groupName);
-		if (verticalDirection)
-			(ctrlGroup as any).container.classList.add('toolbar-vertical-group');
-		viewerToolbar.addControl(ctrlGroup);
-		return (ctrlGroup);
+	public getToolbar(id: string = 'default'): Autodesk.Viewing.UI.ToolBar {
+		return (id === 'default' ? this.viewer.getToolbar(true) : this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
 	}
 
-	protected createRadioButtonGroup(groupName: string): Autodesk.Viewing.UI.RadioButtonGroup {
-		const viewerToolbar: Autodesk.Viewing.UI.ToolBar = this.viewer.getToolbar(true);
+	protected createToolbar(id: string, def: UIToolbar): Autodesk.Viewing.UI.ToolBar {
+		if (this.ui_references[id])
+			return (this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
+
+		const tb: Autodesk.Viewing.UI.ToolBar = new Autodesk.Viewing.UI.ToolBar(id);
+		if (def.isVertical)
+			tb.container.classList.add('adsk-toolbar-vertical');
+		const offsetV: string = '10px';
+		const offsetH: string = '15px';
+		if (def.top || def.docking === 'top')
+			tb.container.style.top = def.top || offsetV;
+		if (def.bottom || def.docking === 'bottom')
+			tb.container.style.bottom = def.bottom || offsetV;
+		if (def.left || def.docking === 'left')
+			tb.container.style.left = def.left || offsetH;
+		if (def.right || def.docking === 'right')
+			tb.container.style.right = def.right || offsetH;
+		//tb.setGlobalManager(this.viewer.getGlobalManager);
+		//tb.setVisible(true);
+		this.viewer.container.appendChild(tb.container);
+		this.ui_references[id] = tb;
+		return (tb);
+	}
+
+	public getGroupCtrl(tb: Autodesk.Viewing.UI.ToolBar, id: string): Autodesk.Viewing.UI.ControlGroup {
+		return (tb.getControl(id) as Autodesk.Viewing.UI.ControlGroup);
+	}
+
+	protected createControlGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.ControlGroup {
+		if (viewerToolbar.getControl(groupName))
+			return (viewerToolbar.getControl(groupName) as Autodesk.Viewing.UI.ControlGroup);
+		const groupCtrl: Autodesk.Viewing.UI.ControlGroup = new Autodesk.Viewing.UI.ControlGroup(groupName);
+		//groupCtrl.setVisible(true);
+		//groupCtrl.container.classList.add('toolbar-vertical-group');
+		viewerToolbar.addControl(groupCtrl);
+		this.ui_references[groupName] = groupCtrl;
+		return (groupCtrl);
+	}
+
+	protected createRadioButtonGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.RadioButtonGroup {
 		if (viewerToolbar.getControl(groupName))
 			return (viewerToolbar.getControl(groupName) as Autodesk.Viewing.UI.RadioButtonGroup);
-		const ctrlGroup: Autodesk.Viewing.UI.RadioButtonGroup = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
-		viewerToolbar.addControl(ctrlGroup);
-		return (ctrlGroup);
+		const groupCtrl: Autodesk.Viewing.UI.RadioButtonGroup = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
+		groupCtrl.setVisible(true);
+		viewerToolbar.addControl(groupCtrl);
+		this.ui_references[groupName] = groupCtrl;
+		return (groupCtrl);
 	}
 
 	protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button {
@@ -918,15 +988,14 @@ class LocalViewer {
 		iconClass.forEach((elt: string) => (button as any).icon.classList.add(elt));
 		if (handler)
 			button.onClick = handler;
+		this.ui_references[id] = button;
+		//button.setVisible(true);
 		return (button);
 	}
 
-	protected createButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button {
-		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = typeof groupNameOrCtrl === 'string' ?
-			this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
-			: groupNameOrCtrl;
+	protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button {
 		const button: Autodesk.Viewing.UI.Button = this.createButton(id, iconClass, tooltip, handler);
-		ctrlGroup.addControl(button, { index: (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+		groupCtrl.addControl(button, { index: (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
 		return (button);
 	}
 
@@ -939,15 +1008,14 @@ class LocalViewer {
 		iconClass.forEach((elt: string) => (combo as any).icon.classList.add(elt));
 		if (handler)
 			combo.onClick = handler;
+		this.ui_references[id] = combo;
+		//combo.setVisible(true);
 		return (combo);
 	}
 
-	protected createComboButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton {
-		const ctrlGroup: Autodesk.Viewing.UI.ControlGroup = typeof groupNameOrCtrl === 'string' ?
-			this.createControlGroup(groupNameOrCtrl, this.tb_definition && this.tb_definition[groupNameOrCtrl] && this.tb_definition[groupNameOrCtrl].isVertical)
-			: groupNameOrCtrl;
+	protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton {
 		const combo: Autodesk.Viewing.UI.ComboButton = this.createComboButton(id, iconClass, tooltip, handler);
-		ctrlGroup.addControl(combo, { 'index': (index || ctrlGroup.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+		groupCtrl.addControl(combo, { 'index': (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
 		return (combo);
 	}
 

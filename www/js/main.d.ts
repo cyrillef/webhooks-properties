@@ -68,12 +68,30 @@ interface ExtensionInfo extends BasicInfo {
     extensionId: string;
     mode?: MouseEvent;
 }
+interface UIToolbar {
+    id?: string;
+    isVertical?: boolean;
+    left?: string;
+    top?: string;
+    bottom?: string;
+    right?: string;
+    docking?: string;
+    [key: string]: any;
+}
 interface UIButton {
     id: string;
     iconClass: string | string[];
     tooltip?: string;
-    handler: string | Function;
+    visible?: boolean;
+    state?: Autodesk.Viewing.UI.Button.State;
+    collapsible?: boolean;
     index?: number;
+    onClick: string | Function;
+    onMouseOut?: string | Function;
+    onMouseOver?: string | Function;
+}
+interface UIConfiguration {
+    [key: string]: UIToolbar;
 }
 declare type UnitType = 'decimal-ft' | 'ft' | 'ft-and-decimal-in' | 'decimal-in' | 'fractional-in' | 'm' | 'cm' | 'mm' | 'm-and-cm';
 interface VisualClustersExtensionOptions {
@@ -97,7 +115,6 @@ declare class LocalViewer {
     private extensions;
     private ui_definition;
     private ui_references;
-    private tb_definition;
     private documents;
     private models;
     private startAt;
@@ -121,11 +138,7 @@ declare class LocalViewer {
     })[]): void;
     private loadExtensions;
     private reconfigureExtensions;
-    configureUI(ui: {
-        [index: string]: UIButton[];
-    }, tb: {
-        [index: string]: any;
-    }): void;
+    configureUI(ui: UIConfiguration): void;
     enableWorkersDebugging(): void;
     setModelBrowserExcludeRoot(flag?: boolean): void;
     run(config?: ResourceType): void;
@@ -410,11 +423,14 @@ declare class LocalViewer {
      * of multiple fragments using {@link setFragmentAuxiliaryTransform}.
      */
     refresh(): void;
-    protected createControlGroup(groupName: string, verticalDirection?: boolean): Autodesk.Viewing.UI.ControlGroup;
-    protected createRadioButtonGroup(groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
+    getToolbar(id?: string): Autodesk.Viewing.UI.ToolBar;
+    protected createToolbar(id: string, def: UIToolbar): Autodesk.Viewing.UI.ToolBar;
+    getGroupCtrl(tb: Autodesk.Viewing.UI.ToolBar, id: string): Autodesk.Viewing.UI.ControlGroup;
+    protected createControlGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.ControlGroup;
+    protected createRadioButtonGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
     protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button;
-    protected createButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button;
+    protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button;
     protected createComboButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.ComboButton;
-    protected createComboButtonInToolbar(groupNameOrCtrl: string | Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton;
+    protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton;
     private options;
 }

@@ -70,6 +70,8 @@
 		// 	myViewer.run('svf');
 		// });
 
+		var tb, grp, ctrl1, ctrl2;
+
 		class myDerivedViewer extends LocalViewer {
 
 			onObjectTreeCreated(tree, event) {
@@ -79,6 +81,49 @@
 
 			onMyButton(evt) {
 				console.log(evt);
+			}
+
+			onToolbarCreated(info) {
+				// tb = new Autodesk.Viewing.UI.ToolBar('testt');
+				// tb.addClass('adsk-toolbar-vertical');
+				// grp = new Autodesk.Viewing.UI.ControlGroup('testg');
+				// grp.addClass('toolbar-vertical-group');
+				// ctrl1 = new Autodesk.Viewing.UI.Button('test1');
+				// ctrl1.icon.classList.add('fa');
+				// ctrl1.icon.classList.add('fa-fire');
+				// grp.addControl(ctrl1);
+				// ctrl2 = new Autodesk.Viewing.UI.Button('test2');
+				// ctrl2.icon.classList.add('fa');
+				// ctrl2.icon.classList.add('fa-fire');
+				// grp.addControl(ctrl2);
+				// tb.addControl(grp);
+				// info.target.container.appendChild(tb.container);
+
+				// tb = new Autodesk.Viewing.UI.ToolBar('testt');
+				// //bottom
+				// //top
+				// 	//tb.container.style.top = '10px';
+				// 	//tb.container.style.bottom = 'unset';
+				// //right
+				// 	//tb.addClass('adsk-toolbar-vertical');
+				// //left
+				// 	tb.addClass('adsk-toolbar-vertical');
+				// 	tb.container.style.left = '15px';
+				// 	tb.container.style.right = 'unset';
+
+
+				// grp = new Autodesk.Viewing.UI.ControlGroup('testg');
+				// //grp.addClass('toolbar-vertical-group');
+				// ctrl1 = new Autodesk.Viewing.UI.Button('test1');
+				// ctrl1.icon.classList.add('fa');
+				// ctrl1.icon.classList.add('fa-fire');
+				// grp.addControl(ctrl1);
+				// ctrl2 = new Autodesk.Viewing.UI.Button('test2');
+				// ctrl2.icon.classList.add('fa');
+				// ctrl2.icon.classList.add('fa-fire');
+				// grp.addControl(ctrl2);
+				// tb.addControl(grp);
+				// info.target.container.appendChild(tb.container);
 			}
 
 		}
