@@ -68,7 +68,7 @@ interface ExtensionInfo extends BasicInfo {
     extensionId: string;
     mode?: MouseEvent;
 }
-interface UIToolbar {
+interface UIToolbarDefinition {
     id?: string;
     isVertical?: boolean;
     left?: string;
@@ -78,7 +78,7 @@ interface UIToolbar {
     docking?: string;
     [key: string]: any;
 }
-interface UIButton {
+interface UIButtonDefinition {
     id: string;
     iconClass: string | string[];
     tooltip?: string;
@@ -86,12 +86,16 @@ interface UIButton {
     state?: Autodesk.Viewing.UI.Button.State;
     collapsible?: boolean;
     index?: number;
-    onClick: string | Function;
-    onMouseOut?: string | Function;
-    onMouseOver?: string | Function;
+    children?: UIButtonDefinition[];
+    onClick: (event: Event) => void;
+    onMouseOut?: (event: Event) => void;
+    onMouseOver?: (event: Event) => void;
+    onVisibiltyChanged?: (event: Event) => void;
+    onStateChanged?: (event: Event) => void;
+    onCollapseChanged?: (event: Event) => void;
 }
 interface UIConfiguration {
-    [key: string]: UIToolbar;
+    [key: string]: UIToolbarDefinition;
 }
 declare type UnitType = 'decimal-ft' | 'ft' | 'ft-and-decimal-in' | 'decimal-in' | 'fractional-in' | 'm' | 'cm' | 'mm' | 'm-and-cm';
 interface VisualClustersExtensionOptions {
@@ -190,6 +194,17 @@ declare class LocalViewer {
      * });
      */
     rayCast(x: number, y: number): Intersection[];
+    /**
+     * Search text in all models loaded.
+     *
+     * @param {string} text Text to search.
+     *
+     * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
+     */
+    searchAllModels(text: string): Promise<{
+        model: Autodesk.Viewing.Model;
+        dbids: number[];
+    }[]>;
     /**
      * Enumerates IDs of objects in the scene.
      *
@@ -424,13 +439,11 @@ declare class LocalViewer {
      */
     refresh(): void;
     getToolbar(id?: string): Autodesk.Viewing.UI.ToolBar;
-    protected createToolbar(id: string, def: UIToolbar): Autodesk.Viewing.UI.ToolBar;
+    protected createToolbar(id: string, def: UIToolbarDefinition): Autodesk.Viewing.UI.ToolBar;
     getGroupCtrl(tb: Autodesk.Viewing.UI.ToolBar, id: string): Autodesk.Viewing.UI.ControlGroup;
     protected createControlGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.ControlGroup;
     protected createRadioButtonGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
-    protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button;
-    protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button;
-    protected createComboButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.ComboButton;
-    protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton;
+    protected createButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
+    protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
     private options;
 }

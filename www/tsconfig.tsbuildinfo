@@ -157,8 +157,8 @@
         "affectsGlobalScope": true
       },
       "../src/client/js/main.ts": {
-        "version": "44391ce30fc56a20bd913bd26d43cd5da03a7e94376da04db982426bfccf57ac",
-        "signature": "717699c41bf79fec9bc9fb95924686b5ea0e3dca00f5d8be838399e9426be926",
+        "version": "933f454409d9822f8afbac35ed3fe5f6fbf251941232a029ecfe273bdf1b1596",
+        "signature": "b801db4897212e64f16a6d86cadd3264c08a3237eee130892f9ce663ac101e40",
         "affectsGlobalScope": true
       },
       "../node_modules/@types/node/globals.d.ts": {
@@ -647,8 +647,8 @@
         "affectsGlobalScope": false
       },
       "../node_modules/@types/forge-viewer/index.d.ts": {
-        "version": "db489e8765f3d13597415627caf1e3d5b721c9bae72808b1f405ffcd3c045172",
-        "signature": "db489e8765f3d13597415627caf1e3d5b721c9bae72808b1f405ffcd3c045172",
+        "version": "a3fc7e6acade751d1088c1c2779417b1b996fc5f6814862911420c5b22cc20ea",
+        "signature": "a3fc7e6acade751d1088c1c2779417b1b996fc5f6814862911420c5b22cc20ea",
         "affectsGlobalScope": true
       },
       "../node_modules/moment/ts3.1-typings/moment.d.ts": {

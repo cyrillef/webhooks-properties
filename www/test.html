@@ -129,13 +129,13 @@
 		}
 
 		$(document).ready(function () {
-			//myViewer = new myDerivedViewer('myViewer', urn_pier9, '/token', region);
+			myViewer = new myDerivedViewer('myViewer', urn_pier9, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', pier9_config, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', bauma_config, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
-			myViewer = new myDerivedViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
+			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
 			myViewer.configureExtensions([
 				'Autodesk.VisualClusters',
 				// {
@@ -159,62 +159,178 @@
 			myViewer.configureUI({
 				default: {
 					myTools: [{
-							id: 'mybutton',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button',
+							id: 'mybutton10',
+							iconClass: ['fa', 'fa-bus'],
+							tooltip: 'my button 10',
 							//	handler: (evt) => console.log
 							handler: (evt) => console.log(evt)
 						},
 						{
-							id: 'mybutton3',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 3',
+							id: 'mybutton11',
+							iconClass: ['fa', 'fa-taxi'],
+							tooltip: 'my button 11',
 							// handler: (evt) => console.log
 							handler: (evt) => console.log(evt)
 						},
 						{
-							id: 'mybutton4',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 4',
+							id: 'mybutton12',
+							iconClass: ['fa', 'fa-eraser'],
+							tooltip: 'my button 12',
 							// handler: (evt) => console.log
 							handler: (evt) => console.log(evt)
 						},
 					],
 					navTools: [{
-						id: 'mybutton2',
-						iconClass: ['fa', 'fa-fire'],
-						tooltip: 'my button 2',
+						id: 'mybutton0',
+						iconClass: ['fa', 'fa-asterisk'],
+						tooltip: 'my button 0',
 						handler: myViewer.onMyButton
 					}, ],
 				},
 				myToolbar: {
 					isVertical: true,
 					//left: '20px;',
-					docking: 'left', // top / bottom / right
+					docking: 'right', // top / bottom / right
 
 					myTools2: [{
-							id: 'mybutton',
+							id: 'mybutton1',
 							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button',
+							tooltip: 'my button 1',
 							// handler: (evt) => console.log
 							handler: (evt) => console.log(evt)
 						},
 						{
-							id: 'mybutton3',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 3',
+							id: 'mybutton2',
+							iconClass: ['fa', 'fa-bullhorn'],
+							tooltip: 'my button 2',
 							// handler: (evt) => console.log
-							handler: (evt) => console.log(evt)
+							handler: (evt) => console.log(evt),
+							//collapsible: true,
+							children: [{
+								id: 'mybutton3',
+								iconClass: ['fa', 'fa-bug'],
+								tooltip: 'my button 3',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton4',
+								iconClass: ['fa', 'fa-car'],
+								tooltip: 'my button 4',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton5',
+								iconClass: ['fa', 'fa-fighter-jet'],
+								tooltip: 'my button 5',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, ]
 						},
 						{
-							id: 'mybutton4',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 4',
+							id: 'mybutton6',
+							iconClass: ['fa', 'fa-bell'],
+							tooltip: 'my button 6',
 							// handler: (evt) => console.log
 							handler: (evt) => console.log(evt)
 						},
 					],
-				}
+				},
+				myToolbar2: {
+					isVertical: true,
+					//left: '20px;',
+					docking: 'left', // top / bottom / right
+
+					myTools3: [{
+							id: 'mybutton21',
+							iconClass: ['fa', 'fa-fire'],
+							tooltip: 'my button 21',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt)
+						},
+						{
+							id: 'mybutton22',
+							iconClass: ['fa', 'fa-bullhorn'],
+							tooltip: 'my button 22',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt),
+							//collapsible: true,
+							children: [{
+								id: 'mybutton23',
+								iconClass: ['fa', 'fa-bug'],
+								tooltip: 'my button 23',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton24',
+								iconClass: ['fa', 'fa-car'],
+								tooltip: 'my button 24',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton25',
+								iconClass: ['fa', 'fa-fighter-jet'],
+								tooltip: 'my button 25',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, ]
+						},
+						{
+							id: 'mybutton26',
+							iconClass: ['fa', 'fa-bell'],
+							tooltip: 'my button 26',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt)
+						},
+					],
+				},
+				myToolbar3: {
+					isVertical: false,
+					//left: '20px;',
+					docking: 'top', // top / bottom / right
+
+					myTools4: [{
+							id: 'mybutton41',
+							iconClass: ['fa', 'fa-fire'],
+							tooltip: 'my button 41',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt)
+						},
+						{
+							id: 'mybutton42',
+							iconClass: ['fa', 'fa-bullhorn'],
+							tooltip: 'my button 42',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt),
+							//collapsible: true,
+							children: [{
+								id: 'mybutton43',
+								iconClass: ['fa', 'fa-bug'],
+								tooltip: 'my button 43',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton44',
+								iconClass: ['fa', 'fa-car'],
+								tooltip: 'my button 44',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, {
+								id: 'mybutton45',
+								iconClass: ['fa', 'fa-fighter-jet'],
+								tooltip: 'my button 45',
+								// handler: (evt) => console.log
+								handler: (evt) => console.log(evt)
+							}, ]
+						},
+						{
+							id: 'mybutton46',
+							iconClass: ['fa', 'fa-bell'],
+							tooltip: 'my button 46',
+							// handler: (evt) => console.log
+							handler: (evt) => console.log(evt)
+						},
+					],
+				},
 			});
 			myViewer.run('svf');
 		});

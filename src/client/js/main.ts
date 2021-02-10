@@ -110,7 +110,7 @@ interface ExtensionInfo extends BasicInfo {
 	mode?: MouseEvent;
 }
 
-interface UIToolbar {
+interface UIToolbarDefinition {
 	id?: string,
 	isVertical?: boolean,
 	left?: string,
@@ -122,7 +122,7 @@ interface UIToolbar {
 	[key: string]: any,
 }
 
-interface UIButton {
+interface UIButtonDefinition {
 	id: string,
 	iconClass: string | string[],
 	tooltip?: string,
@@ -131,13 +131,19 @@ interface UIButton {
 	collapsible?: boolean,
 	index?: number,
 
-	onClick: string | Function,
-	onMouseOut?: string | Function,
-	onMouseOver?: string | Function,
+	children?: UIButtonDefinition[],
+
+	onClick: (event: Event) => void,
+	onMouseOut?: (event: Event) => void,
+	onMouseOver?: (event: Event) => void,
+
+	onVisibiltyChanged?: (event: Event) => void,
+	onStateChanged?: (event: Event) => void,
+	onCollapseChanged?: (event: Event) => void,
 }
 
 interface UIConfiguration {
-	[key: string]: UIToolbar;
+	[key: string]: UIToolbarDefinition;
 }
 
 /*export*/ type UnitType =
@@ -503,7 +509,7 @@ class LocalViewer {
 	private onToolbarCreatedInternal(info: BasicInfo) {
 		const self = this;
 		Object.keys(this.ui_definition as any).map((tbId: string) => {
-			const tbDef: UIToolbar = self.ui_definition[tbId];
+			const tbDef: UIToolbarDefinition = self.ui_definition[tbId];
 			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
 			Object.keys(tbDef as any).map((grpId: string) => {
 				const grpDef: any = tbDef[grpId];
@@ -512,7 +518,7 @@ class LocalViewer {
 				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
 				Object.keys(grpDef as any).map((ctrlId: string) => {
 					const ctrlDef: any = grpDef[ctrlId];
-					const ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef.iconClass, ctrlDef.tooltip, ctrlDef.handler, ctrlDef.index);
+					const ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef);
 
 				});
 			});
@@ -576,6 +582,32 @@ class LocalViewer {
 		let intersections: Intersection[] = [];
 		(this.viewer.impl as any).castRayViewport(this.viewer.impl.clientToViewport(x, y), false, null, null, intersections);
 		return (intersections);
+	}
+
+	/**
+	 * Search text in all models loaded.
+	 *
+	 * @param {string} text Text to search.
+	 *
+	 * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
+	 */
+	public searchAllModels(text: string): Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]> {
+		const viewer: Autodesk.Viewing.Viewer3D = this.viewer;
+		return (new Promise((resolve, reject) => {
+			let results: { model: Autodesk.Viewing.Model, dbids: number[] }[] = [];
+			const models: Autodesk.Viewing.Model[] = viewer.getVisibleModels();
+			models.forEach((model) => {
+				model.search(
+					text,
+					(dbids: number[]) => {
+						results.push({ model, dbids });
+						if (results.length === models.length)
+							resolve(results);
+					},
+					(err) => reject(err)
+				);
+			});
+		}));
 	}
 
 	/**
@@ -930,7 +962,7 @@ class LocalViewer {
 		return (id === 'default' ? this.viewer.getToolbar(true) : this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
 	}
 
-	protected createToolbar(id: string, def: UIToolbar): Autodesk.Viewing.UI.ToolBar {
+	protected createToolbar(id: string, def: UIToolbarDefinition): Autodesk.Viewing.UI.ToolBar {
 		if (this.ui_references[id])
 			return (this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
 
@@ -939,14 +971,24 @@ class LocalViewer {
 			tb.container.classList.add('adsk-toolbar-vertical');
 		const offsetV: string = '10px';
 		const offsetH: string = '15px';
-		if (def.top || def.docking === 'top')
+		if (def.top || def.docking === 'top') {
 			tb.container.style.top = def.top || offsetV;
-		if (def.bottom || def.docking === 'bottom')
+			tb.container.style.bottom = 'unset';
+			tb.container.classList.add('dock-top');
+		}
+		if (def.bottom || def.docking === 'bottom') {
 			tb.container.style.bottom = def.bottom || offsetV;
-		if (def.left || def.docking === 'left')
+			tb.container.style.top = 'unset';
+		}
+		if (def.left || def.docking === 'left') {
 			tb.container.style.left = def.left || offsetH;
-		if (def.right || def.docking === 'right')
+			tb.container.style.right = 'unset';
+			tb.container.classList.add('dock-left');
+		}
+		if (def.right || def.docking === 'right') {
 			tb.container.style.right = def.right || offsetH;
+			tb.container.style.left = 'unset';
+		}
 		//tb.setGlobalManager(this.viewer.getGlobalManager);
 		//tb.setVisible(true);
 		this.viewer.container.appendChild(tb.container);
@@ -979,45 +1021,81 @@ class LocalViewer {
 		return (groupCtrl);
 	}
 
-	protected createButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.Button {
-		const button: Autodesk.Viewing.UI.Button = new Autodesk.Viewing.UI.Button(id);
-		button.setToolTip(tooltip);
-		//button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
-		if (typeof iconClass === 'string')
-			iconClass = [iconClass];
-		iconClass.forEach((elt: string) => (button as any).icon.classList.add(elt));
-		if (handler)
-			button.onClick = handler;
-		this.ui_references[id] = button;
-		//button.setVisible(true);
+	protected createButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button {
+		const ctrl: Autodesk.Viewing.UI.Button = def.children ?
+			  new Autodesk.Viewing.UI.ComboButton(id, { collapsible: (def.collapsible || def.children || false) })
+			: new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
+
+		ctrl.setToolTip(def.tooltip || '');
+		//ctrl.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+		if (typeof def.iconClass === 'string')
+			def.iconClass = [def.iconClass];
+		def.iconClass.forEach((elt: string) => (ctrl as any).icon.classList.add(elt));
+		ctrl.setVisible(def.visible ? def.visible : true);
+		ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
+		if (def.onClick)
+			ctrl.onClick = def.onClick;
+		if (def.onMouseOut)
+			ctrl.onMouseOut = def.onMouseOut;
+		if (def.onMouseOver)
+			ctrl.onMouseOver = def.onMouseOver;
+
+		if (def.onVisibiltyChanged)
+			ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
+		if (def.onStateChanged)
+			ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, def.onStateChanged);
+		if (def.onCollapseChanged)
+			ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
+
+		if ( def.children ) {
+			const combo: Autodesk.Viewing.UI.ComboButton = ctrl as Autodesk.Viewing.UI.ComboButton;
+			const ctrls: Autodesk.Viewing.UI.Button[] = def.children.map((child: UIButtonDefinition) => { return (this.createButton(child.id, child)); });
+			ctrls.map((button: Autodesk.Viewing.UI.Button) => combo.addControl(button));
+		}
+
+		this.ui_references[id] = ctrl;
+		return (ctrl);
+	}
+
+	protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button {
+		const button: Autodesk.Viewing.UI.Button = this.createButton(id, def);
+		groupCtrl.addControl(button, { index: (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
 		return (button);
 	}
 
-	protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.Button {
-		const button: Autodesk.Viewing.UI.Button = this.createButton(id, iconClass, tooltip, handler);
-		groupCtrl.addControl(button, { index: (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
-		return (button);
-	}
+	// protected createComboButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.ComboButton {
+	// 	const ctrl: Autodesk.Viewing.UI.ComboButton = new Autodesk.Viewing.UI.ComboButton(id);
+	// 	ctrl.setToolTip(def.tooltip || '');
+	// 	//combo.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
+	// 	if (typeof def.iconClass === 'string')
+	// 		def.iconClass = [def.iconClass];
+	// 	def.iconClass.forEach((elt: string) => (ctrl as any).icon.classList.add(elt));
+	// 	ctrl.setVisible(def.visible ? def.visible : true);
+	// 	ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
+	// 	if (def.onClick)
+	// 		ctrl.onClick = def.onClick;
+	// 	if (def.onMouseOut)
+	// 		ctrl.onMouseOut = def.onMouseOut;
+	// 	if (def.onMouseOver)
+	// 		ctrl.onMouseOver = def.onMouseOver;
 
-	protected createComboButton(id: string, iconClass: string | string[], tooltip: string, handler: any): Autodesk.Viewing.UI.ComboButton {
-		const combo: Autodesk.Viewing.UI.ComboButton = new Autodesk.Viewing.UI.ComboButton(id);
-		combo.setToolTip(tooltip);
-		///button.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
-		if (typeof iconClass === 'string')
-			iconClass = [iconClass];
-		iconClass.forEach((elt: string) => (combo as any).icon.classList.add(elt));
-		if (handler)
-			combo.onClick = handler;
-		this.ui_references[id] = combo;
-		//combo.setVisible(true);
-		return (combo);
-	}
+	// 	if (def.onVisibiltyChanged)
+	// 		ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
+	// 	if (def.onStateChanged)
+	// 		ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, def.onStateChanged);
+	// 	if (def.onCollapseChanged)
+	// 		ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
 
-	protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, iconClass: string | string[], tooltip: string, handler: any, index?: number): Autodesk.Viewing.UI.ComboButton {
-		const combo: Autodesk.Viewing.UI.ComboButton = this.createComboButton(id, iconClass, tooltip, handler);
-		groupCtrl.addControl(combo, { 'index': (index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
-		return (combo);
-	}
+	// 	this.ui_references[id] = ctrl;
+	// 	//combo.setVisible(true);
+	// 	return (ctrl);
+	// }
+
+	// protected createComboButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.ComboButton {
+	// 	const combo: Autodesk.Viewing.UI.ComboButton = this.createComboButton(id, def);
+	// 	groupCtrl.addControl(combo, { 'index': (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
+	// 	return (combo);
+	// }
 
 	// Viewer options
 	private options(config: ResourceType): object {
