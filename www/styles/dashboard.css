@@ -117,6 +117,14 @@ body {
 	color: #999;
 }
 
+div.adsk-button div.custom-button {
+	background: rgba(255, 0, 0, 0.719);
+}
+
+/* div.adsk-button:has(> div.custom-button) {
+	background: rgba(255, 0, 0, 0.719);
+} */
+
 /*
  * Autodesk Viewer
  */

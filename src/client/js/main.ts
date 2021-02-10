@@ -96,6 +96,8 @@ interface Intersection {
 interface BasicInfo {
 	target: Autodesk.Viewing.Viewer3D | Autodesk.Viewing.GuiViewer3D,
 	type: string,
+
+	[key: string]: any,
 }
 
 interface ModelLoadingInfo extends BasicInfo {
@@ -508,6 +510,8 @@ class LocalViewer {
 	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any) { }
 	private onToolbarCreatedInternal(info: BasicInfo) {
 		const self = this;
+		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>(); //[ this.viewer.getToolbar(true)];
+		toolbars.add(this.viewer.getToolbar(true));
 		Object.keys(this.ui_definition as any).map((tbId: string) => {
 			const tbDef: UIToolbarDefinition = self.ui_definition[tbId];
 			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
@@ -522,9 +526,10 @@ class LocalViewer {
 
 				});
 			});
+			toolbars.add(tb);
 		});
 
-		this.onToolbarCreated(info);
+		this.onToolbarCreated({ ...info, toolbars: Array.from(toolbars) });
 	}
 	public onToolbarCreated(info: BasicInfo) { }
 	private onModelAddedInternal(modelInfo: ModelLoadingInfo) {
@@ -1033,6 +1038,9 @@ class LocalViewer {
 		if (typeof def.iconClass === 'string')
 			def.iconClass = [def.iconClass];
 		(def.iconClass || []).forEach((elt: string) => (ctrl as any).icon.classList.add(elt));
+		// deal with background
+		//(ctrl as any).container.style.backgroundColor = (ctrl as any).container.children[0].style.backgroundColor;
+
 		ctrl.setVisible(def.visible ? def.visible : true);
 		ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
 		
@@ -1057,7 +1065,7 @@ class LocalViewer {
 				button.onClick = self.onClickComboChild.bind(self);
 			});
 
-			if (def.iconClass)
+			if (!def.onClick && !def.iconClass)
 				this.assignComboButton(combo, ctrls[0])
 
 			combo.saveAsDefault();

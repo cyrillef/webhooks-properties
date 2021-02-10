@@ -57,6 +57,7 @@ interface Intersection {
 interface BasicInfo {
     target: Autodesk.Viewing.Viewer3D | Autodesk.Viewing.GuiViewer3D;
     type: string;
+    [key: string]: any;
 }
 interface ModelLoadingInfo extends BasicInfo {
     model: Autodesk.Viewing.Model;

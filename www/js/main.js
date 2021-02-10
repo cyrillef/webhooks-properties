@@ -15,6 +15,17 @@
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
 //
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -375,6 +386,8 @@ var LocalViewer = /** @class */ (function () {
     LocalViewer.prototype.onObjectTreeCreated = function (tree, event) { };
     LocalViewer.prototype.onToolbarCreatedInternal = function (info) {
         var self = this;
+        var toolbars = new Set(); //[ this.viewer.getToolbar(true)];
+        toolbars.add(this.viewer.getToolbar(true));
         Object.keys(this.ui_definition).map(function (tbId) {
             var tbDef = self.ui_definition[tbId];
             var tb = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
@@ -388,8 +401,9 @@ var LocalViewer = /** @class */ (function () {
                     var ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef);
                 });
             });
+            toolbars.add(tb);
         });
-        this.onToolbarCreated(info);
+        this.onToolbarCreated(__assign(__assign({}, info), { toolbars: Array.from(toolbars) }));
     };
     LocalViewer.prototype.onToolbarCreated = function (info) { };
     LocalViewer.prototype.onModelAddedInternal = function (modelInfo) {
@@ -874,6 +888,8 @@ var LocalViewer = /** @class */ (function () {
         if (typeof def.iconClass === 'string')
             def.iconClass = [def.iconClass];
         (def.iconClass || []).forEach(function (elt) { return ctrl.icon.classList.add(elt); });
+        // deal with background
+        //(ctrl as any).container.style.backgroundColor = (ctrl as any).container.children[0].style.backgroundColor;
         ctrl.setVisible(def.visible ? def.visible : true);
         ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
         ctrl.onClick = def.onClick || this._dumb_.bind(this);
@@ -894,7 +910,7 @@ var LocalViewer = /** @class */ (function () {
                 button._parentCtrl = combo_1;
                 button.onClick = self.onClickComboChild.bind(self);
             });
-            if (def.iconClass)
+            if (!def.onClick && !def.iconClass)
                 this.assignComboButton(combo_1, ctrls[0]);
             combo_1.saveAsDefault();
         }
