@@ -117,6 +117,7 @@ body {
 	color: #999;
 }
 
+div.adsk-button.custom-button,
 div.adsk-button div.custom-button {
 	background: rgba(255, 0, 0, 0.719);
 }
@@ -124,88 +125,3 @@ div.adsk-button div.custom-button {
 /* div.adsk-button:has(> div.custom-button) {
 	background: rgba(255, 0, 0, 0.719);
 } */
-
-/*
- * Autodesk Viewer
- */
-
-.adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button-arrow {
-  	/* left: -5px; */
-  	/* right: unset; */
-  	top: unset;
-  	bottom: -5px;
-  	transform: scaleY(-1);
-  	-moz-transform: scaleY(-1);
-  	-webkit-transform: scaleY(-1);
-  	-ms-transform: scaleY(-1);
-}
-
-.adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button>.toolbar-vertical-group {
-	position: absolute;
-	top: 125%;
-	bottom: unset;
-	left: -5px;
-	margin: 0;
-	transition: all 0.2s ease;
-	z-index: 1;
-}
-
-/* .adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button>.adsk-control-tooltip {
-	left: 120%;
-	right: unset;
-	top: 120%;
-	bottom: -25px;
-} */
-
-.adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button>.adsk-control-tooltip {
-	left: 120%;
-	right: unset;
-	top: 120%;
-	bottom: 25%;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button>.toolbar-vertical-group~.adsk-control-tooltip {
-	left: 120%;
-	right: unset;
-	top: 120%;
-	bottom: 25%;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.dock-top .adsk-button>.toolbar-vertical-group>.adsk-button>.adsk-control-tooltip {
-	top: 25%;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.adsk-toolbar-vertical.dock-left .adsk-button-arrow {
- 	/* left: -5px; */
- 	/* right: unset; */
- 	left: unset;
- 	right: -5px;
- 	transform: scaleX(-1);
-	-moz-transform: scaleX(-1);
-	-webkit-transform: scaleX(-1);
-	-ms-transform: scaleX(-1);
-}
-
-.adsk-viewing-viewer .adsk-toolbar.adsk-toolbar-vertical.dock-left .adsk-button>.toolbar-vertical-group {
- 	bottom: -5px;
- 	right: -60px;
- 	left: 50px;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.adsk-toolbar-vertical.dock-left .adsk-button>.adsk-control-tooltip {
-	left: 120%;
-	right: unset;
-	top: unset;
-	bottom: 25%;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.adsk-toolbar-vertical.dock-left .adsk-button>.toolbar-vertical-group~.adsk-control-tooltip {
-	left: 120%;
-	right: unset;
-	top: unset;
-	bottom: -25px;
-}
-
-.adsk-viewing-viewer .adsk-toolbar.adsk-toolbar-vertical.dock-left .adsk-button>.toolbar-vertical-group>.adsk-button>.adsk-control-tooltip {
-	left: 120%;
-}

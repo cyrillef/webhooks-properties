@@ -28,6 +28,7 @@
 	<!-- Autodesk Forge Viewer -->
 	<link href="https://developer.api.autodesk.com/modelderivative/v2/viewers/style.css?v=v7.*" rel="stylesheet" />
 	<script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
+	<link href="/styles/viewer.css" rel="stylesheet" />
 
 	<script src="/js/main.js"></script>
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
@@ -35,6 +36,8 @@
 
 	<script>
 		// US
+		const urn_urbanhouse = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ';
+		const urn_rac = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA'; // <<- with AEC data
 		const urn_pier9 = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0';
 		const pier9_config = {
 			urn: urn_pier9,
@@ -70,8 +73,6 @@
 		// 	myViewer.run('svf');
 		// });
 
-		var tb, grp, ctrl1, ctrl2;
-
 		class myDerivedViewer extends LocalViewer {
 
 			onObjectTreeCreated(tree, event) {
@@ -84,19 +85,23 @@
 			}
 
 			onToolbarCreated(info) {
-				console.log(info);
+				//console.log(info);
 			}
 
 		}
 
 		$(document).ready(function () {
-			myViewer = new myDerivedViewer('myViewer', urn_pier9, '/token', region);
+			//myViewer = new myDerivedViewer('myViewer', urn_pier9, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', pier9_config, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', bauma_config, '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
 			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
+			//myViewer = new myDerivedViewer('myViewer', [urn_specoffice], '/token', region);
+			//myViewer = new myDerivedViewer('myViewer', [urn_urbanhouse], '/token', region);
+			myViewer = new myDerivedViewer('myViewer', [urn_rac], '/token', region); // <<- with AEC data
+			myViewer.setModelBrowserExcludeRoot(false);
 			myViewer.configureExtensions([
 				'Autodesk.VisualClusters',
 				// {
@@ -115,7 +120,10 @@
 						precision: 2,
 					},
 					//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
-				}
+				},
+				// 'Autodesk.AEC.LevelsExtension',
+				//'Autodesk.AEC.Minimap3DExtension',
+				// 'Autodesk.BimWalk',
 			]);
 			myViewer.configureUI({
 				default: {
@@ -123,21 +131,18 @@
 							id: 'mybutton10',
 							iconClass: ['fa', 'fa-bus'],
 							tooltip: 'my button 10',
-							//	handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 						{
 							id: 'mybutton11',
 							iconClass: ['fa', 'fa-taxi'],
 							tooltip: 'my button 11',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 						{
 							id: 'mybutton12',
 							iconClass: ['fa', 'fa-eraser'],
 							tooltip: 'my button 12',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 					],
@@ -148,42 +153,35 @@
 						onClick: myViewer.onMyButton
 					}, ],
 				},
-				myToolbar: {
+				rightToolbar: {
 					isVertical: true,
-					//left: '20px;',
 					docking: 'right', // top / bottom / right
-
-					myTools2: [{
+					rightGroup1: [{
 							id: 'mybutton1',
 							iconClass: ['fa', 'fa-fire'],
 							tooltip: 'my button 1',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 						{
 							id: 'mybutton2',
 							iconClass: ['fa', 'fa-bullhorn'],
 							tooltip: 'my button 2',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt),
 							//collapsible: true,
 							children: [{
 								id: 'mybutton3',
 								iconClass: ['fa', 'fa-bug'],
 								tooltip: 'my button 3',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton4',
 								iconClass: ['fa', 'fa-car'],
 								tooltip: 'my button 4',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton5',
 								iconClass: ['fa', 'fa-fighter-jet'],
 								tooltip: 'my button 5',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, ]
 						},
@@ -191,36 +189,32 @@
 							id: 'mybutton6',
 							iconClass: ['fa', 'fa-bell'],
 							tooltip: 'my button 6',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 					],
 				},
-				myToolbar2: {
+				leftToolbar: {
 					isVertical: true,
-					//left: '20px;',
 					docking: 'left', // top / bottom / right
-
-					myTools3: [{
+					leftGroup1: [{
 							id: 'mybutton21',
 							children: [{
 								id: 'mybutton231',
 								iconClass: ['fa', 'fa-bug'],
 								tooltip: 'my button 231',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton241',
 								iconClass: ['fa', 'fa-car'],
 								tooltip: 'my button 241',
-								// handler: (evt) => console.log
-								onClick: (evt) => console.log(evt)
+								onClick: (evt) => console.log(evt),
+								visible: false,
 							}, {
 								id: 'mybutton251',
 								iconClass: ['fa', 'fa-fighter-jet'],
 								tooltip: 'my button 251',
-								// handler: (evt) => console.log
-								onClick: (evt) => console.log(evt)
+								onClick: (evt) => console.log(evt),
+								state: Autodesk.Viewing.UI.Button.State.ACTIVE,
 							}, ]
 						},
 						{
@@ -233,67 +227,75 @@
 								id: 'mybutton23',
 								iconClass: ['fa', 'fa-bug'],
 								tooltip: 'my button 23',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton24',
 								iconClass: ['fa', 'fa-car'],
 								tooltip: 'my button 24',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton25',
-								iconClass: ['fa', 'fa-fighter-jet', 'custom-button'],
+								iconClass: ['fa', 'fa-fighter-jet'],
+								buttonClass: ['custom-button'],
 								tooltip: 'my button 25',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, ]
 						},
 						{
 							id: 'mybutton26',
-							iconClass: ['fa', 'fa-bell', 'custom-button'],
+							iconClass: ['fa', 'fa-bell'],
+							buttonClass: ['custom-button'],
 							tooltip: 'my button 26',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
+						},
+						{
+							id: 'mybutton261',
+							iconClass: ['fa', 'fa-fighter-jet'],
+							tooltip: 'my button 261',
+							onClick: (evt) => console.log(evt),
+							state: Autodesk.Viewing.UI.Button.State.ACTIVE,
+							bistate: true
+						}, {
+							id: 'mybutton271',
+							iconClass: ['fa', 'fa-fighter-jet'],
+							tooltip: 'my button 271',
+							onClick: (evt) => console.log(evt),
+							bistate: {
+								iconClass: ['fa-fighter-jet', 'fa-car'],
+								buttonClass: ['empty-style', 'custom-button']
+							}
 						},
 					],
 				},
-				myToolbar3: {
+				topToolbar: {
 					isVertical: false,
-					//left: '20px;',
 					docking: 'top', // top / bottom / right
-
-					myTools4: [{
+					topGroup1: [{
 							id: 'mybutton41',
 							iconClass: ['fa', 'fa-fire'],
 							tooltip: 'my button 41',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 						{
 							id: 'mybutton42',
 							iconClass: ['fa', 'fa-bullhorn'],
 							tooltip: 'my button 42',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt),
 							//collapsible: true,
 							children: [{
 								id: 'mybutton43',
 								iconClass: ['fa', 'fa-bug'],
 								tooltip: 'my button 43',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton44',
 								iconClass: ['fa', 'fa-car'],
 								tooltip: 'my button 44',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, {
 								id: 'mybutton45',
 								iconClass: ['fa', 'fa-fighter-jet'],
 								tooltip: 'my button 45',
-								// handler: (evt) => console.log
 								onClick: (evt) => console.log(evt)
 							}, ]
 						},
@@ -301,7 +303,6 @@
 							id: 'mybutton46',
 							iconClass: ['fa', 'fa-bell'],
 							tooltip: 'my button 46',
-							// handler: (evt) => console.log
 							onClick: (evt) => console.log(evt)
 						},
 					],

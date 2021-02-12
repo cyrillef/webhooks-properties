@@ -15,6 +15,19 @@
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
 //
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -74,6 +87,35 @@ function isURN_Config(object) {
 ;
 ;
 ;
+var BistateButton = /** @class */ (function (_super) {
+    __extends(BistateButton, _super);
+    function BistateButton(id, options) {
+        var _this = _super.call(this, id, options) || this;
+        _this.bistateOptions = options.bistate;
+        if (_this.bistateOptions.iconClass && typeof (_this.bistateOptions.iconClass[0]) === 'string')
+            _this.bistateOptions.iconClass = _this.bistateOptions.iconClass.map(function (st) { return ([st]); });
+        if (_this.bistateOptions.buttonClass && typeof (_this.bistateOptions.buttonClass[0]) === 'string')
+            _this.bistateOptions.buttonClass = _this.bistateOptions.buttonClass.map(function (st) { return ([st]); });
+        _this.addEventListener('click', _this.onButtonClick.bind(_this));
+        return _this;
+    }
+    BistateButton.prototype.onButtonClick = function (info) {
+        var button = info.target;
+        var oldState = button.getState();
+        button.setState(button.getState() ? Autodesk.Viewing.UI.Button.State.ACTIVE : Autodesk.Viewing.UI.Button.State.INACTIVE);
+        if (typeof this.bistateOptions !== 'object')
+            return;
+        if (this.bistateOptions.iconClass) {
+            this.bistateOptions.iconClass[oldState].forEach(function (element) { return button.icon.classList.remove(element); });
+            this.bistateOptions.iconClass[button.getState()].forEach(function (element) { return button.icon.classList.add(element); });
+        }
+        if (this.bistateOptions.buttonClass) {
+            this.bistateOptions.buttonClass[oldState].forEach(function (element) { return button.container.classList.remove(element); });
+            this.bistateOptions.buttonClass[button.getState()].forEach(function (element) { return button.container.classList.add(element); });
+        }
+    };
+    return BistateButton;
+}(Autodesk.Viewing.UI.Button));
 var LocalViewer = /** @class */ (function () {
     /**
      *
@@ -111,19 +153,21 @@ var LocalViewer = /** @class */ (function () {
         this.extensions = extensions;
     };
     LocalViewer.prototype.loadExtensions = function () {
-        var _this = this;
+        var self = this;
         this.extensions.map(function (elt) {
             if (typeof elt === 'string') {
-                _this.viewer.loadExtension(elt);
+                self.viewer.loadExtension(elt);
             }
             else {
-                var pr = _this.viewer.loadExtension(elt.id, elt.options);
+                var pr = self.viewer.loadExtension(elt.id, elt.options);
                 switch (elt.id) {
                     case 'Autodesk.Measure': {
-                        pr.then(function (ext) {
+                        pr
+                            .then(function (ext) {
                             ext.setUnits(elt.options.units);
                             ext.setPrecision(elt.options.precision);
-                        });
+                        })
+                            .catch(function (reason) { });
                     }
                 }
             }
@@ -138,7 +182,7 @@ var LocalViewer = /** @class */ (function () {
             if (!ext)
                 return;
             var extOptions = result[0];
-            //setTimeout(() => { // Let a change to the extension code to cope with default behavior
+            //setTimeout((): void => { // Let a change to the extension code to cope with default behavior
             ext.setUnits(extOptions.options.units);
             ext.setPrecision(extOptions.options.precision);
             //}, 1000);
@@ -176,19 +220,19 @@ var LocalViewer = /** @class */ (function () {
                             : this.div, this.configuration);
                         this.viewer.start();
                         // Attach event handlers (this would work for all the files except those that doesn't have geometry data).
-                        this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function (event) {
+                        this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function (info) {
                             //this.viewer.removeEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, arguments.callee);
-                            self.viewer.fitToView(undefined, undefined, true);
+                            info.target.fitToView(undefined, undefined, true);
                             setTimeout(function () {
-                                self.viewer.autocam.setHomeViewFrom(_this.viewer.navigation.getCamera());
+                                info.target.autocam.setHomeViewFrom(info.target.navigation.getCamera());
                             }, 1000);
-                            var endAt = (new Date().getTime() - _this.startAt.getTime()) / 1000;
+                            var endAt = (new Date().getTime() - self.startAt.getTime()) / 1000;
                             console.log("GEOMETRY_LOADED_EVENT => " + endAt);
-                            self.onGeometryLoaded(event);
+                            self.onGeometryLoaded(info);
                         });
-                        this.viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function (event) {
-                            var tree = self.viewer.model.getInstanceTree();
-                            self.onObjectTreeCreated(tree, event);
+                        this.viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function (info) {
+                            var tree = info.model.getInstanceTree();
+                            self.onObjectTreeCreated(tree, info);
                         });
                         //self.viewer.removeEventListener(Autodesk.Viewing.EVENT, arguments.callee);
                         // or this.viewer.addEventListener(EVENT, callback, { once: true });
@@ -234,6 +278,11 @@ var LocalViewer = /** @class */ (function () {
                 self = this;
                 return [2 /*return*/, (new Promise(function (resolve, reject) {
                         var onDocumentLoadSuccess = function (doc) {
+                            doc.downloadAecModelData() // https://forge.autodesk.com/blog/add-revit-levels-and-2d-minimap-your-3d
+                                // this.viewer.model.getDocumentNode().getAecModelData()
+                                // .then((data: any): void => { (doc as any).aecData = data; })
+                                // .catch((reason: any): void => { (doc as any).aecData = null; });
+                                .catch(function (reason) { });
                             self.documents[urn.replace('urn:', '')] = doc;
                             var viewable = view ?
                                 doc.getRoot().search(view)[0]
@@ -286,10 +335,10 @@ var LocalViewer = /** @class */ (function () {
         if (this.darkmode)
             return;
         var self = this;
-        this.darkmode = new MutationObserver(function (mutationsList, observer) {
+        this.darkmode = new MutationObserver(function (mutations, observer) {
             //console.log(mutationsList, observer);
-            for (var _i = 0, mutationsList_1 = mutationsList; _i < mutationsList_1.length; _i++) {
-                var mutation = mutationsList_1[_i];
+            for (var _i = 0, mutations_1 = mutations; _i < mutations_1.length; _i++) {
+                var mutation = mutations_1[_i];
                 if (mutation.type === 'attributes')
                     self.switchToDarkMode();
             }
@@ -310,10 +359,8 @@ var LocalViewer = /** @class */ (function () {
             .then(function (response) {
             if (!response.ok)
                 throw new Error(response.statusText);
-            //return (response.text());
             return (response.json());
         })
-            //.then((bearer) => onGetAccessToken(bearer, 3599));
             .then(function (bearer) { return onGetAccessToken(bearer.access_token, bearer.expires_in); });
     };
     LocalViewer.prototype.useProxy = function (path, mode) {
@@ -382,28 +429,11 @@ var LocalViewer = /** @class */ (function () {
     // VIEW_CUBE_CREATED_EVENT
     // WEBGL_CONTEXT_LOST_EVENT
     // WEBGL_CONTEXT_RESTORED_EVENT
-    LocalViewer.prototype.onGeometryLoaded = function (event) { };
-    LocalViewer.prototype.onObjectTreeCreated = function (tree, event) { };
+    LocalViewer.prototype.onGeometryLoaded = function (info) { };
+    LocalViewer.prototype.onObjectTreeCreated = function (tree, info) { };
     LocalViewer.prototype.onToolbarCreatedInternal = function (info) {
-        var self = this;
-        var toolbars = new Set(); //[ this.viewer.getToolbar(true)];
-        toolbars.add(this.viewer.getToolbar(true));
-        Object.keys(this.ui_definition).map(function (tbId) {
-            var tbDef = self.ui_definition[tbId];
-            var tb = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
-            Object.keys(tbDef).map(function (grpId) {
-                var grpDef = tbDef[grpId];
-                if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
-                    return;
-                var groupCtrl = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
-                Object.keys(grpDef).map(function (ctrlId) {
-                    var ctrlDef = grpDef[ctrlId];
-                    var ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef);
-                });
-            });
-            toolbars.add(tb);
-        });
-        this.onToolbarCreated(__assign(__assign({}, info), { toolbars: Array.from(toolbars) }));
+        var toolbars = this.buildUI(this.ui_definition);
+        this.onToolbarCreated(__assign(__assign({}, info), { toolbars: toolbars }));
     };
     LocalViewer.prototype.onToolbarCreated = function (info) { };
     LocalViewer.prototype.onModelAddedInternal = function (modelInfo) {
@@ -445,7 +475,7 @@ var LocalViewer = /** @class */ (function () {
      * @returns {Intersection[]} List of intersections.
      *
      * @example
-     * document.getElementById('viewer').addEventListener('click', function(ev) {
+     * document.getElementById('viewer').addEventListener('click', (ev) => {
      *   const bounds = ev.target.getBoundingClientRect();
      *   const intersections = utils.rayCast(ev.clientX - bounds.left, ev.clientY - bounds.top);
      *   if (intersections.length > 0) {
@@ -495,9 +525,9 @@ var LocalViewer = /** @class */ (function () {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateNodes(function(id) {
+     *     utils.enumerateNodes((id) => {
      *       console.log('Found node', id);
      *     });
      *   } catch(err) {
@@ -524,7 +554,7 @@ var LocalViewer = /** @class */ (function () {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listNodes();
      *   console.log('Object IDs', ids);
      * });
@@ -557,9 +587,9 @@ var LocalViewer = /** @class */ (function () {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateLeafNodes(function(id) {
+     *     utils.enumerateLeafNodes((id) => {
      *       console.log('Found leaf node', id);
      *     });
      *   } catch(err) {
@@ -587,7 +617,7 @@ var LocalViewer = /** @class */ (function () {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listLeafNodes();
      *   console.log('Leaf object IDs', ids);
      * });
@@ -621,9 +651,9 @@ var LocalViewer = /** @class */ (function () {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateFragments(function(id) {
+     *     utils.enumerateFragments((id) => {
      *       console.log('Found fragment', id);
      *     });
      *   } catch(err) {
@@ -651,7 +681,7 @@ var LocalViewer = /** @class */ (function () {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listFragments();
      *   console.log('Fragment IDs', ids);
      * });
@@ -701,14 +731,12 @@ var LocalViewer = /** @class */ (function () {
      *
      * @example
      * const fragId = 123;
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *     const transform = utils.getFragmentOrigTransform(fragId);
      *     console.log('Original fragment transform', transform);
      * });
      */
     LocalViewer.prototype.getFragmentOrigTransform = function (model, fragId, transform) {
-        // if (!this.viewer.model)
-        // 	throw new Error('Fragments not yet available. Wait for Autodesk.Viewing.FRAGMENTS_LOADED_EVENT event.');
         if (transform === void 0) { transform = null; }
         var frags = model.getFragmentList();
         frags.getOriginalWorldMatrix(fragId, transform || new THREE.Matrix4());
@@ -733,7 +761,7 @@ var LocalViewer = /** @class */ (function () {
      * let scale = new THREE.Vector3(1, 1, 1);
      * let rotation = new THREE.Quaternion(0, 0, 0, 1);
      * let position = new THREE.Vector3(0, 0, 0);
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   utils.getFragmentAuxTransform(fragId, scale, rotation, position);
      *   console.log('Scale', scale);
      *   console.log('Rotation', rotation);
@@ -767,7 +795,7 @@ var LocalViewer = /** @class */ (function () {
      * const fragId = 123;
      * const scale = new THREE.Vector3(2.0, 3.0, 4.0);
      * const position = new THREE.Vector3(5.0, 6.0, 7.0);
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   utils.setFragmentAuxTransform(fragId, scale, null, position);
      * });
      */
@@ -793,7 +821,7 @@ var LocalViewer = /** @class */ (function () {
      * @throws Exception when the fragments are not yet available.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   try {
      *     const transform = utils.getFragmentTransform(1);
      *     console.log('Final fragment transform', transform);
@@ -821,7 +849,7 @@ var LocalViewer = /** @class */ (function () {
     // UI
     LocalViewer.prototype.getToolbar = function (id) {
         if (id === void 0) { id = 'default'; }
-        return (id === 'default' ? this.viewer.getToolbar(true) : this.ui_references[id]);
+        return (id === 'default' || id === 'guiviewer3d-toolbar' ? this.viewer.getToolbar(true) : this.ui_references[id]);
     };
     LocalViewer.prototype.createToolbar = function (id, def) {
         if (this.ui_references[id])
@@ -882,16 +910,20 @@ var LocalViewer = /** @class */ (function () {
         var self = this;
         var ctrl = def.children ?
             new Autodesk.Viewing.UI.ComboButton(id, { collapsible: (def.collapsible || def.children || false) })
-            : new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
+            : def.bistate !== undefined ?
+                new BistateButton(id, { bistate: def.bistate })
+                : new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
         ctrl.setToolTip(def.tooltip || '');
         //ctrl.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
         if (typeof def.iconClass === 'string')
             def.iconClass = [def.iconClass];
         (def.iconClass || []).forEach(function (elt) { return ctrl.icon.classList.add(elt); });
-        // deal with background
-        //(ctrl as any).container.style.backgroundColor = (ctrl as any).container.children[0].style.backgroundColor;
-        ctrl.setVisible(def.visible ? def.visible : true);
-        ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
+        if (typeof def.buttonClass === 'string')
+            def.buttonClass = [def.buttonClass];
+        //(def.buttonClass || []).forEach((elt: string): void => ctrl.addClass(elt));
+        (def.buttonClass || []).forEach(function (elt) { return ctrl.container.classList.add(elt); });
+        ctrl.setVisible(def.visible !== undefined ? def.visible : true);
+        ctrl.setState(def.state !== undefined ? def.state : Autodesk.Viewing.UI.Button.State.INACTIVE);
         ctrl.onClick = def.onClick || this._dumb_.bind(this);
         ctrl.onMouseOut = def.onMouseOut || this._dumb_.bind(this);
         ctrl.onMouseOver = def.onMouseOver || this._dumb_.bind(this);
@@ -924,13 +956,14 @@ var LocalViewer = /** @class */ (function () {
     };
     LocalViewer.prototype.assignComboButton = function (combo, button) {
         combo.setToolTip(button.getToolTip() || '');
-        combo.setVisible(button.isVisible() !== undefined ? button.isVisible() : true);
-        combo.setState(button.getState() || Autodesk.Viewing.UI.Button.State.INACTIVE);
+        combo.setVisible(button.isVisible());
+        combo.setState(button.getState());
         combo.onClick = button._clientOnClick || this._dumb_.bind(this);
-        //ctrl.setIcon = ctrls[0].?;
         combo.icon.classList.forEach(function (element) { return combo.icon.classList.remove(element); });
         button.icon.classList.forEach(function (element) { return combo.icon.classList.add(element); });
-        //(combo as any)._activeButton = button;
+        combo.container.classList.forEach(function (element) { return combo.container.classList.remove(element); });
+        button.container.classList.forEach(function (element) { return combo.container.classList.add(element); });
+        combo._activeButton = button;
     };
     LocalViewer.prototype.onClickComboChild = function (evt) {
         var button = this.ui_references[evt.currentTarget.id];
@@ -941,7 +974,105 @@ var LocalViewer = /** @class */ (function () {
         if (button._clientOnClick)
             button._clientOnClick.call(self, evt);
     };
+    LocalViewer.prototype.getUI = function () {
+        var toolbars = new Set([this.viewer.getToolbar(true)]);
+        Object.values(this.ui_references)
+            .filter(function (elt) { return elt instanceof Autodesk.Viewing.UI.ToolBar; })
+            .forEach(function (tb) { return toolbars.add(tb); });
+        var ids = [];
+        toolbars.forEach(function (tb) {
+            var groupIterator = function (parent, path) {
+                var nbc = parent.getNumberOfControls();
+                for (var c = 0; c < nbc; c++) {
+                    var ctrl = parent.getControl(parent.getControlId(c));
+                    ids.push([path, ctrl.getId()].join('/'));
+                    if (ctrl instanceof Autodesk.Viewing.UI.ComboButton) {
+                        var button = ctrl;
+                        // shall we return options?
+                        var subMenu = button.subMenu;
+                        ids.push([path, ctrl.getId(), subMenu.getId()].join('/'));
+                        groupIterator(subMenu, [path, ctrl.getId(), subMenu.getId()].join('/'));
+                    }
+                    else if (ctrl instanceof Autodesk.Viewing.UI.ControlGroup) {
+                        var group = ctrl;
+                        groupIterator(group, [path, group.getId()].join('/'));
+                    }
+                    else {
+                        var button = ctrl;
+                        // all done!
+                    }
+                }
+            };
+            ids.push('//' + tb.getId());
+            groupIterator(tb, '//' + tb.getId());
+        });
+        return (ids);
+    };
+    LocalViewer.prototype.getControls = function (searchpath) {
+        var self = this;
+        if (typeof searchpath === 'string')
+            searchpath = [searchpath];
+        //let all: Set<Autodesk.Viewing.UI.Control> = new Set<Autodesk.Viewing.UI.Control>();
+        var uipath = this.getUI();
+        var ctrls = searchpath.map(function (criteria) {
+            criteria = criteria.replace(/\*/g, '.*');
+            var regex = new RegExp(criteria);
+            var results = uipath.filter(function (idpath) { return regex.test(idpath); });
+            //all = new Set<Autodesk.Viewing.UI.Control>([ ...all, ...results ])
+            var selection = results.map(function (idpath) { return self.getControl(idpath); });
+            return (selection);
+        });
+        var all = new Set(ctrls.flat());
+        return (Array.from(all));
+    };
+    LocalViewer.prototype.getControl = function (idpath) {
+        var _this = this;
+        var ids = idpath.split('/').slice(2); // remove '//'
+        var ctrl = null;
+        ids.forEach(function (id) {
+            if (!ctrl) {
+                ctrl = _this.getToolbar(id);
+            }
+            else if (ctrl instanceof Autodesk.Viewing.UI.ControlGroup) {
+                var group = ctrl;
+                ctrl = group.getControl(id);
+            }
+            else if (ctrl instanceof Autodesk.Viewing.UI.ComboButton) {
+                var button = ctrl;
+                var subMenu = button.subMenu;
+                if (subMenu.getId() !== id) // path skip the intermediate subMenu group, id represent the option (button)
+                    ctrl = subMenu.getControl(id);
+            }
+            else {
+                var button = ctrl;
+                if (button.getId() !== id)
+                    ctrl = null;
+                // all done!
+            }
+        });
+        return (ctrl);
+    };
     LocalViewer.prototype._dumb_ = function (evt) { };
+    LocalViewer.prototype.buildUI = function (ui_definition) {
+        var self = this;
+        var toolbars = new Set([this.viewer.getToolbar(true)]);
+        Object.keys(ui_definition).map(function (tbId) {
+            var tbDef = self.ui_definition[tbId];
+            var tb = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+            Object.keys(tbDef).map(function (grpId) {
+                var grpDef = tbDef[grpId];
+                if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
+                    return;
+                var groupCtrl = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+                Object.values(grpDef).map(function (ctrlDef) {
+                    //const ctrlDef: any = grpDef[ctrlId];
+                    var ctrl = groupCtrl.getControl(ctrlDef.id) || self.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef);
+                });
+            });
+            toolbars.add(tb);
+        });
+        return (Array.from(toolbars));
+    };
     // Viewer options
     LocalViewer.prototype.options = function (config) {
         var getAccessToken = typeof this.getAccessToken === 'string' ?

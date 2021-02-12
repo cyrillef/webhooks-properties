@@ -79,21 +79,37 @@ interface UIToolbarDefinition {
     docking?: string;
     [key: string]: any;
 }
+declare type BistateButtonOptions = boolean | {
+    iconClass?: string[] | string[][];
+    buttonClass?: string[] | string[][];
+};
 interface UIButtonDefinition {
     id: string;
-    iconClass: string | string[];
+    iconClass?: string | string[];
+    buttonClass?: string | string[];
     tooltip?: string;
     visible?: boolean;
     state?: Autodesk.Viewing.UI.Button.State;
     collapsible?: boolean;
     index?: number;
     children?: UIButtonDefinition[];
+    bistate?: BistateButtonOptions;
     onClick?: (event: Event) => void;
     onMouseOut?: (event: Event) => void;
     onMouseOver?: (event: Event) => void;
     onVisibiltyChanged?: (event: Event) => void;
     onStateChanged?: (event: Event) => void;
     onCollapseChanged?: (event: Event) => void;
+}
+interface ControlEvent {
+    target: Autodesk.Viewing.UI.Control;
+    type: string;
+    [key: string]: any;
+}
+declare class BistateButton extends Autodesk.Viewing.UI.Button {
+    private bistateOptions;
+    constructor(id?: string, options?: Autodesk.Viewing.UI.ControlOptions);
+    protected onButtonClick(info: ControlEvent): void;
 }
 interface UIConfiguration {
     [key: string]: UIToolbarDefinition;
@@ -156,8 +172,8 @@ declare class LocalViewer {
     private getAccessTokenFct;
     useProxy(path?: string, mode?: string): void;
     private activateProxy;
-    onGeometryLoaded(event?: any): void;
-    onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any): void;
+    onGeometryLoaded(info: ModelLoadingInfo): void;
+    onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, info: ModelLoadingInfo): void;
     private onToolbarCreatedInternal;
     onToolbarCreated(info: BasicInfo): void;
     private onModelAddedInternal;
@@ -184,7 +200,7 @@ declare class LocalViewer {
      * @returns {Intersection[]} List of intersections.
      *
      * @example
-     * document.getElementById('viewer').addEventListener('click', function(ev) {
+     * document.getElementById('viewer').addEventListener('click', (ev) => {
      *   const bounds = ev.target.getBoundingClientRect();
      *   const intersections = utils.rayCast(ev.clientX - bounds.left, ev.clientY - bounds.top);
      *   if (intersections.length > 0) {
@@ -220,9 +236,9 @@ declare class LocalViewer {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateNodes(function(id) {
+     *     utils.enumerateNodes((id) => {
      *       console.log('Found node', id);
      *     });
      *   } catch(err) {
@@ -241,7 +257,7 @@ declare class LocalViewer {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listNodes();
      *   console.log('Object IDs', ids);
      * });
@@ -261,9 +277,9 @@ declare class LocalViewer {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateLeafNodes(function(id) {
+     *     utils.enumerateLeafNodes((id) => {
      *       console.log('Found leaf node', id);
      *     });
      *   } catch(err) {
@@ -282,7 +298,7 @@ declare class LocalViewer {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listLeafNodes();
      *   console.log('Leaf object IDs', ids);
      * });
@@ -302,9 +318,9 @@ declare class LocalViewer {
      * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
      *   try {
-     *     utils.enumerateFragments(function(id) {
+     *     utils.enumerateFragments((id) => {
      *       console.log('Found fragment', id);
      *     });
      *   } catch(err) {
@@ -324,7 +340,7 @@ declare class LocalViewer {
      * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
      *
      * @example <caption>Using async/await</caption>
-     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+     * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
      *   const ids = await utils.listFragments();
      *   console.log('Fragment IDs', ids);
      * });
@@ -354,7 +370,7 @@ declare class LocalViewer {
      *
      * @example
      * const fragId = 123;
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *     const transform = utils.getFragmentOrigTransform(fragId);
      *     console.log('Original fragment transform', transform);
      * });
@@ -379,7 +395,7 @@ declare class LocalViewer {
      * let scale = new THREE.Vector3(1, 1, 1);
      * let rotation = new THREE.Quaternion(0, 0, 0, 1);
      * let position = new THREE.Vector3(0, 0, 0);
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   utils.getFragmentAuxTransform(fragId, scale, rotation, position);
      *   console.log('Scale', scale);
      *   console.log('Rotation', rotation);
@@ -405,7 +421,7 @@ declare class LocalViewer {
      * const fragId = 123;
      * const scale = new THREE.Vector3(2.0, 3.0, 4.0);
      * const position = new THREE.Vector3(5.0, 6.0, 7.0);
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   utils.setFragmentAuxTransform(fragId, scale, null, position);
      * });
      */
@@ -423,7 +439,7 @@ declare class LocalViewer {
      * @throws Exception when the fragments are not yet available.
      *
      * @example
-     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+     * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
      *   try {
      *     const transform = utils.getFragmentTransform(1);
      *     console.log('Final fragment transform', transform);
@@ -448,6 +464,10 @@ declare class LocalViewer {
     protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
     protected assignComboButton(combo: Autodesk.Viewing.UI.ComboButton, button: Autodesk.Viewing.UI.Button): void;
     protected onClickComboChild(evt: Event): void;
+    getUI(): string[];
+    getControls(searchpath: string | string[]): Autodesk.Viewing.UI.Control[];
+    getControl(idpath: string): Autodesk.Viewing.UI.Control;
     protected _dumb_(evt: Event): void;
+    buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[];
     private options;
 }

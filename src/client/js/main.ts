@@ -19,7 +19,6 @@
    Load models from differentt regions / different clientID / different repo BIM360 / OSS
    SVF2 socket proxy
    all events
-   UI - https://github.com/cyrillef/extract.autodesk.io/blob/master/views/explore.ejs
 */
 
 //import * as THREE from 'three';
@@ -124,9 +123,12 @@ interface UIToolbarDefinition {
 	[key: string]: any,
 }
 
+type BistateButtonOptions = boolean | { iconClass?: string[] | string[][], buttonClass?: string[] | string[][] };
+
 interface UIButtonDefinition {
 	id: string,
-	iconClass: string | string[],
+	iconClass?: string | string[],
+	buttonClass?: string | string[],
 	tooltip?: string,
 	visible?: boolean,
 	state?: Autodesk.Viewing.UI.Button.State,
@@ -134,6 +136,14 @@ interface UIButtonDefinition {
 	index?: number,
 
 	children?: UIButtonDefinition[],
+	/*
+	 * bistate configuration to handle BistateButton
+	 * if boolean - Auto-switch between Autodesk.Viewing.UI.Button.State.ACTIVE and Autodesk.Viewing.UI.Button.State.INACTIVE states
+	 * if object, iconClass and buttonClass will switch icons and styles
+	 *            can be an array of 2 strings [ '', '' ] -> 0 for Autodesk.Viewing.UI.Button.State.ACTIVE, and 1 for Autodesk.Viewing.UI.Button.State.INACTIVE
+	 *            or be an array of 2 string array [ [ '', '', ... ], [ '', '', ... ] ]
+	 */
+	bistate?: BistateButtonOptions,
 
 	onClick?: (event: Event) => void,
 	onMouseOut?: (event: Event) => void,
@@ -142,6 +152,50 @@ interface UIButtonDefinition {
 	onVisibiltyChanged?: (event: Event) => void,
 	onStateChanged?: (event: Event) => void,
 	onCollapseChanged?: (event: Event) => void,
+}
+
+interface ControlEvent {
+	target: Autodesk.Viewing.UI.Control,
+	type: string,
+
+	[key: string]: any,
+}
+
+class BistateButton extends Autodesk.Viewing.UI.Button {
+
+
+	private bistateOptions: BistateButtonOptions;
+
+	constructor(id?: string, options?: Autodesk.Viewing.UI.ControlOptions) {
+		super(id, options);
+
+		this.bistateOptions = options.bistate as BistateButtonOptions;
+		if ((this.bistateOptions as any).iconClass && typeof ((this.bistateOptions as any).iconClass[0]) === 'string')
+			(this.bistateOptions as any).iconClass = (this.bistateOptions as any).iconClass.map((st: string): string[] => ([st]));
+		if ((this.bistateOptions as any).buttonClass && typeof ((this.bistateOptions as any).buttonClass[0]) === 'string')
+			(this.bistateOptions as any).buttonClass = (this.bistateOptions as any).buttonClass.map((st: string): string[] => ([st]));
+
+		this.addEventListener('click', this.onButtonClick.bind(this));
+	}
+
+	protected onButtonClick(info: ControlEvent): void {
+		const button: BistateButton = info.target as BistateButton;
+
+		const oldState: Autodesk.Viewing.UI.Button.State = button.getState();
+		button.setState(button.getState() ? Autodesk.Viewing.UI.Button.State.ACTIVE : Autodesk.Viewing.UI.Button.State.INACTIVE);
+		if (typeof this.bistateOptions !== 'object')
+			return;
+
+		if (this.bistateOptions.iconClass) {
+			(this.bistateOptions.iconClass[oldState] as string[]).forEach((element: string): void => (button as any).icon.classList.remove(element));
+			(this.bistateOptions.iconClass[button.getState()] as string[]).forEach((element: string): void => (button as any).icon.classList.add(element));
+		}
+		if (this.bistateOptions.buttonClass) {
+			(this.bistateOptions.buttonClass[oldState] as string[]).forEach((element: string): void => (button as any).container.classList.remove(element));
+			(this.bistateOptions.buttonClass[button.getState()] as string[]).forEach((element: string): void => (button as any).container.classList.add(element));
+		}
+	}
+
 }
 
 interface UIConfiguration {
@@ -207,8 +261,8 @@ class LocalViewer {
 	constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string) {
 		this.div = div;
 		const temp: (string | URN_Config)[] = Array.isArray(urn) ? urn : [urn];
-		this.urn = temp.map((elt: string | URN_Config) => typeof elt === 'string' ? { urn: elt } : (isURN_Config(elt) ? elt : null));
-		this.urn = this.urn.filter((elt: string | URN_Config) => elt !== null);
+		this.urn = temp.map((elt: string | URN_Config): any => typeof elt === 'string' ? { urn: elt } : (isURN_Config(elt) ? elt : null));
+		this.urn = this.urn.filter((elt: string | URN_Config): boolean => elt !== null);
 		this.getAccessToken = getAccessToken;
 		this.region = region || 'US';
 		this.endpoint = endpoint || '';
@@ -226,17 +280,20 @@ class LocalViewer {
 	}
 
 	private loadExtensions() {
-		this.extensions.map((elt: string | { id: string, options: object }) => {
+		const self = this;
+		this.extensions.map((elt: string | { id: string, options: object }): any => {
 			if (typeof elt === 'string') {
-				this.viewer.loadExtension(elt);
+				self.viewer.loadExtension(elt);
 			} else {
-				const pr = this.viewer.loadExtension(elt.id, elt.options);
+				const pr = self.viewer.loadExtension(elt.id, elt.options);
 				switch (elt.id) {
 					case 'Autodesk.Measure': {
-						pr.then((ext: Autodesk.Extensions.Measure.MeasureExtension) => {
-							ext.setUnits((elt.options as MeasureExtensionOptions).units);
-							ext.setPrecision((elt.options as MeasureExtensionOptions).precision);
-						});
+						pr
+							.then((ext: Autodesk.Extensions.Measure.MeasureExtension): void => {
+								ext.setUnits((elt.options as MeasureExtensionOptions).units);
+								ext.setPrecision((elt.options as MeasureExtensionOptions).precision);
+							})
+							.catch((reason: any): void => { });
 					}
 				}
 			}
@@ -246,13 +303,13 @@ class LocalViewer {
 	private reconfigureExtensions(extensionInfo?: ExtensionInfo) {
 		if (extensionInfo && extensionInfo.extensionId !== 'Autodesk.Measure')
 			return;
-		const result = this.extensions.filter((elt: string | { id: string, options: object }) => typeof elt !== 'string' && elt.id === 'Autodesk.Measure');
+		const result = this.extensions.filter((elt: string | { id: string, options: object }): boolean => typeof elt !== 'string' && elt.id === 'Autodesk.Measure');
 		if (result && result.length === 1) {
 			const ext: Autodesk.Extensions.Measure.MeasureExtension = this.viewer.getExtension('Autodesk.Measure') as Autodesk.Extensions.Measure.MeasureExtension;
 			if (!ext)
 				return;
 			const extOptions: { id: string, options: object } = result[0] as { id: string, options: object };
-			//setTimeout(() => { // Let a change to the extension code to cope with default behavior
+			//setTimeout((): void => { // Let a change to the extension code to cope with default behavior
 			ext.setUnits((extOptions.options as MeasureExtensionOptions).units);
 			ext.setPrecision((extOptions.options as MeasureExtensionOptions).precision);
 			//}, 1000);
@@ -291,20 +348,20 @@ class LocalViewer {
 		this.viewer.start();
 
 		// Attach event handlers (this would work for all the files except those that doesn't have geometry data).
-		this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, (event) => {
+		this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, (info: ModelLoadingInfo): void => {
 			//this.viewer.removeEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, arguments.callee);
-			self.viewer.fitToView(undefined, undefined, true);
-			setTimeout(() => {
-				self.viewer.autocam.setHomeViewFrom(this.viewer.navigation.getCamera());
+			info.target.fitToView(undefined, undefined, true);
+			setTimeout((): void => {
+				(info.target as Autodesk.Viewing.GuiViewer3D).autocam.setHomeViewFrom(info.target.navigation.getCamera());
 			}, 1000);
 
-			const endAt = (new Date().getTime() - this.startAt.getTime()) / 1000;
+			const endAt = (new Date().getTime() - self.startAt.getTime()) / 1000;
 			console.log(`GEOMETRY_LOADED_EVENT => ${endAt}`);
-			self.onGeometryLoaded(event);
+			self.onGeometryLoaded(info);
 		});
-		this.viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, (event) => {
-			const tree = self.viewer.model.getInstanceTree();
-			self.onObjectTreeCreated(tree, event);
+		this.viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, (info: ModelLoadingInfo): void => {
+			const tree = info.model.getInstanceTree();
+			self.onObjectTreeCreated(tree, info);
 		});
 
 		//self.viewer.removeEventListener(Autodesk.Viewing.EVENT, arguments.callee);
@@ -332,7 +389,7 @@ class LocalViewer {
 			this.activateProxy();
 
 		this.startAt = new Date();
-		const jobs = this.urn.map((elt: URN_Config) => this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids));
+		const jobs = this.urn.map((elt: URN_Config): Promise<Autodesk.Viewing.Model> => this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids));
 		const models = await Promise.all(jobs);
 		this.onModelsLoaded(models);
 
@@ -346,13 +403,20 @@ class LocalViewer {
 
 	protected async addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model> {
 		const self = this;
-		return (new Promise(function (resolve, reject) {
-			const onDocumentLoadSuccess = (doc: Autodesk.Viewing.Document) => {
+		return (new Promise((resolve: (model: Autodesk.Viewing.Model) => void, reject: (reason?: any) => void): void => {
+			const onDocumentLoadSuccess = (doc: Autodesk.Viewing.Document): void => {
+
+				doc.downloadAecModelData() // https://forge.autodesk.com/blog/add-revit-levels-and-2d-minimap-your-3d
+					// this.viewer.model.getDocumentNode().getAecModelData()
+					// .then((data: any): void => { (doc as any).aecData = data; })
+					// .catch((reason: any): void => { (doc as any).aecData = null; });
+					.catch((reason: any): void => { });
+
 				self.documents[urn.replace('urn:', '')] = doc;
 				const viewable = view ?
 					doc.getRoot().search(view)[0]
 					: doc.getRoot().getDefaultGeometry();
-				let options: { preserveView: Boolean, keepCurrentModels: Boolean, placementTransform?: THREE.Matrix4, globalOffset?: THREE.Vector3, ids?: number[] } = {
+				let options: { preserveView: boolean, keepCurrentModels: boolean, placementTransform?: THREE.Matrix4, globalOffset?: THREE.Vector3, ids?: number[] } = {
 					preserveView: (Object.keys(self.documents).length !== 1),
 					keepCurrentModels: true
 				};
@@ -366,7 +430,7 @@ class LocalViewer {
 					.then(resolve)
 					.catch(reject);
 			}
-			const onDocumentLoadFailure = (code: any) => {
+			const onDocumentLoadFailure = (code: any): void => {
 				reject(`Could not load document (${code}).`);
 			}
 
@@ -392,7 +456,7 @@ class LocalViewer {
 	}
 
 	public switchToDarkMode() {
-		const darkmode: Boolean =
+		const darkmode: boolean =
 			localStorage.getItem('darkSwitch') !== null &&
 			localStorage.getItem('darkSwitch') === 'dark';
 
@@ -406,9 +470,9 @@ class LocalViewer {
 		if (this.darkmode)
 			return;
 		const self = this;
-		this.darkmode = new MutationObserver((mutationsList, observer) => {
+		this.darkmode = new MutationObserver((mutations: MutationRecord[], observer: MutationObserver): void => {
 			//console.log(mutationsList, observer);
-			for (const mutation of mutationsList) {
+			for (const mutation of mutations) {
 				if (mutation.type === 'attributes')
 					self.switchToDarkMode();
 			}
@@ -429,14 +493,12 @@ class LocalViewer {
 		//onGetAccessToken('<%= access_token %>', 82000);
 		const options: any = this;
 		fetch(options.tokenURL as string)
-			.then((response: any) => {
+			.then((response: any): any => {
 				if (!response.ok)
 					throw new Error(response.statusText)
-				//return (response.text());
 				return (response.json());
 			})
-			//.then((bearer) => onGetAccessToken(bearer, 3599));
-			.then((bearer) => onGetAccessToken(bearer.access_token, bearer.expires_in));
+			.then((bearer): void => onGetAccessToken(bearer.access_token, bearer.expires_in));
 	}
 
 	public useProxy(path: string = '/forge-proxy', mode: string = 'modelDerivativeV2'): void {
@@ -506,65 +568,46 @@ class LocalViewer {
 	// WEBGL_CONTEXT_LOST_EVENT
 	// WEBGL_CONTEXT_RESTORED_EVENT
 
-	public onGeometryLoaded(event?: any) { }
-	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, event?: any) { }
-	private onToolbarCreatedInternal(info: BasicInfo) {
-		const self = this;
-		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>(); //[ this.viewer.getToolbar(true)];
-		toolbars.add(this.viewer.getToolbar(true));
-		Object.keys(this.ui_definition as any).map((tbId: string) => {
-			const tbDef: UIToolbarDefinition = self.ui_definition[tbId];
-			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
-			Object.keys(tbDef as any).map((grpId: string) => {
-				const grpDef: any = tbDef[grpId];
-				if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
-					return;
-				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
-				Object.keys(grpDef as any).map((ctrlId: string) => {
-					const ctrlDef: any = grpDef[ctrlId];
-					const ctrl = groupCtrl.getControl(ctrlId) || self.createButtonInGroup(groupCtrl, ctrlId, ctrlDef);
-
-				});
-			});
-			toolbars.add(tb);
-		});
-
-		this.onToolbarCreated({ ...info, toolbars: Array.from(toolbars) });
+	public onGeometryLoaded(info: ModelLoadingInfo): void { }
+	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, info: ModelLoadingInfo): void { }
+	private onToolbarCreatedInternal(info: BasicInfo): void {
+		const toolbars: Autodesk.Viewing.UI.ToolBar[] = this.buildUI(this.ui_definition);
+		this.onToolbarCreated({ ...info, toolbars: toolbars });
 	}
-	public onToolbarCreated(info: BasicInfo) { }
-	private onModelAddedInternal(modelInfo: ModelLoadingInfo) {
+	public onToolbarCreated(info: BasicInfo): void { }
+	private onModelAddedInternal(modelInfo: ModelLoadingInfo): void {
 		this.models.push(modelInfo.model);
 		this.onModelAdded(modelInfo);
 	}
-	public onModelAdded(modelInfo: ModelLoadingInfo) { }
-	private onModelRemovedInternal(modelInfo: ModelLoadingInfo) {
+	public onModelAdded(modelInfo: ModelLoadingInfo): void { }
+	private onModelRemovedInternal(modelInfo: ModelLoadingInfo): void {
 		const lastModelRemoved = !this.viewer.getVisibleModels().length;
-		this.models = this.models.filter((elt: Autodesk.Viewing.Model) => elt !== modelInfo.model);
+		this.models = this.models.filter((elt: Autodesk.Viewing.Model): boolean => elt !== modelInfo.model);
 		this.onModelRemoved(modelInfo);
 	}
-	public onModelRemoved(modelInfo: ModelLoadingInfo) { }
-	private onModelRootLoadedInternal(modelInfo: ModelLoadingInfo) {
+	public onModelRemoved(modelInfo: ModelLoadingInfo): void { }
+	private onModelRootLoadedInternal(modelInfo: ModelLoadingInfo): void {
 		//this.reconfigureExtensions();
 		this.onModelRootLoaded(modelInfo);
 	}
-	public onModelRootLoaded(modelInfo: ModelLoadingInfo) { }
-	public onExtensionActivatedInternal(extensionInfo: ExtensionInfo) {
+	public onModelRootLoaded(modelInfo: ModelLoadingInfo): void { }
+	public onExtensionActivatedInternal(extensionInfo: ExtensionInfo): void {
 		this.reconfigureExtensions(extensionInfo);
 		this.onExtensionActivated(extensionInfo);
 	}
-	public onExtensionActivated(extensionInfo: ExtensionInfo) { }
-	public onExtensionDeactivated(extensionInfo: ExtensionInfo) { }
-	public onExtensionLoaded(extensionInfo: ExtensionInfo) { }
-	public onExtensionPreActivated(extensionInfo: ExtensionInfo) { }
-	public onExtensionPreDeactivated(extensionInfo: ExtensionInfo) { }
-	public onExtensionPreLoaded(extensionInfo: ExtensionInfo) { }
-	public onExtensionPreUnloaded(extensionInfo: ExtensionInfo) { }
-	public onExtensionUnloaded(extensionInfo: ExtensionInfo) { }
-	public onPrefChanged(event?: any) { }
+	public onExtensionActivated(extensionInfo: ExtensionInfo): void { }
+	public onExtensionDeactivated(extensionInfo: ExtensionInfo): void { }
+	public onExtensionLoaded(extensionInfo: ExtensionInfo): void { }
+	public onExtensionPreActivated(extensionInfo: ExtensionInfo): void { }
+	public onExtensionPreDeactivated(extensionInfo: ExtensionInfo): void { }
+	public onExtensionPreLoaded(extensionInfo: ExtensionInfo): void { }
+	public onExtensionPreUnloaded(extensionInfo: ExtensionInfo): void { }
+	public onExtensionUnloaded(extensionInfo: ExtensionInfo): void { }
+	public onPrefChanged(event?: any): void { }
 
 	// Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
 
-	private throwObjectTreeError(errorCode: number, errorMsg: string, statusCode: number, statusText: string) { throw new Error(errorMsg); };
+	private throwObjectTreeError(errorCode: number, errorMsg: string, statusCode: number, statusText: string): void { throw new Error(errorMsg); };
 
 	/**
 	 * Finds all scene objects on specific X,Y position on the canvas.
@@ -573,7 +616,7 @@ class LocalViewer {
 	 * @returns {Intersection[]} List of intersections.
 	 * 
 	 * @example
-	 * document.getElementById('viewer').addEventListener('click', function(ev) {
+	 * document.getElementById('viewer').addEventListener('click', (ev) => {
 	 *   const bounds = ev.target.getBoundingClientRect();
 	 *   const intersections = utils.rayCast(ev.clientX - bounds.left, ev.clientY - bounds.top);
 	 *   if (intersections.length > 0) {
@@ -598,18 +641,18 @@ class LocalViewer {
 	 */
 	public searchAllModels(text: string): Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]> {
 		const viewer: Autodesk.Viewing.Viewer3D = this.viewer;
-		return (new Promise((resolve, reject) => {
+		return (new Promise((resolve: (data: { model: Autodesk.Viewing.Model, dbids: number[] }[]) => void, reject: (reason?: any) => void): void => {
 			let results: { model: Autodesk.Viewing.Model, dbids: number[] }[] = [];
 			const models: Autodesk.Viewing.Model[] = viewer.getVisibleModels();
-			models.forEach((model) => {
+			models.forEach((model: Autodesk.Viewing.Model): void => {
 				model.search(
 					text,
-					(dbids: number[]) => {
+					(dbids: number[]): void => {
 						results.push({ model, dbids });
 						if (results.length === models.length)
 							resolve(results);
 					},
-					(err) => reject(err)
+					(err?: any): void => reject(err)
 				);
 			});
 		}));
@@ -629,9 +672,9 @@ class LocalViewer {
 	 * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
 	 *
 	 * @example
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
 	 *   try {
-	 *     utils.enumerateNodes(function(id) {
+	 *     utils.enumerateNodes((id) => {
 	 *       console.log('Found node', id);
 	 *     });
 	 *   } catch(err) {
@@ -640,7 +683,7 @@ class LocalViewer {
 	 * });
 	 */
 	public enumerateNodes(callback: NodeCallback, recursive: boolean = true, parentId?: number): void {
-		const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 			if (typeof parentId === 'undefined')
 				parentId = tree.getRootId();
 			tree.enumNodeChildren(parentId, callback, recursive);
@@ -659,19 +702,19 @@ class LocalViewer {
 	 * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
 	 *
 	 * @example <caption>Using async/await</caption>
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
 	 *   const ids = await utils.listNodes();
 	 *   console.log('Object IDs', ids);
 	 * });
 	 */
 	public listNodes(recursive: boolean = true, parentId?: number): Promise<number[]> {
 		const viewer = this.viewer;
-		return (new Promise((resolve, reject) => {
-			const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		return (new Promise((resolve: (value: number[]) => void, reject: (reason?: any) => void): void => {
+			const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 				if (typeof parentId === 'undefined')
 					parentId = tree.getRootId();
 				let ids: number[] = [];
-				tree.enumNodeChildren(parentId, (id: number) => { ids.push(id); }, recursive);
+				tree.enumNodeChildren(parentId, (id: number): void => { ids.push(id); }, recursive);
 				resolve(ids);
 			}
 
@@ -693,9 +736,9 @@ class LocalViewer {
 	 * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
 	 *
 	 * @example
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
 	 *   try {
-	 *     utils.enumerateLeafNodes(function(id) {
+	 *     utils.enumerateLeafNodes((id) => {
 	 *       console.log('Found leaf node', id);
 	 *     });
 	 *   } catch(err) {
@@ -704,12 +747,12 @@ class LocalViewer {
 	 * });
 	 */
 	public enumerateLeafNodes(callback: NodeCallback, recursive: boolean = true, parentId?: number): void {
-		const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 			if (typeof parentId === 'undefined')
 				parentId = tree.getRootId();
 			tree.enumNodeChildren(
 				parentId,
-				(id: number) => { if (tree.getChildCount(id) === 0) callback(id); },
+				(id: number): void => { if (tree.getChildCount(id) === 0) callback(id); },
 				recursive
 			);
 		}
@@ -726,21 +769,21 @@ class LocalViewer {
 	 * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
 	 *
 	 * @example <caption>Using async/await</caption>
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
 	 *   const ids = await utils.listLeafNodes();
 	 *   console.log('Leaf object IDs', ids);
 	 * });
 	 */
 	public listLeafNodes(recursive: boolean = true, parentId?: number): Promise<number[]> {
 		const viewer = this.viewer;
-		return (new Promise(function (resolve, reject) {
-			const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		return (new Promise((resolve: (value: number[]) => void, reject: (reason?: any) => void): void => {
+			const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 				if (typeof parentId === 'undefined')
 					parentId = tree.getRootId();
 				let ids: number[] = [];
 				tree.enumNodeChildren(
 					parentId,
-					(id: number) => { if (tree.getChildCount(id) === 0) ids.push(id); },
+					(id: number): void => { if (tree.getChildCount(id) === 0) ids.push(id); },
 					recursive
 				);
 				resolve(ids);
@@ -764,9 +807,9 @@ class LocalViewer {
 	 * @throws Exception if no {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model} is loaded.
 	 *
 	 * @example
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
 	 *   try {
-	 *     utils.enumerateFragments(function(id) {
+	 *     utils.enumerateFragments((id) => {
 	 *       console.log('Found fragment', id);
 	 *     });
 	 *   } catch(err) {
@@ -775,7 +818,7 @@ class LocalViewer {
 	 * });
 	 */
 	public enumerateFragments(callback: FragmentCallback, recursive: boolean = true, parentId?: number): void {
-		const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 			if (typeof parentId === 'undefined')
 				parentId = tree.getRootId();
 			tree.enumNodeFragments(parentId, callback, recursive);
@@ -795,19 +838,19 @@ class LocalViewer {
 	 * {@link https://forge.autodesk.com/en/docs/viewer/v6/reference/javascript/model|Model}.
 	 *
 	 * @example <caption>Using async/await</caption>
-	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async function() {
+	 * viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, async () => {
 	 *   const ids = await utils.listFragments();
 	 *   console.log('Fragment IDs', ids);
 	 * });
 	 */
 	public listFragments(recursive: boolean = true, parentId?: number): Promise<number[]> {
 		const viewer = this.viewer;
-		return (new Promise(function (resolve, reject) {
-			const proceed = (tree: Autodesk.Viewing.InstanceTree) => {
+		return (new Promise((resolve: (value: number[]) => void, reject: (reason?: any) => void): void => {
+			const proceed = (tree: Autodesk.Viewing.InstanceTree): void => {
 				if (typeof parentId === 'undefined')
 					parentId = tree.getRootId();
 				let ids: number[] = [];
-				tree.enumNodeFragments(parentId, (id) => { ids.push(id); }, recursive);
+				tree.enumNodeFragments(parentId, (id): void => { ids.push(id); }, recursive);
 				resolve(ids);
 			}
 
@@ -846,15 +889,12 @@ class LocalViewer {
 	 *
 	 * @example
 	 * const fragId = 123;
-	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
 	 *     const transform = utils.getFragmentOrigTransform(fragId);
 	 *     console.log('Original fragment transform', transform);
 	 * });
 	 */
 	public getFragmentOrigTransform(model: Autodesk.Viewing.Model, fragId: number, transform: THREE.Matrix4 = null): THREE.Matrix4 {
-		// if (!this.viewer.model)
-		// 	throw new Error('Fragments not yet available. Wait for Autodesk.Viewing.FRAGMENTS_LOADED_EVENT event.');
-
 		const frags = model.getFragmentList();
 		(frags as any).getOriginalWorldMatrix(fragId, transform || new THREE.Matrix4());
 		return (transform);
@@ -879,7 +919,7 @@ class LocalViewer {
 	 * let scale = new THREE.Vector3(1, 1, 1);
 	 * let rotation = new THREE.Quaternion(0, 0, 0, 1);
 	 * let position = new THREE.Vector3(0, 0, 0);
-	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
 	 *   utils.getFragmentAuxTransform(fragId, scale, rotation, position);
 	 *   console.log('Scale', scale);
 	 *   console.log('Rotation', rotation);
@@ -911,7 +951,7 @@ class LocalViewer {
 	 * const fragId = 123;
 	 * const scale = new THREE.Vector3(2.0, 3.0, 4.0);
 	 * const position = new THREE.Vector3(5.0, 6.0, 7.0);
-	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
 	 *   utils.setFragmentAuxTransform(fragId, scale, null, position);
 	 * });
 	 */
@@ -935,7 +975,7 @@ class LocalViewer {
 	 * @throws Exception when the fragments are not yet available.
 	 *
 	 * @example
-	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function() {
+	 * viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, () => {
 	 *   try {
 	 *     const transform = utils.getFragmentTransform(1);
 	 *     console.log('Final fragment transform', transform);
@@ -964,7 +1004,7 @@ class LocalViewer {
 	// UI
 
 	public getToolbar(id: string = 'default'): Autodesk.Viewing.UI.ToolBar {
-		return (id === 'default' ? this.viewer.getToolbar(true) : this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
+		return (id === 'default' || id === 'guiviewer3d-toolbar' ? this.viewer.getToolbar(true) : this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
 	}
 
 	protected createToolbar(id: string, def: UIToolbarDefinition): Autodesk.Viewing.UI.ToolBar {
@@ -1030,20 +1070,24 @@ class LocalViewer {
 		const self = this;
 
 		const ctrl: Autodesk.Viewing.UI.Button = def.children ?
-			  new Autodesk.Viewing.UI.ComboButton(id, { collapsible: (def.collapsible || def.children || false) })
-			: new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
+			new Autodesk.Viewing.UI.ComboButton(id, { collapsible: (def.collapsible || def.children || false) })
+			: def.bistate !== undefined ?
+				new BistateButton(id, { bistate: def.bistate })
+				: new Autodesk.Viewing.UI.Button(id, { collapsible: (def.collapsible || def.children || false) });
 
 		ctrl.setToolTip(def.tooltip || '');
 		//ctrl.setIcon(iconClass); // Unfortunately this API removes the previous class style applied :()
 		if (typeof def.iconClass === 'string')
 			def.iconClass = [def.iconClass];
-		(def.iconClass || []).forEach((elt: string) => (ctrl as any).icon.classList.add(elt));
-		// deal with background
-		//(ctrl as any).container.style.backgroundColor = (ctrl as any).container.children[0].style.backgroundColor;
+		(def.iconClass || []).forEach((elt: string): void => (ctrl as any).icon.classList.add(elt));
+		if (typeof def.buttonClass === 'string')
+			def.buttonClass = [def.buttonClass];
+		//(def.buttonClass || []).forEach((elt: string): void => ctrl.addClass(elt));
+		(def.buttonClass || []).forEach((elt: string): void => (ctrl as any).container.classList.add(elt));
 
-		ctrl.setVisible(def.visible ? def.visible : true);
-		ctrl.setState(def.state || Autodesk.Viewing.UI.Button.State.INACTIVE);
-		
+		ctrl.setVisible(def.visible !== undefined ? def.visible : true);
+		ctrl.setState(def.state !== undefined ? def.state : Autodesk.Viewing.UI.Button.State.INACTIVE);
+
 		ctrl.onClick = def.onClick || this._dumb_.bind(this);
 		ctrl.onMouseOut = def.onMouseOut || this._dumb_.bind(this);
 		ctrl.onMouseOver = def.onMouseOver || this._dumb_.bind(this);
@@ -1055,11 +1099,11 @@ class LocalViewer {
 		if (def.onCollapseChanged)
 			ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
 
-		if ( def.children ) {
+		if (def.children) {
 			const combo: Autodesk.Viewing.UI.ComboButton = ctrl as Autodesk.Viewing.UI.ComboButton;
-			const ctrls: Autodesk.Viewing.UI.Button[] = def.children.map((child: UIButtonDefinition) => { return (this.createButton(child.id, child)); });
-			ctrls.map((button: Autodesk.Viewing.UI.Button) => combo.addControl(button));
-			ctrls.map((button: Autodesk.Viewing.UI.Button) => {
+			const ctrls: Autodesk.Viewing.UI.Button[] = def.children.map((child: UIButtonDefinition): Autodesk.Viewing.UI.Button => { return (this.createButton(child.id, child)); });
+			ctrls.map((button: Autodesk.Viewing.UI.Button): void => combo.addControl(button));
+			ctrls.map((button: Autodesk.Viewing.UI.Button): void => {
 				(button as any)._clientOnClick = button.onClick;
 				(button as any)._parentCtrl = combo;
 				button.onClick = self.onClickComboChild.bind(self);
@@ -1083,14 +1127,17 @@ class LocalViewer {
 
 	protected assignComboButton(combo: Autodesk.Viewing.UI.ComboButton, button: Autodesk.Viewing.UI.Button): void {
 		combo.setToolTip(button.getToolTip() || '');
-		combo.setVisible(button.isVisible() !== undefined ? button.isVisible() : true);
-		combo.setState(button.getState() || Autodesk.Viewing.UI.Button.State.INACTIVE);
+		combo.setVisible(button.isVisible());
+		combo.setState(button.getState());
 		combo.onClick = (button as any)._clientOnClick || this._dumb_.bind(this);
-		//ctrl.setIcon = ctrls[0].?;
-		(combo as any).icon.classList.forEach((element: string) => (combo as any).icon.classList.remove(element));
-		(button as any).icon.classList.forEach((element: string) => (combo as any).icon.classList.add(element));
 
-		//(combo as any)._activeButton = button;
+		(combo as any).icon.classList.forEach((element: string): void => (combo as any).icon.classList.remove(element));
+		(button as any).icon.classList.forEach((element: string): void => (combo as any).icon.classList.add(element));
+
+		(combo as any).container.classList.forEach((element: string): void => (combo as any).container.classList.remove(element));
+		(button as any).container.classList.forEach((element: string): void => (combo as any).container.classList.add(element));
+
+		(combo as any)._activeButton = button;
 	}
 
 	protected onClickComboChild(evt: Event): void {
@@ -1101,10 +1148,110 @@ class LocalViewer {
 		(radioCtrl as any)._activeButton = button;
 
 		if ((button as any)._clientOnClick)
-		 	(button as any)._clientOnClick.call(self, evt);
+			(button as any)._clientOnClick.call(self, evt);
+	}
+
+	public getUI(): string[] {
+		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>([this.viewer.getToolbar(true)]);
+		Object.values(this.ui_references)
+			.filter((elt: Autodesk.Viewing.UI.ToolBar | Autodesk.Viewing.UI.Control): any => elt instanceof Autodesk.Viewing.UI.ToolBar)
+			.forEach((tb: Autodesk.Viewing.UI.ToolBar) => toolbars.add(tb));
+
+		let ids: string[] = [];
+		toolbars.forEach((tb: Autodesk.Viewing.UI.ToolBar): void => {
+			const groupIterator = (parent: Autodesk.Viewing.UI.ControlGroup, path: string) => {
+				const nbc: number = parent.getNumberOfControls();
+				for (let c = 0; c < nbc; c++) {
+					const ctrl: Autodesk.Viewing.UI.Control = parent.getControl(parent.getControlId(c));
+					ids.push([path, ctrl.getId()].join('/'));
+					if (ctrl instanceof Autodesk.Viewing.UI.ComboButton) {
+						const button: Autodesk.Viewing.UI.ComboButton = ctrl as Autodesk.Viewing.UI.ComboButton;
+						// shall we return options?
+						const subMenu: Autodesk.Viewing.UI.RadioButtonGroup = (button as any).subMenu as Autodesk.Viewing.UI.RadioButtonGroup;
+						ids.push([path, ctrl.getId(), subMenu.getId()].join('/'));
+						groupIterator(subMenu, [path, ctrl.getId(), subMenu.getId()].join('/'));
+					} else if (ctrl instanceof Autodesk.Viewing.UI.ControlGroup) {
+						const group: Autodesk.Viewing.UI.ControlGroup = ctrl as Autodesk.Viewing.UI.ControlGroup;
+						groupIterator(group, [path, group.getId()].join('/'));
+					} else {
+						const button: Autodesk.Viewing.UI.Button = ctrl as Autodesk.Viewing.UI.Button;
+						// all done!
+					}
+				}
+			};
+
+			ids.push('//' + tb.getId());
+			groupIterator(tb, '//' + tb.getId());
+		});
+
+		return (ids);
+	}
+
+	public getControls(searchpath: string | string[]): Autodesk.Viewing.UI.Control[] {
+		const self = this;
+		if (typeof searchpath === 'string')
+			searchpath = [searchpath];
+		//let all: Set<Autodesk.Viewing.UI.Control> = new Set<Autodesk.Viewing.UI.Control>();
+		const uipath = this.getUI();
+		const ctrls: Autodesk.Viewing.UI.Control[][] = searchpath.map((criteria: string): Autodesk.Viewing.UI.Control[] => {
+			criteria = criteria.replace(/\*/g, '.*');
+			const regex: RegExp = new RegExp(criteria);
+			const results: string[] = uipath.filter((idpath: string): boolean => regex.test(idpath));
+			//all = new Set<Autodesk.Viewing.UI.Control>([ ...all, ...results ])
+			const selection: Autodesk.Viewing.UI.Control[] = results.map((idpath: string): Autodesk.Viewing.UI.Control => self.getControl(idpath));
+			return (selection);
+		});
+		let all: Set<Autodesk.Viewing.UI.Control> = new Set<Autodesk.Viewing.UI.Control>((ctrls as any).flat());
+		return (Array.from(all));
+	}
+
+	public getControl(idpath: string): Autodesk.Viewing.UI.Control {
+		const ids = idpath.split('/').slice(2); // remove '//'
+		let ctrl: Autodesk.Viewing.UI.Control = null;
+		ids.forEach((id: string): void => {
+			if (!ctrl) {
+				ctrl = this.getToolbar(id);
+			} else if (ctrl instanceof Autodesk.Viewing.UI.ControlGroup) {
+				const group: Autodesk.Viewing.UI.ControlGroup = ctrl as Autodesk.Viewing.UI.ControlGroup;
+				ctrl = group.getControl(id);
+			} else if (ctrl instanceof Autodesk.Viewing.UI.ComboButton) {
+				const button: Autodesk.Viewing.UI.ComboButton = ctrl as Autodesk.Viewing.UI.ComboButton;
+				const subMenu: Autodesk.Viewing.UI.RadioButtonGroup = (button as any).subMenu as Autodesk.Viewing.UI.RadioButtonGroup;
+				if (subMenu.getId() !== id) // path skip the intermediate subMenu group, id represent the option (button)
+					ctrl = subMenu.getControl(id);
+			} else {
+				const button: Autodesk.Viewing.UI.Button = ctrl as Autodesk.Viewing.UI.Button;
+				if ( button.getId() !== id )
+					ctrl = null;
+				// all done!
+			}
+		});
+		return (ctrl);
 	}
 
 	protected _dumb_(evt: Event): void { }
+
+	public buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[] {
+		const self = this;
+		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>([this.viewer.getToolbar(true)]);
+		Object.keys(ui_definition as any).map((tbId: string): void => {
+			const tbDef: UIToolbarDefinition = self.ui_definition[tbId];
+			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+			Object.keys(tbDef as any).map((grpId: string): void => {
+				const grpDef: any = tbDef[grpId];
+				if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
+					return;
+				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+				Object.values(grpDef as any).map((ctrlDef: any): void => {
+					//const ctrlDef: any = grpDef[ctrlId];
+					const ctrl = groupCtrl.getControl(ctrlDef.id) || self.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef);
+				});
+			});
+			toolbars.add(tb);
+		});
+
+		return (Array.from(toolbars));
+	}
 
 	// Viewer options
 	private options(config: ResourceType): object {
