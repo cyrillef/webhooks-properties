@@ -87,6 +87,13 @@ function isURN_Config(object) {
 ;
 ;
 ;
+var ToolBarDockingSite;
+(function (ToolBarDockingSite) {
+    ToolBarDockingSite["Left"] = "left";
+    ToolBarDockingSite["Right"] = "right";
+    ToolBarDockingSite["Top"] = "top";
+    ToolBarDockingSite["Bottom"] = "bottom";
+})(ToolBarDockingSite || (ToolBarDockingSite = {}));
 var BistateButton = /** @class */ (function (_super) {
     __extends(BistateButton, _super);
     function BistateButton(id, options) {
@@ -116,6 +123,12 @@ var BistateButton = /** @class */ (function (_super) {
     };
     return BistateButton;
 }(Autodesk.Viewing.UI.Button));
+var AggregateMode;
+(function (AggregateMode) {
+    AggregateMode[AggregateMode["Legacy"] = 0] = "Legacy";
+    AggregateMode[AggregateMode["Auto"] = 0] = "Auto";
+    AggregateMode[AggregateMode["Aggregated"] = 1] = "Aggregated";
+})(AggregateMode || (AggregateMode = {}));
 var LocalViewer = /** @class */ (function () {
     /**
      *
@@ -133,6 +146,7 @@ var LocalViewer = /** @class */ (function () {
         this.extensions = null;
         this.ui_definition = null;
         this.ui_references = {};
+        this.viewerAggregateMode = AggregateMode.Auto;
         this.documents = {};
         this.models = null;
         this.startAt = null;
@@ -159,6 +173,13 @@ var LocalViewer = /** @class */ (function () {
                 self.viewer.loadExtension(elt);
             }
             else {
+                switch (elt.id) {
+                    case 'Autodesk.Debug': {
+                        //(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+                        if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+                            Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+                    }
+                }
                 var pr = self.viewer.loadExtension(elt.id, elt.options);
                 switch (elt.id) {
                     case 'Autodesk.Measure': {
@@ -169,6 +190,15 @@ var LocalViewer = /** @class */ (function () {
                         })
                             .catch(function (reason) { });
                     }
+                    // case 'Autodesk.Debug': {
+                    // 	pr
+                    // 		.then((ext: any): void => {
+                    // 			//(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+                    // 			if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+                    // 				Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+                    // 		})
+                    // 		.catch((reason: any): void => { });
+                    // }
                 }
             }
         });
@@ -198,7 +228,7 @@ var LocalViewer = /** @class */ (function () {
         if (flag === void 0) { flag = true; }
         this.modelBrowserExcludeRoot = flag;
     };
-    LocalViewer.prototype.run = function (config) {
+    LocalViewer.prototype.start = function (config) {
         if (config === void 0) { config = 'svf'; }
         this.configuration = this.options(config);
         //Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
@@ -206,12 +236,15 @@ var LocalViewer = /** @class */ (function () {
     };
     LocalViewer.prototype.loadModels = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var self, jobs, models;
+            var self, darkmode, jobs, models;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         self = this;
+                        darkmode = localStorage.getItem('darkSwitch') !== null &&
+                            localStorage.getItem('darkSwitch') === 'dark';
+                        this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
                         // Autodesk.Viewing.Private.ENABLE_DEBUG =true;
                         // Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
                         this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
@@ -219,6 +252,14 @@ var LocalViewer = /** @class */ (function () {
                             document.getElementById(this.div)
                             : this.div, this.configuration);
                         this.viewer.start();
+                        if (darkmode) {
+                            setTimeout(function () {
+                                var ctx = self.viewer.canvas.getContext('webgl2');
+                                ctx.clearColor(0.199, 0.199, 0.199, 1);
+                                ctx.clear(ctx.COLOR_BUFFER_BIT);
+                            }, 200);
+                        }
+                        //return;
                         // Attach event handlers (this would work for all the files except those that doesn't have geometry data).
                         this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function (info) {
                             //this.viewer.removeEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, arguments.callee);
@@ -490,6 +531,13 @@ var LocalViewer = /** @class */ (function () {
         this.viewer.impl.castRayViewport(this.viewer.impl.clientToViewport(x, y), false, null, null, intersections);
         return (intersections);
     };
+    Object.defineProperty(LocalViewer.prototype, "aggregateMode", {
+        // Aggregate - Multi-Model utilities
+        get: function () { return (this.viewerAggregateMode); },
+        set: function (newAggragteMode) { this.viewerAggregateMode = newAggragteMode; },
+        enumerable: false,
+        configurable: true
+    });
     /**
      * Search text in all models loaded.
      *
@@ -497,7 +545,7 @@ var LocalViewer = /** @class */ (function () {
      *
      * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
      */
-    LocalViewer.prototype.searchAllModels = function (text) {
+    LocalViewer.prototype.aggregateSearch = function (text) {
         var viewer = this.viewer;
         return (new Promise(function (resolve, reject) {
             var results = [];
@@ -510,6 +558,42 @@ var LocalViewer = /** @class */ (function () {
                 }, function (err) { return reject(err); });
             });
         }));
+    };
+    LocalViewer.prototype.getAggregateSelection = function () {
+        return (this.viewer.getAggregateSelection());
+    };
+    LocalViewer.prototype.setAggregateSelection = function (selection) {
+        var ss = selection.map(function (elt) {
+            if (elt.selection && !elt.ids) {
+                elt.ids = elt.selection;
+                delete elt.selection;
+            }
+            return (elt);
+        });
+        this.viewer.impl.selector.setAggregateSelection(ss);
+    };
+    LocalViewer.prototype.aggregateSelect = function (selection) {
+        this.setAggregateSelection(selection);
+    };
+    LocalViewer.prototype.getAggregateIsolation = function () {
+        return (this.viewer.getAggregateIsolation());
+    };
+    LocalViewer.prototype.setAggregateIsolation = function (isolateAggregate, hideLoadedModels) {
+        if (hideLoadedModels === void 0) { hideLoadedModels = false; }
+        this.viewer.impl.visibilityManager.aggregateIsolate(isolateAggregate, { hideLoadedModels: hideLoadedModels });
+    };
+    LocalViewer.prototype.aggregateIsolate = function (isolateAggregate, hideLoadedModels) {
+        if (hideLoadedModels === void 0) { hideLoadedModels = false; }
+        this.setAggregateIsolation(isolateAggregate, hideLoadedModels);
+    };
+    LocalViewer.prototype.getAggregateHiddenNodes = function () {
+        return (this.viewer.getAggregateHiddenNodes());
+    };
+    LocalViewer.prototype.setAggregateHiddenNodes = function (hideAggregate) {
+        this.viewer.impl.visibilityManager.aggregateHide(hideAggregate);
+    };
+    LocalViewer.prototype.aggregateHide = function (hideAggregate) {
+        this.setAggregateHiddenNodes(hideAggregate);
     };
     /**
      * Enumerates IDs of objects in the scene.
@@ -859,21 +943,21 @@ var LocalViewer = /** @class */ (function () {
             tb.container.classList.add('adsk-toolbar-vertical');
         var offsetV = '10px';
         var offsetH = '15px';
-        if (def.top || def.docking === 'top') {
+        if (def.top || def.docking === ToolBarDockingSite.Top) {
             tb.container.style.top = def.top || offsetV;
             tb.container.style.bottom = 'unset';
             tb.container.classList.add('dock-top');
         }
-        if (def.bottom || def.docking === 'bottom') {
+        if (def.bottom || def.docking === ToolBarDockingSite.Bottom) {
             tb.container.style.bottom = def.bottom || offsetV;
             tb.container.style.top = 'unset';
         }
-        if (def.left || def.docking === 'left') {
+        if (def.left || def.docking === ToolBarDockingSite.Left) {
             tb.container.style.left = def.left || offsetH;
             tb.container.style.right = 'unset';
             tb.container.classList.add('dock-left');
         }
-        if (def.right || def.docking === 'right') {
+        if (def.right || def.docking === ToolBarDockingSite.Right) {
             tb.container.style.right = def.right || offsetH;
             tb.container.style.left = 'unset';
         }
@@ -1054,6 +1138,8 @@ var LocalViewer = /** @class */ (function () {
     };
     LocalViewer.prototype._dumb_ = function (evt) { };
     LocalViewer.prototype.buildUI = function (ui_definition) {
+        if (!ui_definition)
+            return (null);
         var self = this;
         var toolbars = new Set([this.viewer.getToolbar(true)]);
         Object.keys(ui_definition).map(function (tbId) {
@@ -1072,6 +1158,49 @@ var LocalViewer = /** @class */ (function () {
             toolbars.add(tb);
         });
         return (Array.from(toolbars));
+    };
+    LocalViewer.prototype.moveCtrl = function (ctrl, parent, options) {
+        ctrl = typeof ctrl === 'string' ? this.getControl(ctrl) : ctrl;
+        parent = typeof parent === 'string' ? this.getControl(parent) : parent;
+        if (parent instanceof Autodesk.Viewing.UI.ControlGroup === false)
+            return;
+        var currentParent = ctrl.parent;
+        currentParent.removeControl(ctrl);
+        parent.addControl(ctrl, options);
+    };
+    LocalViewer.prototype.moveToolBar = function (tb, docking, offset) {
+        if (tb === void 0) { tb = 'default'; }
+        if (docking === void 0) { docking = ToolBarDockingSite.Bottom; }
+        if (offset === void 0) { offset = undefined; }
+        tb = typeof tb === 'string' ? this.getToolbar(tb) : tb;
+        // 'adsk-toolbar-vertical'
+        var isVertical = docking === ToolBarDockingSite.Left || docking === ToolBarDockingSite.Right;
+        if (isVertical)
+            tb.container.classList.add('adsk-toolbar-vertical');
+        else
+            tb.container.classList.remove('adsk-toolbar-vertical');
+        var offsetV = '10px';
+        var offsetH = '15px';
+        tb.container.classList.remove('dock-top');
+        tb.container.classList.remove('dock-left');
+        if (docking === ToolBarDockingSite.Top) {
+            tb.container.style.top = offset || offsetV;
+            tb.container.style.bottom = 'unset';
+            tb.container.classList.add('dock-top');
+        }
+        if (docking === ToolBarDockingSite.Bottom) {
+            tb.container.style.bottom = offset || offsetV;
+            tb.container.style.top = 'unset';
+        }
+        if (docking === ToolBarDockingSite.Left) {
+            tb.container.style.left = offset || offsetH;
+            tb.container.style.right = 'unset';
+            tb.container.classList.add('dock-left');
+        }
+        if (docking === ToolBarDockingSite.Right) {
+            tb.container.style.right = offset || offsetH;
+            tb.container.style.left = 'unset';
+        }
     };
     // Viewer options
     LocalViewer.prototype.options = function (config) {

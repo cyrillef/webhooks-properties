@@ -19,6 +19,9 @@
    Load models from differentt regions / different clientID / different repo BIM360 / OSS
    SVF2 socket proxy
    all events
+   inject material meshes properties
+   overlays
+   viewer options
 */
 
 //import * as THREE from 'three';
@@ -111,6 +114,13 @@ interface ExtensionInfo extends BasicInfo {
 	mode?: MouseEvent;
 }
 
+enum ToolBarDockingSite {
+	Left = 'left',
+	Right = 'right',
+	Top = 'top',
+	Bottom = 'bottom'
+}
+
 interface UIToolbarDefinition {
 	id?: string,
 	isVertical?: boolean,
@@ -118,7 +128,7 @@ interface UIToolbarDefinition {
 	top?: string;
 	bottom?: string;
 	right?: string;
-	docking?: string, // left, right, top, bottom
+	docking?: ToolBarDockingSite,
 
 	[key: string]: any,
 }
@@ -224,6 +234,50 @@ interface MeasureExtensionOptions {
 	//calibrationFactor?: number;
 }
 
+enum AggregateMode {
+	Legacy = 0, // Legacy and Auto behave the same way (default)
+	Auto = 0,
+	Aggregated = 1,
+}
+
+interface ViewerInitializerOptions {
+	webGLHelpLink?: string;
+	language?: string;
+	useADP?: boolean;
+	useConsolidation?: boolean;
+
+	[key: string]: any;
+}
+
+interface Viewer3DConstructorOptions {
+	startOnInitialize?: boolean;
+	theme?: 'dark-theme' | 'light-theme' | string;
+
+	[key: string]: any;
+}
+
+interface ViewerConstructorOptions {
+	disableBrowserContextMenu?: boolean;
+	disabledExtensions?: {
+		bimwalk?: boolean;
+		hyperlink?: boolean;
+		measure?: boolean;
+		scalarisSimulation?: boolean;
+		section?: boolean;
+	};
+	extensions?: string[];
+	useConsolidation?: boolean;
+	consolidationMemoryLimit?: number;
+	sharedPropertyDbPath?: string;
+	bubbleNode?: Autodesk.Viewing.BubbleNode;
+	canvasConfig?: any;
+	startOnInitialize?: boolean;
+	experimental?: any[];
+	theme?: 'dark-theme' | 'light-theme' | string;
+
+	[key: string]: any;
+}
+
 class LocalViewer {
 
 	private div: HTMLElement | string;
@@ -236,9 +290,10 @@ class LocalViewer {
 	private viewer: Autodesk.Viewing.GuiViewer3D = null;
 	private configuration: any = null;
 	private modelBrowserExcludeRoot: boolean = true;
-	private extensions: (string | { id: string, options: object })[] = null;
+	private extensions: (string | { id: string, options: any })[] = null;
 	private ui_definition: UIConfiguration = null;
 	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control | Autodesk.Viewing.UI.ToolBar } = {};
+	private viewerAggregateMode: AggregateMode = AggregateMode.Auto;
 
 	private documents: { [index: string]: Autodesk.Viewing.Document } = {};
 	private models: Autodesk.Viewing.Model[] = null;
@@ -275,16 +330,23 @@ class LocalViewer {
 			this.region = 'EMEA';
 	}
 
-	public configureExtensions(extensions: (string | { id: string, options: object })[]) {
+	public configureExtensions(extensions: (string | { id: string, options: any })[]) {
 		this.extensions = extensions;
 	}
 
 	private loadExtensions() {
 		const self = this;
-		this.extensions.map((elt: string | { id: string, options: object }): any => {
+		this.extensions.map((elt: string | { id: string, options: any }): any => {
 			if (typeof elt === 'string') {
 				self.viewer.loadExtension(elt);
 			} else {
+				switch (elt.id) {
+					case 'Autodesk.Debug': {
+						//(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+						if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+							Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+					}
+				}
 				const pr = self.viewer.loadExtension(elt.id, elt.options);
 				switch (elt.id) {
 					case 'Autodesk.Measure': {
@@ -295,6 +357,15 @@ class LocalViewer {
 							})
 							.catch((reason: any): void => { });
 					}
+					// case 'Autodesk.Debug': {
+					// 	pr
+					// 		.then((ext: any): void => {
+					// 			//(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+					// 			if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+					// 				Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+					// 		})
+					// 		.catch((reason: any): void => { });
+					// }
 				}
 			}
 		});
@@ -328,7 +399,7 @@ class LocalViewer {
 		this.modelBrowserExcludeRoot = flag;
 	}
 
-	public run(config: ResourceType = 'svf'): void {
+	public start(config: ResourceType = 'svf'): void {
 		this.configuration = this.options(config);
 		//Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
 		Autodesk.Viewing.Initializer(this.configuration, this.loadModels.bind(this));
@@ -336,6 +407,12 @@ class LocalViewer {
 
 	protected async loadModels(): Promise<void> {
 		const self = this;
+		// Not really needed since we will swtich light/dark mode after loading models to make sure to get the right environment
+		const darkmode: boolean =
+			localStorage.getItem('darkSwitch') !== null &&
+			localStorage.getItem('darkSwitch') === 'dark';
+		this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
+		
 		// Autodesk.Viewing.Private.ENABLE_DEBUG =true;
 		// Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
 		this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
@@ -345,7 +422,17 @@ class LocalViewer {
 				: this.div,
 			this.configuration
 		);
-		this.viewer.start();
+		 this.viewer.start();
+
+		if ( darkmode ) {
+			setTimeout ((): void => {
+				const ctx = self.viewer.canvas.getContext('webgl2');
+				ctx.clearColor(0.199, 0.199, 0.199, 1)
+				ctx.clear(ctx.COLOR_BUFFER_BIT);
+			}, 200);
+		}
+
+		//return;
 
 		// Attach event handlers (this would work for all the files except those that doesn't have geometry data).
 		this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, (info: ModelLoadingInfo): void => {
@@ -632,6 +719,11 @@ class LocalViewer {
 		return (intersections);
 	}
 
+	// Aggregate - Multi-Model utilities
+
+	public get aggregateMode(): AggregateMode { return (this.viewerAggregateMode); }
+	public set aggregateMode(newAggragteMode: AggregateMode) { this.viewerAggregateMode = newAggragteMode }
+
 	/**
 	 * Search text in all models loaded.
 	 *
@@ -639,7 +731,7 @@ class LocalViewer {
 	 *
 	 * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
 	 */
-	public searchAllModels(text: string): Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]> {
+	public aggregateSearch(text: string): Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]> {
 		const viewer: Autodesk.Viewing.Viewer3D = this.viewer;
 		return (new Promise((resolve: (data: { model: Autodesk.Viewing.Model, dbids: number[] }[]) => void, reject: (reason?: any) => void): void => {
 			let results: { model: Autodesk.Viewing.Model, dbids: number[] }[] = [];
@@ -656,6 +748,49 @@ class LocalViewer {
 				);
 			});
 		}));
+	}
+
+	public getAggregateSelection(): { model: Autodesk.Viewing.Model, selection: number[] }[] {
+		return (this.viewer.getAggregateSelection());
+	}
+	
+	public setAggregateSelection(selection: { model: Autodesk.Viewing.Model, selection: number[], selectionType?: any }[]): void {
+		const ss = selection.map((elt: { model: Autodesk.Viewing.Model, selection: number[] }) => {
+			if (elt.selection && !(elt as any).ids) {
+				(elt as any).ids = elt.selection;
+				delete elt.selection;
+			}
+			return (elt);
+		});
+		this.viewer.impl.selector.setAggregateSelection(ss);
+	}
+
+	public aggregateSelect(selection: { model: Autodesk.Viewing.Model, selection: number[], selectionType?: any }[]): void {
+		this.setAggregateSelection(selection);
+	}
+
+	public getAggregateIsolation(): { model: Autodesk.Viewing.Model, ids: number[] }[] {
+		return (this.viewer.getAggregateIsolation());
+	}
+	
+	public setAggregateIsolation(isolateAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[], hideLoadedModels: boolean = false): void {
+		(this.viewer.impl.visibilityManager as any).aggregateIsolate(isolateAggregate, { hideLoadedModels: hideLoadedModels });
+	}
+
+	public aggregateIsolate(isolateAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[], hideLoadedModels: boolean = false): void {
+		this.setAggregateIsolation(isolateAggregate, hideLoadedModels);
+	}
+
+	public getAggregateHiddenNodes(): { model: Autodesk.Viewing.Model, ids: number[] }[] {
+		return (this.viewer.getAggregateHiddenNodes());
+	}
+
+	public setAggregateHiddenNodes(hideAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[]): void {
+		(this.viewer.impl.visibilityManager as any).aggregateHide(hideAggregate);
+	}
+
+	public aggregateHide(hideAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[]): void {
+		this.setAggregateHiddenNodes(hideAggregate);
 	}
 
 	/**
@@ -1016,21 +1151,21 @@ class LocalViewer {
 			tb.container.classList.add('adsk-toolbar-vertical');
 		const offsetV: string = '10px';
 		const offsetH: string = '15px';
-		if (def.top || def.docking === 'top') {
+		if (def.top || def.docking === ToolBarDockingSite.Top) {
 			tb.container.style.top = def.top || offsetV;
 			tb.container.style.bottom = 'unset';
 			tb.container.classList.add('dock-top');
 		}
-		if (def.bottom || def.docking === 'bottom') {
+		if (def.bottom || def.docking === ToolBarDockingSite.Bottom) {
 			tb.container.style.bottom = def.bottom || offsetV;
 			tb.container.style.top = 'unset';
 		}
-		if (def.left || def.docking === 'left') {
+		if (def.left || def.docking === ToolBarDockingSite.Left) {
 			tb.container.style.left = def.left || offsetH;
 			tb.container.style.right = 'unset';
 			tb.container.classList.add('dock-left');
 		}
-		if (def.right || def.docking === 'right') {
+		if (def.right || def.docking === ToolBarDockingSite.Right) {
 			tb.container.style.right = def.right || offsetH;
 			tb.container.style.left = 'unset';
 		}
@@ -1221,7 +1356,7 @@ class LocalViewer {
 					ctrl = subMenu.getControl(id);
 			} else {
 				const button: Autodesk.Viewing.UI.Button = ctrl as Autodesk.Viewing.UI.Button;
-				if ( button.getId() !== id )
+				if (button.getId() !== id)
 					ctrl = null;
 				// all done!
 			}
@@ -1232,6 +1367,8 @@ class LocalViewer {
 	protected _dumb_(evt: Event): void { }
 
 	public buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[] {
+		if (!ui_definition)
+			return (null);
 		const self = this;
 		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>([this.viewer.getToolbar(true)]);
 		Object.keys(ui_definition as any).map((tbId: string): void => {
@@ -1251,6 +1388,48 @@ class LocalViewer {
 		});
 
 		return (Array.from(toolbars));
+	}
+
+	public moveCtrl(ctrl: string | Autodesk.Viewing.UI.Control, parent: string | Autodesk.Viewing.UI.ControlGroup | Autodesk.Viewing.UI.ToolBar, options?: Autodesk.Viewing.UI.AddControlOptions) {
+		ctrl = typeof ctrl === 'string' ? this.getControl(ctrl) : ctrl;
+		parent = typeof parent === 'string' ? this.getControl(parent) as Autodesk.Viewing.UI.ControlGroup : parent;
+		if (parent instanceof Autodesk.Viewing.UI.ControlGroup === false)
+			return;
+		const currentParent = (ctrl as any).parent as Autodesk.Viewing.UI.ControlGroup;
+		currentParent.removeControl (ctrl);
+		parent.addControl (ctrl, options);
+	}
+
+	public moveToolBar(tb: string | Autodesk.Viewing.UI.ToolBar = 'default', docking: ToolBarDockingSite = ToolBarDockingSite.Bottom, offset: string = undefined) {
+		tb = typeof tb === 'string' ? this.getToolbar(tb) : tb;
+		// 'adsk-toolbar-vertical'
+		const isVertical: boolean = docking === ToolBarDockingSite.Left || docking === ToolBarDockingSite.Right;
+		if (isVertical)
+			tb.container.classList.add('adsk-toolbar-vertical');
+		else
+			tb.container.classList.remove('adsk-toolbar-vertical');
+		const offsetV: string = '10px';
+		const offsetH: string = '15px';
+		tb.container.classList.remove('dock-top');
+		tb.container.classList.remove('dock-left');
+		if (docking === ToolBarDockingSite.Top) {
+			tb.container.style.top = offset || offsetV;
+			tb.container.style.bottom = 'unset';
+			tb.container.classList.add('dock-top');
+		}
+		if (docking === ToolBarDockingSite.Bottom) {
+			tb.container.style.bottom = offset || offsetV;
+			tb.container.style.top = 'unset';
+		}
+		if (docking === ToolBarDockingSite.Left) {
+			tb.container.style.left = offset || offsetH;
+			tb.container.style.right = 'unset';
+			tb.container.classList.add('dock-left');
+		}
+		if (docking === ToolBarDockingSite.Right) {
+			tb.container.style.right = offset || offsetH;
+			tb.container.style.left = 'unset';
+		}
 	}
 
 	// Viewer options

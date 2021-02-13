@@ -125,3 +125,11 @@ div.adsk-button div.custom-button {
 /* div.adsk-button:has(> div.custom-button) {
 	background: rgba(255, 0, 0, 0.719);
 } */
+
+[data-theme="dark"] div#myViewer {
+	background-color: #333 !important;
+}
+
+[data-theme="dark"] div#myViewer div.adsk-viewing-viewer.dark-theme {
+	background-color: #333 !important;
+}

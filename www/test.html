@@ -35,280 +35,81 @@
 	<link href="/styles/dashboard.css" rel="stylesheet" />
 
 	<script>
+		const region = 'US';
+		let myViewer = null;
+
 		// US
-		const urn_urbanhouse = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ';
-		const urn_rac = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA'; // <<- with AEC data
-		const urn_pier9 = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0';
-		const pier9_config = {
-			urn: urn_pier9,
-			ids: [3147]
+		const pier9 = {
+			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
+			ids: [3147],
+			region: 'US',
+		}
+		const urbanhouse = {
+			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ',
+			region: 'US',
 		};
-		const urn_bauma = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0';
-		const bauma_config = {
-			urn: urn_bauma,
+		const rac = { // <<- with AEC data
+			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA',
+			region: 'US',
+		};
+		const bauma = {
+			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0',
 			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
 			offset: new THREE.Vector3(0, 5, 7),
+			region: 'US',
 		};
 		// EMEA (seed and derivative)
-		const urn_specoffice = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0';
-		const specoffice_config = {
-			urn: urn_specoffice,
+		const specoffice = {
+			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0',
 			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
 			offset: new THREE.Vector3(-100, 80, 5),
 			view: {
 				guid: '071c5bcb-a8bb-a538-8b19-b08d814609d2',
 				/*role type*/
 			},
+			region: 'EMEA',
 		};
-
-		const region = 'US';
-		let myViewer = null;
-
-		// $(document).ready(function () {
-		// 	//myViewer = new LocalViewer('myViewer', urn_pier9, '/token', region);
-		//	//myViewer = new myDerivedViewer('myViewer', pier9_config, '/token', region);
-		// 	//myViewer = new LocalViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
-		// 	//myViewer = new LocalViewer('myViewer', bauma_config, '/token', region);
-		// 	myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
-		// 	myViewer.run('svf');
-		// });
 
 		class myDerivedViewer extends LocalViewer {
 
-			onObjectTreeCreated(tree, event) {
-				super.onObjectTreeCreated(tree, event);
-				//console.log(tree, event);
-			}
+			constructor(div, urn, getAccessToken, region = undefined, endpoint = undefined) {
+				urn =
+				// Single Model
+				//pier9.urn;
+				//pier9;
+				//bauma;
+				//specoffice.urn;
+				//urbanhouse.urn;
+				//rac.urn;
 
-			onMyButton(evt) {
-				console.log(evt);
-			}
+				// Multi Models
+				//[pier9.urn, bauma.urn];
+				[pier9.urn, bauma];
+				//[pier9.urn, bauma, specoffice];
+				//[pier9.urn, specoffice];
 
-			onToolbarCreated(info) {
-				//console.log(info);
+				super(div, urn, getAccessToken, region, endpoint);
+
+				this.setModelBrowserExcludeRoot(false);
+				this.configureExtensions([
+					'Autodesk.DocumentBrowser',
+					//'Autodesk.Measure',
+					{
+						id: 'Autodesk.Measure',
+						options: {
+							units: 'mm',
+							precision: 2,
+						},
+						//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
+					},
+				]);
 			}
 
 		}
 
 		$(document).ready(function () {
-			//myViewer = new myDerivedViewer('myViewer', urn_pier9, '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', pier9_config, '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', bauma_config, '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_specoffice], '/token', region);
-			//myViewer = new myDerivedViewer('myViewer', [urn_urbanhouse], '/token', region);
-			myViewer = new myDerivedViewer('myViewer', [urn_rac], '/token', region); // <<- with AEC data
-			myViewer.setModelBrowserExcludeRoot(false);
-			myViewer.configureExtensions([
-				'Autodesk.VisualClusters',
-				// {
-				// 	id: 'Autodesk.VisualClusters',
-				// 	options: {
-				// 		attribName: 'Level',
-				// 		searchAncestors: false
-				// 	}
-				// },
-				'Autodesk.DocumentBrowser',
-				//'Autodesk.Measure',
-				{
-					id: 'Autodesk.Measure',
-					options: {
-						units: 'mm',
-						precision: 2,
-					},
-					//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
-				},
-				// 'Autodesk.AEC.LevelsExtension',
-				//'Autodesk.AEC.Minimap3DExtension',
-				// 'Autodesk.BimWalk',
-			]);
-			myViewer.configureUI({
-				default: {
-					myTools: [{
-							id: 'mybutton10',
-							iconClass: ['fa', 'fa-bus'],
-							tooltip: 'my button 10',
-							onClick: (evt) => console.log(evt)
-						},
-						{
-							id: 'mybutton11',
-							iconClass: ['fa', 'fa-taxi'],
-							tooltip: 'my button 11',
-							onClick: (evt) => console.log(evt)
-						},
-						{
-							id: 'mybutton12',
-							iconClass: ['fa', 'fa-eraser'],
-							tooltip: 'my button 12',
-							onClick: (evt) => console.log(evt)
-						},
-					],
-					navTools: [{
-						id: 'mybutton0',
-						iconClass: ['fa', 'fa-asterisk'],
-						tooltip: 'my button 0',
-						onClick: myViewer.onMyButton
-					}, ],
-				},
-				rightToolbar: {
-					isVertical: true,
-					docking: 'right', // top / bottom / right
-					rightGroup1: [{
-							id: 'mybutton1',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 1',
-							onClick: (evt) => console.log(evt)
-						},
-						{
-							id: 'mybutton2',
-							iconClass: ['fa', 'fa-bullhorn'],
-							tooltip: 'my button 2',
-							onClick: (evt) => console.log(evt),
-							//collapsible: true,
-							children: [{
-								id: 'mybutton3',
-								iconClass: ['fa', 'fa-bug'],
-								tooltip: 'my button 3',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton4',
-								iconClass: ['fa', 'fa-car'],
-								tooltip: 'my button 4',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton5',
-								iconClass: ['fa', 'fa-fighter-jet'],
-								tooltip: 'my button 5',
-								onClick: (evt) => console.log(evt)
-							}, ]
-						},
-						{
-							id: 'mybutton6',
-							iconClass: ['fa', 'fa-bell'],
-							tooltip: 'my button 6',
-							onClick: (evt) => console.log(evt)
-						},
-					],
-				},
-				leftToolbar: {
-					isVertical: true,
-					docking: 'left', // top / bottom / right
-					leftGroup1: [{
-							id: 'mybutton21',
-							children: [{
-								id: 'mybutton231',
-								iconClass: ['fa', 'fa-bug'],
-								tooltip: 'my button 231',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton241',
-								iconClass: ['fa', 'fa-car'],
-								tooltip: 'my button 241',
-								onClick: (evt) => console.log(evt),
-								visible: false,
-							}, {
-								id: 'mybutton251',
-								iconClass: ['fa', 'fa-fighter-jet'],
-								tooltip: 'my button 251',
-								onClick: (evt) => console.log(evt),
-								state: Autodesk.Viewing.UI.Button.State.ACTIVE,
-							}, ]
-						},
-						{
-							id: 'mybutton22',
-							iconClass: ['fa', 'fa-question'],
-							// tooltip: 'my button 22',
-							// onClick: (evt) => console.log(evt),
-							//collapsible: true,
-							children: [{
-								id: 'mybutton23',
-								iconClass: ['fa', 'fa-bug'],
-								tooltip: 'my button 23',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton24',
-								iconClass: ['fa', 'fa-car'],
-								tooltip: 'my button 24',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton25',
-								iconClass: ['fa', 'fa-fighter-jet'],
-								buttonClass: ['custom-button'],
-								tooltip: 'my button 25',
-								onClick: (evt) => console.log(evt)
-							}, ]
-						},
-						{
-							id: 'mybutton26',
-							iconClass: ['fa', 'fa-bell'],
-							buttonClass: ['custom-button'],
-							tooltip: 'my button 26',
-							onClick: (evt) => console.log(evt)
-						},
-						{
-							id: 'mybutton261',
-							iconClass: ['fa', 'fa-fighter-jet'],
-							tooltip: 'my button 261',
-							onClick: (evt) => console.log(evt),
-							state: Autodesk.Viewing.UI.Button.State.ACTIVE,
-							bistate: true
-						}, {
-							id: 'mybutton271',
-							iconClass: ['fa', 'fa-fighter-jet'],
-							tooltip: 'my button 271',
-							onClick: (evt) => console.log(evt),
-							bistate: {
-								iconClass: ['fa-fighter-jet', 'fa-car'],
-								buttonClass: ['empty-style', 'custom-button']
-							}
-						},
-					],
-				},
-				topToolbar: {
-					isVertical: false,
-					docking: 'top', // top / bottom / right
-					topGroup1: [{
-							id: 'mybutton41',
-							iconClass: ['fa', 'fa-fire'],
-							tooltip: 'my button 41',
-							onClick: (evt) => console.log(evt)
-						},
-						{
-							id: 'mybutton42',
-							iconClass: ['fa', 'fa-bullhorn'],
-							tooltip: 'my button 42',
-							onClick: (evt) => console.log(evt),
-							//collapsible: true,
-							children: [{
-								id: 'mybutton43',
-								iconClass: ['fa', 'fa-bug'],
-								tooltip: 'my button 43',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton44',
-								iconClass: ['fa', 'fa-car'],
-								tooltip: 'my button 44',
-								onClick: (evt) => console.log(evt)
-							}, {
-								id: 'mybutton45',
-								iconClass: ['fa', 'fa-fighter-jet'],
-								tooltip: 'my button 45',
-								onClick: (evt) => console.log(evt)
-							}, ]
-						},
-						{
-							id: 'mybutton46',
-							iconClass: ['fa', 'fa-bell'],
-							tooltip: 'my button 46',
-							onClick: (evt) => console.log(evt)
-						},
-					],
-				},
-			});
-			myViewer.run('svf');
+			myViewer = new myDerivedViewer('myViewer', null, '/token', region);
+			myViewer.start('svf');
 		});
 	</script>
 

@@ -14,6 +14,8 @@
 	<meta http-equiv="pragma" content="no-cache" / -->
 
 	<!-- jQuery / Popper / Bootstrap (https://cdnjs.com/libraries/jquery/3.5.1) -->
+	<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.7.2/css/all.css"
+		integrity='sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr' crossorigin='anonymous' />
 	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
 		integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
@@ -26,6 +28,7 @@
 	<!-- Autodesk Forge Viewer -->
 	<link href="https://developer.api.autodesk.com/modelderivative/v2/viewers/style.css?v=v7.*" rel="stylesheet" />
 	<script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
+	<link href="/styles/viewer.css" rel="stylesheet" />
 
 	<script src="/js/main.js"></script>
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
@@ -33,6 +36,9 @@
 
 	<script>
 		// US
+		const urn_urbanhouse = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ';
+		const urn_rac =
+		'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA'; // <<- with AEC data
 		const urn_pier9 = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0';
 		const pier9_config = {
 			urn: urn_pier9,
@@ -42,12 +48,18 @@
 		const bauma_config = {
 			urn: urn_bauma,
 			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
-			offset: new THREE.Vector3(0, 5, 7)
+			offset: new THREE.Vector3(0, 5, 7),
 		};
 		// EMEA (seed and derivative)
 		const urn_specoffice = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0';
 		const specoffice_config = {
 			urn: urn_specoffice,
+			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
+			offset: new THREE.Vector3(-100, 80, 5),
+			view: {
+				guid: '071c5bcb-a8bb-a538-8b19-b08d814609d2',
+				/*role type*/
+			},
 		};
 
 		const region = 'US';
@@ -58,10 +70,51 @@
 			//myViewer = new LocalViewer('myViewer', pier9_config, '/token', region);
 			//myViewer = new LocalViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
 			//myViewer = new LocalViewer('myViewer', bauma_config, '/token', region);
-			myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config], undefined, region);
-			myViewer.useProxy('/forge-proxy');
-			myViewer.loadExtensions([
+			//myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
+			//myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
+			myViewer = new LocalViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
+			//myViewer = new LocalViewer('myViewer', [urn_specoffice], '/token', region);
+			//myViewer = new LocalViewer('myViewer', [urn_urbanhouse], '/token', region);
+			//myViewer = new LocalViewer('myViewer', [urn_rac], '/token', region); // <<- with AEC data
+			myViewer.setModelBrowserExcludeRoot(false);
+			myViewer.configureExtensions([
+				//'Autodesk.Debug',
+				// {
+				// 	id: 'Autodesk.Debug',
+				// 	options: {
+				// 		DEFAULT_DEBUG_URL: 'http://localhost:3002'
+				// 	}
+				// },
+				//'Autodesk.SplitScreen',
+				// {
+				// 	id: 'Autodesk.SplitScreen',
+				// 	options: {
+				// 		viewports: [ // 1 to 4 viewports (default to 2 without filtering)
+				// 			(modelId) => {
+				// 				return (modelId % 2 === 0);
+				// 			},
+				// 			(modelId) => {
+				// 				return (modelId % 2 === 1);
+				// 			},
+				// 			(modelId) => {
+				// 				return (modelId % 2 === 1);
+				// 			},
+				// 			(modelId) => {
+				// 				return (modelId % 2 === 1);
+				// 			}
+				// 		]
+				// 	}
+				// },
+				//'Autodesk.VisualClusters',
+				// {
+				// 	id: 'Autodesk.VisualClusters',
+				// 	options: {
+				// 		attribName: 'Level',
+				// 		searchAncestors: false
+				// 	}
+				// },
 				'Autodesk.DocumentBrowser',
+				//'Autodesk.Measure',
 				{
 					id: 'Autodesk.Measure',
 					options: {
@@ -70,7 +123,11 @@
 					},
 					//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
 				},
+				// 'Autodesk.AEC.LevelsExtension',
+				//'Autodesk.AEC.Minimap3DExtension',
+				// 'Autodesk.BimWalk',
 			]);
+
 			myViewer.start('svf');
 		});
 	</script>

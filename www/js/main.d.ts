@@ -69,6 +69,12 @@ interface ExtensionInfo extends BasicInfo {
     extensionId: string;
     mode?: MouseEvent;
 }
+declare enum ToolBarDockingSite {
+    Left = "left",
+    Right = "right",
+    Top = "top",
+    Bottom = "bottom"
+}
 interface UIToolbarDefinition {
     id?: string;
     isVertical?: boolean;
@@ -76,7 +82,7 @@ interface UIToolbarDefinition {
     top?: string;
     bottom?: string;
     right?: string;
-    docking?: string;
+    docking?: ToolBarDockingSite;
     [key: string]: any;
 }
 declare type BistateButtonOptions = boolean | {
@@ -123,6 +129,43 @@ interface MeasureExtensionOptions {
     units: UnitType;
     precision: number;
 }
+declare enum AggregateMode {
+    Legacy = 0,
+    Auto = 0,
+    Aggregated = 1
+}
+interface ViewerInitializerOptions {
+    webGLHelpLink?: string;
+    language?: string;
+    useADP?: boolean;
+    useConsolidation?: boolean;
+    [key: string]: any;
+}
+interface Viewer3DConstructorOptions {
+    startOnInitialize?: boolean;
+    theme?: 'dark-theme' | 'light-theme' | string;
+    [key: string]: any;
+}
+interface ViewerConstructorOptions {
+    disableBrowserContextMenu?: boolean;
+    disabledExtensions?: {
+        bimwalk?: boolean;
+        hyperlink?: boolean;
+        measure?: boolean;
+        scalarisSimulation?: boolean;
+        section?: boolean;
+    };
+    extensions?: string[];
+    useConsolidation?: boolean;
+    consolidationMemoryLimit?: number;
+    sharedPropertyDbPath?: string;
+    bubbleNode?: Autodesk.Viewing.BubbleNode;
+    canvasConfig?: any;
+    startOnInitialize?: boolean;
+    experimental?: any[];
+    theme?: 'dark-theme' | 'light-theme' | string;
+    [key: string]: any;
+}
 declare class LocalViewer {
     private div;
     private urn;
@@ -136,6 +179,7 @@ declare class LocalViewer {
     private extensions;
     private ui_definition;
     private ui_references;
+    private viewerAggregateMode;
     private documents;
     private models;
     private startAt;
@@ -155,14 +199,14 @@ declare class LocalViewer {
     constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string);
     configureExtensions(extensions: (string | {
         id: string;
-        options: object;
+        options: any;
     })[]): void;
     private loadExtensions;
     private reconfigureExtensions;
     configureUI(ui: UIConfiguration): void;
     enableWorkersDebugging(): void;
     setModelBrowserExcludeRoot(flag?: boolean): void;
-    run(config?: ResourceType): void;
+    start(config?: ResourceType): void;
     protected loadModels(): Promise<void>;
     protected addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model>;
     protected onModelsLoaded(models: Autodesk.Viewing.Model[]): void;
@@ -211,6 +255,8 @@ declare class LocalViewer {
      * });
      */
     rayCast(x: number, y: number): Intersection[];
+    get aggregateMode(): AggregateMode;
+    set aggregateMode(newAggragteMode: AggregateMode);
     /**
      * Search text in all models loaded.
      *
@@ -218,10 +264,48 @@ declare class LocalViewer {
      *
      * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
      */
-    searchAllModels(text: string): Promise<{
+    aggregateSearch(text: string): Promise<{
         model: Autodesk.Viewing.Model;
         dbids: number[];
     }[]>;
+    getAggregateSelection(): {
+        model: Autodesk.Viewing.Model;
+        selection: number[];
+    }[];
+    setAggregateSelection(selection: {
+        model: Autodesk.Viewing.Model;
+        selection: number[];
+        selectionType?: any;
+    }[]): void;
+    aggregateSelect(selection: {
+        model: Autodesk.Viewing.Model;
+        selection: number[];
+        selectionType?: any;
+    }[]): void;
+    getAggregateIsolation(): {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[];
+    setAggregateIsolation(isolateAggregate: {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[], hideLoadedModels?: boolean): void;
+    aggregateIsolate(isolateAggregate: {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[], hideLoadedModels?: boolean): void;
+    getAggregateHiddenNodes(): {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[];
+    setAggregateHiddenNodes(hideAggregate: {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[]): void;
+    aggregateHide(hideAggregate: {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[]): void;
     /**
      * Enumerates IDs of objects in the scene.
      *
@@ -469,5 +553,7 @@ declare class LocalViewer {
     getControl(idpath: string): Autodesk.Viewing.UI.Control;
     protected _dumb_(evt: Event): void;
     buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[];
+    moveCtrl(ctrl: string | Autodesk.Viewing.UI.Control, parent: string | Autodesk.Viewing.UI.ControlGroup | Autodesk.Viewing.UI.ToolBar, options?: Autodesk.Viewing.UI.AddControlOptions): void;
+    moveToolBar(tb?: string | Autodesk.Viewing.UI.ToolBar, docking?: ToolBarDockingSite, offset?: string): void;
     private options;
 }
