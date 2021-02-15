@@ -22,6 +22,7 @@ import * as _path from 'path';
 import * as _fs from 'fs';
 
 import OAuth2leggedController from './controllers/oauth-2legged';
+import WebHooksController from './controllers/webhooks';
 
 const useHTTP2: Boolean = false;
 const dev: Boolean = process.env.NODE_ENV !== 'production';
@@ -31,6 +32,7 @@ if (dev === true)
 
 const expressApp = new ExpressApp([
 	new OAuth2leggedController(),
+	new WebHooksController(),
 ]);
 
 if (useHTTP2 === true) {

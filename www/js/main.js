@@ -228,10 +228,11 @@ var LocalViewer = /** @class */ (function () {
         if (flag === void 0) { flag = true; }
         this.modelBrowserExcludeRoot = flag;
     };
-    LocalViewer.prototype.start = function (config) {
+    LocalViewer.prototype.start = function (config, enableInlineWorker) {
         if (config === void 0) { config = 'svf'; }
         this.configuration = this.options(config);
-        //Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
+        //(Autodesk.Viewing.Private as any).ENABLE_DEBUG = true;
+        Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = enableInlineWorker ? enableInlineWorker : true;
         Autodesk.Viewing.Initializer(this.configuration, this.loadModels.bind(this));
     };
     LocalViewer.prototype.loadModels = function () {
@@ -245,8 +246,8 @@ var LocalViewer = /** @class */ (function () {
                         darkmode = localStorage.getItem('darkSwitch') !== null &&
                             localStorage.getItem('darkSwitch') === 'dark';
                         this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
-                        // Autodesk.Viewing.Private.ENABLE_DEBUG =true;
-                        // Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
+                        //(Autodesk.Viewing.Private as any).ENABLE_DEBUG =true;
+                        //(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER =false;
                         this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
                         this.viewer = new Autodesk.Viewing.GuiViewer3D(typeof this.div === 'string' ?
                             document.getElementById(this.div)
@@ -259,7 +260,6 @@ var LocalViewer = /** @class */ (function () {
                                 ctx.clear(ctx.COLOR_BUFFER_BIT);
                             }, 200);
                         }
-                        //return;
                         // Attach event handlers (this would work for all the files except those that doesn't have geometry data).
                         this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function (info) {
                             //this.viewer.removeEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, arguments.callee);
@@ -595,6 +595,49 @@ var LocalViewer = /** @class */ (function () {
     LocalViewer.prototype.aggregateHide = function (hideAggregate) {
         this.setAggregateHiddenNodes(hideAggregate);
     };
+    // Injection
+    // https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+    LocalViewer.prototype.injectShaderMaterial = function (materialName, shaderDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
+        if (supportsMrtNormals === void 0) { supportsMrtNormals = true; }
+        if (skipSimplPhongHeuristics === void 0) { skipSimplPhongHeuristics = true; }
+        //https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+        var customMaterial = new THREE.ShaderMaterial(shaderDefinition);
+        customMaterial.side = THREE.DoubleSide;
+        customMaterial.supportsMrtNormals = supportsMrtNormals;
+        this.viewer.impl.matman().addMaterial(materialName, customMaterial, skipSimplPhongHeuristics);
+        return (customMaterial);
+    };
+    LocalViewer.prototype.injectPhongMaterial = function (materialName, phongDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
+        if (supportsMrtNormals === void 0) { supportsMrtNormals = true; }
+        if (skipSimplPhongHeuristics === void 0) { skipSimplPhongHeuristics = true; }
+        //https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+        var customMaterial = new THREE.MeshPhongMaterial(phongDefinition);
+        customMaterial.side = THREE.DoubleSide;
+        customMaterial.supportsMrtNormals = supportsMrtNormals;
+        this.viewer.impl.matman().addOverrideMaterial(materialName, customMaterial);
+        return (customMaterial);
+    };
+    LocalViewer.prototype.assignMaterialToObjects = function (material, ids, model) {
+        ids = ids || this.viewer.getSelection();
+        model = model || this.viewer.model;
+        model.unconsolidate(); // If the model is consolidated, material changes won't have any effect
+        material = typeof material === 'string' ? this.viewer.impl.matman().getModelMaterials(model, true).mats[material] : material;
+        var tree = model.getInstanceTree();
+        var frags = model.getFragmentList();
+        for (var _i = 0, ids_1 = ids; _i < ids_1.length; _i++) {
+            var dbid = ids_1[_i];
+            tree.enumNodeFragments(dbid, function (fragid) {
+                frags.setMaterial(fragid, material);
+            });
+        }
+    };
+    LocalViewer.prototype.aggregateAssignMaterialToObjects = function (material, selection) {
+        var _this = this;
+        selection.forEach(function (elt) {
+            _this.assignMaterialToObjects(material, elt.ids, elt.model);
+        });
+    };
+    // Utilities
     /**
      * Enumerates IDs of objects in the scene.
      *

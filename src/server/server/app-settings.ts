@@ -24,11 +24,12 @@ const AppSettings = {
 		forgeClientSecret: process.env.FORGE_CLIENT_SECRET || 'your_client_secret',
 		forgeCallback: process.env.FORGE_CALLBACK || ('http://localhost:' + (process.env.PORT || '80') + '/oauth'),
 		forgeScope: {
-			internal: 'data:read data:write data:search bucket:read bucket:create bucket:update bucket:delete',
+			internal: 'data:read data:write data:create data:search bucket:read bucket:create bucket:update bucket:delete',
 			external: 'viewables:read',
 			userinfo: 'user-profile:read',
 		},
 		forgeWebhooks: process.env.FORGE_WEBHOOKS || 'your_webhook_base_url',
+		forgeWebhooksToken: process.env.FORGE_WEBHOOKS_TOKEN, // your_webhook_secret_token, defaults to undefined
 	},
 
 	// Mongoose

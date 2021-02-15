@@ -16,7 +16,7 @@
 //
 
 /* TODOs
-   Load models from differentt regions / different clientID / different repo BIM360 / OSS
+   Load models from different regions / different clientID / different repo BIM360 / OSS
    SVF2 socket proxy
    all events
    inject material meshes properties
@@ -399,9 +399,10 @@ class LocalViewer {
 		this.modelBrowserExcludeRoot = flag;
 	}
 
-	public start(config: ResourceType = 'svf'): void {
+	public start(config: ResourceType = 'svf', enableInlineWorker?: boolean): void {
 		this.configuration = this.options(config);
-		//Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
+		//(Autodesk.Viewing.Private as any).ENABLE_DEBUG = true;
+		(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER = enableInlineWorker ? enableInlineWorker : true;
 		Autodesk.Viewing.Initializer(this.configuration, this.loadModels.bind(this));
 	}
 
@@ -412,9 +413,9 @@ class LocalViewer {
 			localStorage.getItem('darkSwitch') !== null &&
 			localStorage.getItem('darkSwitch') === 'dark';
 		this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
-		
-		// Autodesk.Viewing.Private.ENABLE_DEBUG =true;
-		// Autodesk.Viewing.Private.ENABLE_INLINE_WORKER =false;
+
+		//(Autodesk.Viewing.Private as any).ENABLE_DEBUG =true;
+		//(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER =false;
 		this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;
 		this.viewer = new Autodesk.Viewing.GuiViewer3D(
 			typeof this.div === 'string' ?
@@ -422,17 +423,15 @@ class LocalViewer {
 				: this.div,
 			this.configuration
 		);
-		 this.viewer.start();
+		this.viewer.start();
 
-		if ( darkmode ) {
-			setTimeout ((): void => {
+		if (darkmode) {
+			setTimeout((): void => {
 				const ctx = self.viewer.canvas.getContext('webgl2');
 				ctx.clearColor(0.199, 0.199, 0.199, 1)
 				ctx.clear(ctx.COLOR_BUFFER_BIT);
 			}, 200);
 		}
-
-		//return;
 
 		// Attach event handlers (this would work for all the files except those that doesn't have geometry data).
 		this.viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, (info: ModelLoadingInfo): void => {
@@ -504,7 +503,7 @@ class LocalViewer {
 					doc.getRoot().search(view)[0]
 					: doc.getRoot().getDefaultGeometry();
 				let options: { preserveView: boolean, keepCurrentModels: boolean, placementTransform?: THREE.Matrix4, globalOffset?: THREE.Vector3, ids?: number[] } = {
-					preserveView: (Object.keys(self.documents).length !== 1),
+					preserveView: (Object.keys(self.documents).length !== 1), // Since we started without any model, we need the first one to initilize the viewer camera
 					keepCurrentModels: true
 				};
 				if (xform)
@@ -753,7 +752,7 @@ class LocalViewer {
 	public getAggregateSelection(): { model: Autodesk.Viewing.Model, selection: number[] }[] {
 		return (this.viewer.getAggregateSelection());
 	}
-	
+
 	public setAggregateSelection(selection: { model: Autodesk.Viewing.Model, selection: number[], selectionType?: any }[]): void {
 		const ss = selection.map((elt: { model: Autodesk.Viewing.Model, selection: number[] }) => {
 			if (elt.selection && !(elt as any).ids) {
@@ -772,7 +771,7 @@ class LocalViewer {
 	public getAggregateIsolation(): { model: Autodesk.Viewing.Model, ids: number[] }[] {
 		return (this.viewer.getAggregateIsolation());
 	}
-	
+
 	public setAggregateIsolation(isolateAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[], hideLoadedModels: boolean = false): void {
 		(this.viewer.impl.visibilityManager as any).aggregateIsolate(isolateAggregate, { hideLoadedModels: hideLoadedModels });
 	}
@@ -792,6 +791,49 @@ class LocalViewer {
 	public aggregateHide(hideAggregate: { model: Autodesk.Viewing.Model, ids: number[] }[]): void {
 		this.setAggregateHiddenNodes(hideAggregate);
 	}
+
+	// Injection
+
+	// https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+	public injectShaderMaterial(materialName: string, shaderDefinition: THREE.ShaderMaterialParameters, supportsMrtNormals: boolean = true, skipSimplPhongHeuristics: boolean = true): THREE.ShaderMaterial {
+		//https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+		const customMaterial = new THREE.ShaderMaterial(shaderDefinition);
+		customMaterial.side = THREE.DoubleSide;
+		(customMaterial as any).supportsMrtNormals = supportsMrtNormals;
+		this.viewer.impl.matman().addMaterial(materialName, customMaterial, skipSimplPhongHeuristics);
+		return (customMaterial);
+	}
+
+	public injectPhongMaterial(materialName: string, phongDefinition: THREE.MeshPhongMaterialParameters, supportsMrtNormals: boolean = true, skipSimplPhongHeuristics: boolean = true): THREE.MeshPhongMaterial {
+		//https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
+		const customMaterial = new THREE.MeshPhongMaterial(phongDefinition);
+		customMaterial.side = THREE.DoubleSide;
+		(customMaterial as any).supportsMrtNormals = supportsMrtNormals;
+		this.viewer.impl.matman().addOverrideMaterial(materialName, customMaterial);
+		return (customMaterial);
+	}
+
+	public assignMaterialToObjects(material: string | THREE.Material, ids: number[], model?: Autodesk.Viewing.Model) {
+		ids = ids || this.viewer.getSelection();
+		model = model || this.viewer.model;
+		(model as any).unconsolidate(); // If the model is consolidated, material changes won't have any effect
+		material = typeof material === 'string' ? this.viewer.impl.matman().getModelMaterials(model, true).mats[material] : material;
+		const tree: Autodesk.Viewing.InstanceTree = model.getInstanceTree();
+		const frags: Autodesk.Viewing.Private.FragmentList = model.getFragmentList();
+		for (const dbid of ids) {
+			tree.enumNodeFragments(dbid, (fragid: number): void => {
+				(frags as any).setMaterial(fragid, material);
+			});
+		}
+	}
+
+	public aggregateAssignMaterialToObjects(material: THREE.Material, selection: { model: Autodesk.Viewing.Model, ids: number[] }[]) {
+		selection.forEach((elt: { model: Autodesk.Viewing.Model, ids: number[] }): void => {
+			this.assignMaterialToObjects(material, elt.ids, elt.model);
+		});
+	}
+
+	// Utilities
 
 	/**
 	 * Enumerates IDs of objects in the scene.
@@ -1396,8 +1438,8 @@ class LocalViewer {
 		if (parent instanceof Autodesk.Viewing.UI.ControlGroup === false)
 			return;
 		const currentParent = (ctrl as any).parent as Autodesk.Viewing.UI.ControlGroup;
-		currentParent.removeControl (ctrl);
-		parent.addControl (ctrl, options);
+		currentParent.removeControl(ctrl);
+		parent.addControl(ctrl, options);
 	}
 
 	public moveToolBar(tb: string | Autodesk.Viewing.UI.ToolBar = 'default', docking: ToolBarDockingSite = ToolBarDockingSite.Bottom, offset: string = undefined) {

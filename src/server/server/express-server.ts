@@ -18,6 +18,7 @@
 import * as bodyParser from 'body-parser';
 //import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
+import { IncomingMessage, ServerResponse } from 'http';
 import Controller from '../interfaces/controller';
 import errorMiddleware from '../middlewares/error';
 import compressionMiddleware from '../middlewares/should-compress';
@@ -70,7 +71,12 @@ class ExpressApp {
 	private initializeMiddlewares(): void {
 		if (this.app.get('env') === 'production')
 			this.app.set('trust proxy', 1); // trust first proxy
-		this.app.use(bodyParser.json());
+		//this.app.use(bodyParser.json());
+		this.app.use(bodyParser.json({
+			verify: (req: IncomingMessage, res: ServerResponse, buf: Buffer, encoding: string) => {
+				(req as any).rawBody = buf;
+			}
+		}));
 		this.app.use(bodyParser.urlencoded({ extended: true }));
 		//this.app.use(cookieParser());
 		this.app.use(compressionMiddleware);

@@ -23,8 +23,8 @@ import AppSettings from './app-settings';
 class Forge2Legged {
 
 	public name: string;
-	private internalClient: ForgeAPI.AuthClientTwoLegged;
-	private externalClient: ForgeAPI.AuthClientTwoLegged;
+	public internalClient: ForgeAPI.AuthClientTwoLegged;
+	public externalClient: ForgeAPI.AuthClientTwoLegged;
 
 	private constructor(name: string, config: any) {
 		this.name = name;

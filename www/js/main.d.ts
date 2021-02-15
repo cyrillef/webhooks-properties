@@ -206,7 +206,7 @@ declare class LocalViewer {
     configureUI(ui: UIConfiguration): void;
     enableWorkersDebugging(): void;
     setModelBrowserExcludeRoot(flag?: boolean): void;
-    start(config?: ResourceType): void;
+    start(config?: ResourceType, enableInlineWorker?: boolean): void;
     protected loadModels(): Promise<void>;
     protected addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model>;
     protected onModelsLoaded(models: Autodesk.Viewing.Model[]): void;
@@ -303,6 +303,13 @@ declare class LocalViewer {
         ids: number[];
     }[]): void;
     aggregateHide(hideAggregate: {
+        model: Autodesk.Viewing.Model;
+        ids: number[];
+    }[]): void;
+    injectShaderMaterial(materialName: string, shaderDefinition: THREE.ShaderMaterialParameters, supportsMrtNormals?: boolean, skipSimplPhongHeuristics?: boolean): THREE.ShaderMaterial;
+    injectPhongMaterial(materialName: string, phongDefinition: THREE.MeshPhongMaterialParameters, supportsMrtNormals?: boolean, skipSimplPhongHeuristics?: boolean): THREE.MeshPhongMaterial;
+    assignMaterialToObjects(material: string | THREE.Material, ids: number[], model?: Autodesk.Viewing.Model): void;
+    aggregateAssignMaterialToObjects(material: THREE.Material, selection: {
         model: Autodesk.Viewing.Model;
         ids: number[];
     }[]): void;
