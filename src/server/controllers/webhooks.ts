@@ -24,6 +24,7 @@ import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import AppSettings from '../server/app-settings';
 import * as crypto from 'crypto';
+import JsonProperties from '../utilities/json-properties';
 
 class WebHooksController implements Controller {
 
@@ -102,43 +103,59 @@ class WebHooksController implements Controller {
 	}
 
 	private async modelDerivativesExtractionUpdated(request: Request, response: Response): Promise<void> {
-		// If we have a need for updates, we could send a socket.io message to clients
-		// or pull the manifest for intermedaite resources becoming avalable and start processing data
+		try {
+			// If we have a need for updates, we could send a socket.io message to clients
+			// or pull the manifest for intermedaite resources becoming avalable and start processing data
 
-		const payload: any = request.body.payload;
-		// payload.EventType === 'UPDATED';
+			const payload: any = request.body.payload;
+			// payload.EventType === 'UPDATED';
 
-		// payload.Payload.status;
-		// payload.Payload.bubble.status;
-		// payload.Payload.bubble.success;
-		// payload.Payload.bubble.progress;
+			// payload.Payload.status;
+			// payload.Payload.bubble.status;
+			// payload.Payload.bubble.success;
+			// payload.Payload.bubble.progress;
 
-		if (payload.Payload.status !== 'success')
-			return;
+			if (payload.Payload.status !== 'success')
+				return;
 
-		const urn: string = payload.URN;
+			const urn: string = payload.URN;
 
-		// The file list for property database files is fixed, no need to go to the server to find out
-		const dbFiles: string[] = [
-			'objects_attrs.json.gz',
-			'objects_vals.json.gz',
-			'objects_avs.json.gz',
-			'objects_offs.json.gz',
-			'objects_ids.json.gz',
-		];
-		// `urn:adsk.viewing:fs.file:${urn}/output/objects_attrs.json.gz`
-		// `urn:adsk.viewing:fs.file:${urn}/${derivativePath}`
-		const paths: string[] = dbFiles.map((fn: string): string => `urn:adsk.viewing:fs.file:${urn}/output/${fn}`);
+			// The file list for property database files is fixed, no need to go to the server to find out
+			// const dbFiles: string[] = [
+			// 	'objects_offs.json.gz',
+			// 	'objects_avs.json.gz',
+			// 	'objects_vals.json.gz',
+			// 	'objects_attrs.json.gz',
+			// 	'objects_ids.json.gz',
+			// ];
+			const dbFiles: string[] = JsonProperties.dbs;
+			// `urn:adsk.viewing:fs.file:${urn}/output/objects_attrs.json.gz`
+			// `urn:adsk.viewing:fs.file:${urn}/${derivativePath}`
+			const paths: string[] = dbFiles.map((fn: string): string => `urn:adsk.viewing:fs.file:${urn}/output/${fn}.json.gz`);
 
-		// Let's get the derivatives we want
-		const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
-		const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
-		const md: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, payload.Payload.bubble.region);
-		const jobs = paths.map ((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
-		const results = await Promise.all(jobs);
+			// Let's get the derivatives we want
+			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
+			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
+			const md: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, payload.Payload.bubble.region);
+			const jobs: Promise<Forge.ApiResponse>[] = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
+			const results: Forge.ApiResponse[] = await Promise.all(jobs);
+			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
-		
+			const propsDb = new JsonProperties(urn);
+			await propsDb.load(dbBuffers);
 
+			// Ready to get properties
+			const test14 = propsDb.read(481);
+			console.log (JSON.stringify(test14, null, 4));
+
+			const test14all = propsDb.read(481, false); // get internal properties too
+			console.log(JSON.stringify(test14all, null, 4));
+
+			console.log('ok');
+
+		} catch (ex) {
+			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+		}
 	}
 
 	private async modelDerivativesExtractionFinished(request: Request, response: Response): Promise<void> {
