@@ -31,13 +31,14 @@ class ExpressApp {
 	public app: express.Application;
 	public oauth: Forge2Legged;
 
-	constructor(controllers: Controller[]) {
+	constructor(controllers?: Controller[]) {
 		this.app = express();
 
 		this.initializeForge2legged();
 		this.connectDatabase();
 		this.initializeMiddlewares();
-		this.initializeControllers(controllers);
+		if (controllers)
+			this.initializeControllers(controllers);
 		this.initializeErrorHandling();
 		this.initializeStaticPath();
 		this.initializeForgeProxy();
@@ -65,7 +66,7 @@ class ExpressApp {
 	}
 
 	private initializeForge2legged(): void {
-		Forge2Legged.Instance ('main', AppSettings.main);
+		Forge2Legged.Instance('main', AppSettings.main);
 	}
 
 	private initializeMiddlewares(): void {
@@ -82,9 +83,10 @@ class ExpressApp {
 		this.app.use(compressionMiddleware);
 	}
 
-	private initializeControllers(controllers: Controller[]): void {
+	public initializeControllers(controllers: Controller[]): void {
 		const self = this;
 		controllers.forEach((controller) => {
+			controller.expressApp = self;
 			self.app.use('/', controller.router);
 		});
 	}
@@ -96,7 +98,6 @@ class ExpressApp {
 	private initializeStaticPath(): void {
 		this.app.use('/', express.static('./www'));
 		if (this.app.get('env') !== 'production')
-			//this.app.use('/src/client', express.static('/src/client'));
 			this.app.use('/src/client', express.static('./src/client'));
 	}
 

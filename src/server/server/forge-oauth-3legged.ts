@@ -194,7 +194,7 @@
 // });
 
 // router.get('/user/is', async (req, res) => {
-// 	// if (process.env.NODE_ENV === 'development')
+// 	// if (process.env.NODE_ENV !== 'production')
 // 	// 	return (res.json('ok')); // for debug
 // 	const response = await Forge_oauth.validateToken(req);
 // 	res.json(response && response.access_token ? { ...response.access_token, admin: AppSettings.admins.indexOf(response.access_token.email) !== -1 } : null);

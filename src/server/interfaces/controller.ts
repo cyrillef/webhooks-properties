@@ -16,10 +16,12 @@
 //
 
 import { Router } from 'express';
+import ExpressApp from '../server/express-server';
 
 interface Controller {
 	path: string;
 	router: Router;
+	expressApp: ExpressApp;
 }
 
 export default Controller;

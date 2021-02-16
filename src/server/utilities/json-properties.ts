@@ -103,7 +103,7 @@ class JsonProperties {
 		var propStop: number = (this.offs.length <= dbId + 1) ? this.avs.length : 2 * this.offs[dbId + 1];
 		for (let i = propStart; i < propStop; i += 2) {
 			const attr: string = this.attrs[this.avs[i]];
-			const category: string = attr[JsonProperties.iCATEGORY] || '__internal__';
+			let category: string = attr[JsonProperties.iCATEGORY] || '__internal__';
 			let key: string = attr[JsonProperties.iCATEGORY] + '/' + attr[JsonProperties.iNAME];
 			// if ( key === '__parent__/parent' ) {
 			// 	parent =parseInt (this.vals [this.avs [i + 1]]) ;
@@ -123,7 +123,7 @@ class JsonProperties {
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
 			) {
-				continue;
+				category = '__internal__';
 			}
 			//console.log (key) ;
 			if (key === '__name__/name') {

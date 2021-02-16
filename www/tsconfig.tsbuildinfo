@@ -447,8 +447,8 @@
         "affectsGlobalScope": false
       },
       "../node_modules/@types/forge-apis/index.d.ts": {
-        "version": "17d9ce9cb3835c9513d918584f8203582f9d94285dd3006515a18cd1c7464514",
-        "signature": "17d9ce9cb3835c9513d918584f8203582f9d94285dd3006515a18cd1c7464514",
+        "version": "bed60708cfcb14ecf419b222dc5da8f584577f17f9cd7b83c3c9aecf066dfca7",
+        "signature": "bed60708cfcb14ecf419b222dc5da8f584577f17f9cd7b83c3c9aecf066dfca7",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/three/three-core.d.ts": {

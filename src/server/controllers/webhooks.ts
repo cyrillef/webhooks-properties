@@ -25,15 +25,18 @@ import Forge2Legged from '../server/forge-oauth-2legged';
 import AppSettings from '../server/app-settings';
 import * as crypto from 'crypto';
 import JsonProperties from '../utilities/json-properties';
+import ExpressApp from '../server/express-server';
 
 class WebHooksController implements Controller {
 
 	public path: string = '/webhooks';
-	public scope: string = 'webhooks-properties';
-	public webhooksToken: string = AppSettings.main.forgeWebhooksToken;
 	public router: Router = Router();
+	public expressApp: ExpressApp = null;
+	private scope: string = 'webhooks-properties';
+	private webhooksToken: string = AppSettings.main.forgeWebhooksToken;
 
-	constructor() {
+	public constructor(expressApp: ExpressApp) {
+		this.expressApp = expressApp;
 		this.initializeRoutes();
 	}
 
@@ -49,7 +52,8 @@ class WebHooksController implements Controller {
 		this.router.get(`${this.path}/setup`, this.modelDerivativesList.bind(this));
 		this.router.delete(`${this.path}/setup`, this.modelDerivativesDelete.bind(this));
 
-		if (process.env.NODE_ENV !== 'production') {
+		if (this.expressApp.app.get('env') !== 'production') {
+		//if (process.env.NODE_ENV !== 'production') {
 			this.router.get(`${this.path}/setup-create`, this.modelDerivativesSetup.bind(this));
 			this.router.get(`${this.path}/setup-delete`, this.modelDerivativesDelete.bind(this));
 			this.router.get(`${this.path}/setup-test`, this.modelDerivativesTest.bind(this));
@@ -145,10 +149,13 @@ class WebHooksController implements Controller {
 			await propsDb.load(dbBuffers);
 
 			// Ready to get properties
-			const test14 = propsDb.read(481);
+			const test14 = propsDb.read(481, false);
 			console.log (JSON.stringify(test14, null, 4));
 
-			const test14all = propsDb.read(481, false); // get internal properties too
+			const test199 = propsDb.read(199, false);
+			console.log(JSON.stringify(test199, null, 4));
+
+			const test14all = propsDb.read(24, false); // get internal properties too
 			console.log(JSON.stringify(test14all, null, 4));
 
 			console.log('ok');
@@ -271,11 +278,11 @@ class WebHooksController implements Controller {
 			const api: Forge.DerivativesApi = new Forge.DerivativesApi();
 			const payload = {
 				input: {
-					urn: "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTWFzdGVyJTIwLSUyMFBsYW50M0QuZHdn" // "objectKey": "Master - Plant3D.dwg"
+					urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTWFzdGVyJTIwLSUyMFBsYW50M0QuZHdn' // 'objectKey': 'Master - Plant3D.dwg'
 				},
 				output: {
 					destination: {
-						region: 'US'
+						region: Forge.DerivativesApi.RegionEnum.US
 					},
 					formats: [{
 						type: 'svf',

@@ -23,22 +23,26 @@ import * as _fs from 'fs';
 
 import OAuth2leggedController from './controllers/oauth-2legged';
 import WebHooksController from './controllers/webhooks';
+import TestsController from './controllers/tests';
 
 const useHTTP2: Boolean = false;
 const dev: Boolean = process.env.NODE_ENV !== 'production';
 console.log(`Server running in ${dev === true ? 'development' : 'production'} mode.`);
+console.log(`Using Forge application key: ${AppSettings.main.forgeClientId}`);
 if (dev === true)
 	process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-const expressApp = new ExpressApp([
-	new OAuth2leggedController(),
-	new WebHooksController(),
+const expressApp: ExpressApp = new ExpressApp();
+expressApp.initializeControllers([
+	new OAuth2leggedController(expressApp),
+	new WebHooksController(expressApp),
+	new TestsController(expressApp),
 ]);
 
 if (useHTTP2 === true) {
 
 	// Create your own certificate with openssl for development
-	const options = {
+	const options: any = {
 		key: _fs.readFileSync(_path.join(__dirname, '/keys/server.key')),
 		cert: _fs.readFileSync(_path.join(__dirname, '/keys/server.crt')),
 		ca: _fs.readFileSync(_path.join(__dirname, '/keys/server.csr'))
@@ -48,10 +52,10 @@ if (useHTTP2 === true) {
 
 	// Start the HTTP/2 server with express
 	createServer(options, expressApp.app)
-		.listen(AppSettings.PORT, () => {
+		.listen(AppSettings.PORT, (): void => {
 			console.log(`HTTP/2 server listening on port: ${AppSettings.PORT}`);
 		})
-		.on('error', (error) => {
+		.on('error', (error: any): void => {
 			if (error.errno === 'EACCES')
 				console.warn(`Port ${AppSettings.PORT} already in use.\nExiting...`);
 			else

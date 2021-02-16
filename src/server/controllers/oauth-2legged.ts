@@ -18,14 +18,17 @@
 import { Request, Response, Router } from 'express';
 import * as moment from 'moment';
 import Controller from '../interfaces/controller';
+import ExpressApp from '../server/express-server';
 import Forge2Legged from '../server/forge-oauth-2legged';
 
 class OAuth2leggedController implements Controller {
 
 	public path = '/token';
 	public router = Router();
+	public expressApp: ExpressApp = null;
 
-	constructor() {
+	public constructor(expressApp: ExpressApp) {
+		this.expressApp = expressApp;
 		this.initializeRoutes();
 	}
 
