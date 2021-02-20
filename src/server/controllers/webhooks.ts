@@ -15,10 +15,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as bodyParser from 'body-parser';
-import * as http from 'http';
 import { NextFunction, Request, Response, Router } from 'express';
-import * as moment from 'moment';
 import Controller from '../interfaces/controller';
 import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
@@ -132,7 +129,7 @@ class WebHooksController implements Controller {
 			// 	'objects_attrs.json.gz',
 			// 	'objects_ids.json.gz',
 			// ];
-			const dbFiles: string[] = JsonProperties.dbs;
+			const dbFiles: string[] = JsonProperties.dbNames;
 			// `urn:adsk.viewing:fs.file:${urn}/output/objects_attrs.json.gz`
 			// `urn:adsk.viewing:fs.file:${urn}/${derivativePath}`
 			const paths: string[] = dbFiles.map((fn: string): string => `urn:adsk.viewing:fs.file:${urn}/output/${fn}.json.gz`);
@@ -145,7 +142,7 @@ class WebHooksController implements Controller {
 			const results: Forge.ApiResponse[] = await Promise.all(jobs);
 			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
-			const propsDb = new JsonProperties(urn);
+			const propsDb = new JsonProperties();
 			await propsDb.load(dbBuffers);
 
 			// Ready to get properties

@@ -32,9 +32,6 @@ const AppSettings = {
 		forgeWebhooksToken: process.env.FORGE_WEBHOOKS_TOKEN, // your_webhook_secret_token, defaults to undefined
 	},
 
-	// Cache
-	cacheFolder: 'cache',
-
 	// Mongoose
 	MONGO_USER: process.env.MONGO_USER || 'MONGO_USER',
 	MONGO_PASSWORD: process.env.MONGO_PASSWORD || 'MONGO_PASSWORD',

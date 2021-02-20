@@ -651,9 +651,29 @@
         "signature": "a3fc7e6acade751d1088c1c2779417b1b996fc5f6814862911420c5b22cc20ea",
         "affectsGlobalScope": true
       },
+      "../node_modules/@types/minimatch/index.d.ts": {
+        "version": "1d1e6bd176eee5970968423d7e215bfd66828b6db8d54d17afec05a831322633",
+        "signature": "1d1e6bd176eee5970968423d7e215bfd66828b6db8d54d17afec05a831322633",
+        "affectsGlobalScope": false
+      },
+      "../node_modules/@types/glob/index.d.ts": {
+        "version": "393137c76bd922ba70a2f8bf1ade4f59a16171a02fb25918c168d48875b0cfb0",
+        "signature": "393137c76bd922ba70a2f8bf1ade4f59a16171a02fb25918c168d48875b0cfb0",
+        "affectsGlobalScope": false
+      },
+      "../node_modules/@types/mkdirp/index.d.ts": {
+        "version": "c535422967fe3cf8adfee4e1a543870aede1fa77fd055a382e6f6582a2d866eb",
+        "signature": "c535422967fe3cf8adfee4e1a543870aede1fa77fd055a382e6f6582a2d866eb",
+        "affectsGlobalScope": false
+      },
       "../node_modules/moment/ts3.1-typings/moment.d.ts": {
         "version": "f97edc4d3b4dd0b32766e9633086497565c37657fb591cc84a35864db4bc2fc5",
         "signature": "f97edc4d3b4dd0b32766e9633086497565c37657fb591cc84a35864db4bc2fc5",
+        "affectsGlobalScope": false
+      },
+      "../node_modules/@types/rimraf/index.d.ts": {
+        "version": "ad23ef9834b5b8819ca9da91e9d534514d47d31d33fa384d82697c7b9502572c",
+        "signature": "ad23ef9834b5b8819ca9da91e9d534514d47d31d33fa384d82697c7b9502572c",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/spdy/index.d.ts": {
@@ -707,6 +727,15 @@
       ],
       "../node_modules/@types/forge-viewer/index.d.ts": [
         "../node_modules/@types/three/index.d.ts"
+      ],
+      "../node_modules/@types/glob/index.d.ts": [
+        "../node_modules/@types/minimatch/index.d.ts",
+        "../node_modules/@types/node/events.d.ts",
+        "../node_modules/@types/node/index.d.ts"
+      ],
+      "../node_modules/@types/mkdirp/index.d.ts": [
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/index.d.ts"
       ],
       "../node_modules/@types/node/base.d.ts": [
         "../node_modules/@types/node/assert.d.ts",
@@ -877,6 +906,11 @@
       ],
       "../node_modules/@types/node/zlib.d.ts": [
         "../node_modules/@types/node/stream.d.ts"
+      ],
+      "../node_modules/@types/rimraf/index.d.ts": [
+        "../node_modules/@types/glob/index.d.ts",
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/index.d.ts"
       ],
       "../node_modules/@types/serve-static/index.d.ts": [
         "../node_modules/@types/mime/index.d.ts",
@@ -1082,6 +1116,15 @@
       "../node_modules/@types/forge-viewer/index.d.ts": [
         "../node_modules/@types/three/index.d.ts"
       ],
+      "../node_modules/@types/glob/index.d.ts": [
+        "../node_modules/@types/minimatch/index.d.ts",
+        "../node_modules/@types/node/events.d.ts",
+        "../node_modules/@types/node/index.d.ts"
+      ],
+      "../node_modules/@types/mkdirp/index.d.ts": [
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/index.d.ts"
+      ],
       "../node_modules/@types/node/base.d.ts": [
         "../node_modules/@types/node/assert.d.ts",
         "../node_modules/@types/node/ts3.6/base.d.ts"
@@ -1251,6 +1294,11 @@
       ],
       "../node_modules/@types/node/zlib.d.ts": [
         "../node_modules/@types/node/stream.d.ts"
+      ],
+      "../node_modules/@types/rimraf/index.d.ts": [
+        "../node_modules/@types/glob/index.d.ts",
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/index.d.ts"
       ],
       "../node_modules/@types/serve-static/index.d.ts": [
         "../node_modules/@types/mime/index.d.ts",
@@ -1464,7 +1512,10 @@
       "../node_modules/@types/express/index.d.ts",
       "../node_modules/@types/forge-apis/index.d.ts",
       "../node_modules/@types/forge-viewer/index.d.ts",
+      "../node_modules/@types/glob/index.d.ts",
       "../node_modules/@types/mime/index.d.ts",
+      "../node_modules/@types/minimatch/index.d.ts",
+      "../node_modules/@types/mkdirp/index.d.ts",
       "../node_modules/@types/node/assert.d.ts",
       "../node_modules/@types/node/async_hooks.d.ts",
       "../node_modules/@types/node/base.d.ts",
@@ -1514,6 +1565,7 @@
       "../node_modules/@types/node/zlib.d.ts",
       "../node_modules/@types/qs/index.d.ts",
       "../node_modules/@types/range-parser/index.d.ts",
+      "../node_modules/@types/rimraf/index.d.ts",
       "../node_modules/@types/serve-static/index.d.ts",
       "../node_modules/@types/spdy/index.d.ts",
       "../node_modules/@types/three/index.d.ts",

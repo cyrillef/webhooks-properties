@@ -23,7 +23,8 @@ import * as _fs from 'fs';
 
 import OAuth2leggedController from './controllers/oauth-2legged';
 import WebHooksController from './controllers/webhooks';
-import TestsController from './controllers/tests';
+import RateLimitsTestsController from './controllers/rate-limits';
+import PropertiesController from './controllers/properties';
 
 const useHTTP2: Boolean = false;
 const dev: Boolean = process.env.NODE_ENV !== 'production';
@@ -36,7 +37,8 @@ const expressApp: ExpressApp = new ExpressApp();
 expressApp.initializeControllers([
 	new OAuth2leggedController(expressApp),
 	new WebHooksController(expressApp),
-	new TestsController(expressApp),
+	new RateLimitsTestsController(expressApp),
+	new PropertiesController(expressApp),
 ]);
 
 if (useHTTP2 === true) {
