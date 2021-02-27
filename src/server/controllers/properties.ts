@@ -15,7 +15,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import { NextFunction, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import Controller from '../interfaces/controller';
 import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
@@ -23,7 +23,13 @@ import AppSettings from '../server/app-settings';
 import { JsonProperties, JsonPropertiesSources } from '../utilities/json-properties';
 import JsonPropertiesUtils from '../utilities/json-properties-utils';
 import ExpressApp from '../server/express-server';
-import * as moment from 'moment';
+import * as util from 'util';
+import * as _fs from 'fs';
+import * as _path from 'path';
+
+const _fsExists = util.promisify(_fs.exists);
+const _fsReadFile = util.promisify(_fs.readFile);
+const _fsWriteFile = util.promisify(_fs.writeFile);
 
 // public static objects: any = {
 // 	master: { // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
@@ -39,6 +45,7 @@ import * as moment from 'moment';
 //		ur: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
 // 		guids: [
 // 			'ee578c34-41d4-83e7-fd72-1c18a453c3b9', // 3d role: "graphics", mime: "application/autodesk-svf", type: "resource"
+//			//'ee578c34-41d4-83e7-fd72-1c18a453c3b9', // 3d role: "graphics", mime: "application/autodesk-svf2", type: "resource"
 // 			'6fda4fe6-0ceb-4525-a86d-20be4000dab5', // 2d role: "graphics", mime: "application/autodesk-f2d", type: "resource",
 // 			'e67f2035-8010-3ff5-e399-b9c9217c2366', // 2d role: "graphics", mime: "application/autodesk-f2d", type: "resource",
 // 		],
@@ -68,7 +75,7 @@ import * as moment from 'moment';
 
 class PropertiesController implements Controller {
 
-	public pathTeee: string = '/tree';
+	public pathTree: string = '/tree';
 	public path: string = '/properties';
 	public router: Router = Router();
 	public expressApp: ExpressApp = null;
@@ -88,13 +95,14 @@ class PropertiesController implements Controller {
 		this.router.get(`${this.path}/:urn/guids/:guid`, this.modelDerivativesProperties.bind(this));
 
 		this.router.get(`${this.path}/:urn/db`, this.databaseProperties.bind(this));
-		this.router.get(`${this.path}/:urn/db/:guid`, this.databaseProperties.bind(this));
+		this.router.get(`${this.path}/:urn/guids/:guid/db`, this.databaseProperties.bind(this));
 
-		this.router.get(`${this.pathTeee}/:urn`, this.modelDerivativesObjectTree.bind(this));
-		this.router.get(`${this.pathTeee}/:urn/guids/:guid`, this.modelDerivativesObjectTree.bind(this));
+		this.router.get(`${this.pathTree}/:urn`, this.modelDerivativesObjectTree.bind(this));
+		this.router.get(`${this.pathTree}/:urn/guids/:guid`, this.modelDerivativesObjectTree.bind(this));
 
-		this.router.get(`${this.pathTeee}/:urn/db`, this.databaseObjectTree.bind(this));
-		this.router.get(`${this.pathTeee}/:urn/guids/:guid/db`, this.databaseObjectTree.bind(this));
+		this.router.get(`${this.pathTree}/:urn/db`, this.databaseObjectTree.bind(this));
+		this.router.get(`${this.pathTree}/:urn/guids/:guid/db`, this.databaseObjectTree.bind(this));
+
 	}
 
 	private static sleep(milliseconds: number): Promise<any> {
@@ -117,7 +125,7 @@ class PropertiesController implements Controller {
 						await PropertiesController.sleep(PropertiesController.WAIT_202);
 						break;
 					default:
-						return (null);
+						return (result);
 				}
 			};
 		} catch (ex) {
@@ -148,6 +156,8 @@ class PropertiesController implements Controller {
 			const results: Forge.ApiResponse = await this.runTestUntilSuccess(
 				() => api.getModelviewProperties(urn, guid, { forceget: true }, oauth.internalClient, token)
 			);
+			if (results === null || results.statusCode !== 200)
+				return (response.status(results.statusCode || 500).end());
 			response.json(results.body);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -158,22 +168,44 @@ class PropertiesController implements Controller {
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = request.params.urn || '';
-			const guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb = new JsonProperties();
 			await propsDb.load(dbBuffers);
 
-			const rootIds: number[] = propsDb.findRootNodes();
-			let trees: any = rootIds.map((objId: number): any => propsDb.buildTree(objId, true));
+			if (!guid || guid === '')
+				guid = dbBuffers.guids[0];
+			if (!dbBuffers.hasOwnProperty(guid))
+				return (response.status(404).end());
+
+			// const rootIds: number[] = propsDb.findRootNodes();
+			// let trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId, true));
+			// for (let i = 0; i < trees.length; i++) {
+			// 	if (trees[i].objects) {
+			// 		trees = [...trees, ...trees[i].objects];
+			// 		delete trees[i].objects;
+			// 	}
+			// }
+			// trees.map((elt: any): any => delete elt.properties.__internal__);
+
+			let trees: any[] = [propsDb.buildTree(dbBuffers[guid], true)];
 			for (let i = 0; i < trees.length; i++) {
 				if (trees[i].objects) {
 					trees = [...trees, ...trees[i].objects];
 					delete trees[i].objects;
 				}
 			}
-			trees.map((elt: any): any => delete elt.properties.__internal__);
+			const regex = new RegExp('^__(\\w+)__$');
+			trees.map((elt: any): any => {
+				const keys = Object.keys(elt.properties);
+				keys
+					.filter((key: string): boolean => regex.test(key))
+					.map((key: string): any => delete elt.properties[key]);
+				delete elt.properties.Other;
+			});
+			trees.sort((a, b) => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0))
 
 			response.json({
 				data: {
@@ -208,6 +240,8 @@ class PropertiesController implements Controller {
 			const results: Forge.ApiResponse = await this.runTestUntilSuccess(
 				() => api.getModelviewMetadata(urn, guid, { forceget: true }, oauth.internalClient, token)
 			);
+			if (results === null || results.statusCode !== 200)
+				return (response.status(results.statusCode || 500).end());
 			response.json(results.body);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -218,20 +252,28 @@ class PropertiesController implements Controller {
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = request.params.urn || '';
-			const guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb = new JsonProperties();
 			await propsDb.load(dbBuffers);
 
-			const rootIds: number[] = propsDb.findRootNodes();
-			const trees: any = rootIds.map((objId: number): any => propsDb.buildTree(objId));
+			if (!guid || guid === '')
+				guid = dbBuffers.guids[0];
+			if (!dbBuffers.hasOwnProperty(guid))
+				//return (response.status(404).end());
+				guid = dbBuffers.guids[0];
+
+			// const rootIds: number[] = propsDb.findRootNodes();
+			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));
+
+			const tree: any = propsDb.buildTree(dbBuffers[guid], false);
 
 			response.json({
 				data: {
 					type: 'objects',
-					objects: trees,
+					objects: [tree],
 				}
 			});
 		} catch (ex) {
@@ -239,6 +281,7 @@ class PropertiesController implements Controller {
 			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 		}
 	}
+
 }
 
 export default PropertiesController;

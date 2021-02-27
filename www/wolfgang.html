@@ -35,6 +35,9 @@
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
 	<link href="/styles/dashboard.css" rel="stylesheet" />
 
+	<script src="/js/wolfgang-ext1.js"></script>
+	<script src="/js/wolfgang-ext2.js"></script>
+
 	<script>
 		const region = 'US';
 		let myViewer = null;
@@ -75,8 +78,8 @@
 
 			constructor(div, urn, getAccessToken, region = undefined, endpoint = undefined) {
 				urn =
-				// Single Model
-				pier9.urn;
+					// Single Model
+					pier9.urn;
 				//pier9;
 				//bauma;
 				//specoffice.urn;
@@ -104,6 +107,83 @@
 						//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
 					},
 				]);
+				this.configureUI({
+					leftToolbar: {
+						isVertical: true,
+						docking: 'left', // top / bottom / right
+						leftGroup1: [{
+								id: 'mybutton1',
+								iconClass: ['fa', 'fa-fire'],
+								tooltip: 'my button 1',
+								onClick: (evt) => this.fireButton(evt)
+							},
+							{
+								id: 'mybutton5',
+								iconClass: ['fa', 'fa-fighter-jet'],
+								tooltip: 'my button 5',
+								onClick: (evt) => this.fighterJetButon(evt)
+							},
+						],
+					},
+				});
+			}
+
+			async fireButton(evt) {
+				console.log(evt);
+				let ext1 = this.viewer.getExtension('Autodesk.MyExtension1') || await this.viewer.loadExtension('Autodesk.MyExtension1');
+				ext1.getPanel();
+
+			}
+
+			async fighterJetButon(evt) {
+				console.log(evt);
+				//let ext2 = this.viewer.getExtension('Autodesk.MyExtension2') || await this.viewer.loadExtension('Autodesk.MyExtension2');
+				//ext2.getPanel();
+				//let result = this.viewer.unloadDocumentNode(manifestNode: any/*BubbleNode*/);
+
+				// const _conf = this.viewer.config;
+				// this.viewer.tearDown();
+				// this.viewer.setUp(_conf);
+				
+
+				Autodesk.Viewing.Document.load(
+					'urn:' + bauma.urn,
+					(doc) => {
+						const viewable = doc.getRoot().getDefaultGeometry();
+						let options = {
+							preserveView: false,
+							keepCurrentModels: false
+						};
+						this.viewer.loadDocumentNode(doc, viewable, options);
+					},
+					(code) => console.error(`Could not load document (${code}).`)
+				);
+
+			}
+
+			onExtensionActivated(extensionInfo) {
+				console.log('onExtensionActivated', extensionInfo);
+			}
+			onExtensionDeactivated(extensionInfo) {
+				console.log('onExtensionDeactivated', extensionInfo);
+			}
+			onExtensionLoaded(extensionInfo) {
+				console.log('onExtensionLoaded', extensionInfo);
+			}
+			onExtensionPreActivated(extensionInfo) {
+				console.log('onExtensionPreActivated', extensionInfo);
+			}
+			onExtensionPreDeactivated(extensionInfo) {
+				console.log('onExtensionPreDeactivated', extensionInfo);
+			}
+			onExtensionPreLoaded(extensionInfo) {
+				console.log('onExtensionPreLoaded', extensionInfo);
+			}
+			onExtensionPreUnloaded(extensionInfo) {
+				console.log('onExtensionPreUnloaded', extensionInfo);
+			}
+			onExtensionUnloaded(extensionInfo) {
+				console.log('onExtensionUnloaded', extensionInfo);
 			}
 
 		}

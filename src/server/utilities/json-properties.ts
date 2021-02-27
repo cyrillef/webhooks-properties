@@ -341,164 +341,49 @@ export class JsonProperties {
 		return (roots);
 	}
 
-	public buildTree(nodeId: number, keepRef: boolean = false): any {
+	public buildFullTree(nodeId: number, keepRef: boolean = false): any {
 		const node: any = this.read(nodeId, false);
-		let result: any = {
+		let result: any = keepRef ? node : {
 			objectid: nodeId,
 			name: node.name,
 			//objects: [],
 		};
-		if (keepRef)
-			result = node;
 		if (!node.properties.__internal__.child)
 			return (result);
 		if (typeof node.properties.__internal__.child === 'number' )
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildTree(id, keepRef));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, keepRef));
 		return (result);
 	}
 
+	public buildTree(nodeIds: number[], keepRef: boolean = false): any {
+		const nodes: any = {};
+		let rootNode: any = null;
 
+		const traverseReverseNodes = (nodeId: number, keepRef_: boolean = false): any => {
+			const node: any = this.read(nodeId, false);
+			const result: any = keepRef_ ? node : {
+				objectid: nodeId,
+				name: node.name,
+				//objects: [],
+			};
+			nodes[nodeId] = result;
+			const parentId = node.properties.__internal__ && node.properties.__internal__.parent;
+			if (!parentId)
+				return (rootNode = result);
+			
+			const parentNode: any = nodes.hasOwnProperty(parentId) ? nodes[parentId] : traverseReverseNodes(parentId, keepRef_);
+			if (!parentNode.objects)
+				parentNode.objects = [];
+			parentNode.objects.push(result);
+			return (result);
+		};
 
-
-
-
-	// public enumObjects(cb: (id: number) => boolean, fromId?: number, toId?: number): void {
-	// 	// For a given id, the range in _avs is specified by [offsets[id], _offsets[id+1]].
-	// 	// The last element in _offsets is just the range end of the final range.
-	// 	const idCount = this.idMax;
-
-	// 	if (typeof fromId === 'number')
-	// 		fromId = Math.max(fromId, 1);
-	// 	else
-	// 		fromId = 1;
-	// 	if (typeof toId === 'number')
-	// 		toId = Math.min(idCount, toId);
-	// 	else
-	// 		toId = idCount;
-
-	// 	for (let id = fromId; id < toId; id++) {
-	// 		if (!cb(id))
-	// 			break;
-	// 	}
-	// }
-
-	// public enumObjectProperties(dbId: number, cb: (attrId: number, valId: number) => boolean): void {
-	// 	// v2 variable length encoding. Offsets point into delta+varint encoded a-v pairs per object
-	// 	let offset = this.offs[dbId];
-	// 	const propEnd = this.offs[dbId + 1];
-	// 	let buf = this.avs;
-
-	// 	let a = 0;
-	// 	while (offset < propEnd) {
-	// 		// Inlined version of readVarint
-	// 		let b = buf[offset++];
-	// 		let value = b & 0x7f;
-	// 		let shiftBy = 7;
-	// 		while (b & 0x80) {
-	// 			b = buf[offset++];
-	// 			value |= (b & 0x7f) << shiftBy;
-	// 			shiftBy += 7;
-	// 		}
-
-	// 		// attribute ID is delta encoded from the previously seen attribute ID, add that back in
-	// 		a += value;
-
-	// 		// Inlined version of readVarint
-	// 		b = buf[offset++];
-	// 		value = b & 0x7f;
-	// 		shiftBy = 7;
-	// 		while (b & 0x80) {
-	// 			b = buf[offset++];
-	// 			value |= (b & 0x7f) << shiftBy;
-	// 			shiftBy += 7;
-	// 		}
-
-	// 		if (!cb(a, value))
-	// 			break;
-	// 	}
-	// }
-
-	// public getAttrValue(attrId: number, valId: number, integerHint: boolean) {
-	// 	const attr = this.attrs[attrId];
-	// 	if (attr[6] & AttributeFlags.afDirectStorage) {
-	// 		if (attr[2] === AttributeType.DbKey) {
-	// 			//db keys are stored directly in the EAV triplet
-	// 			return (valId);
-	// 		}/* else if (attr.dataType === AttributeType.Integer) {
-    //             return (this.ints.get(this.ints.indexToPointer(valId)));
-    //         } else if (attr.dataType === AttributeType.Float) {
-    //             return (this.floats.getf(this.floats.indexToPointer(valId)));
-    //         }*/
-	// 	}
-	// 	return (integerHint ? this.getIntValueAt(valId) : this.getValueAt(valId));
-	// }
-
-	// public getValueAt(valId: number): any {
-	// 	return (0); //return subBlobToJson(_valuesBlob, _valuesOffsets[valId]);
-	// };
-
-	// public getIntValueAt(valId: number): any {
-	// 	return (0); //subBlobToJsonInt(_valuesBlob, _valuesOffsets[valId]);
-	// }
-
-	// private processedIds: any = {};
-	// private cyclesCount: number = 0;
-
-	// Builds a tree of nodes according to the parent/child hierarchy
-	// stored in the property database, starting at the node with the given dbId
-	// public buildObjectTree(rootId: number,
-	// 	// fragToDbId, //array of fragId->dbId lookup
-	// 	// maxDepth, /* returns max tree depth */
-	// 	// nodeStorage
-	// ) {
-	// 	// Build reverse lookup for dbId->fragId
-	// 	// var dbToFragId;
-	// 	// if (fragToDbId) {
-	// 	// 	dbToFragId = buildDbIdToFragMap(fragToDbId);
-	// 	// }
-
-	// 	this.processedIds = {};
-	// 	this.cyclesCount = 0;
-
-	// 	// Call recursive implementation
-	// 	let ret = this.buildObjectTreeRec(rootId, 0, 0);
-	// 	if (this.cyclesCount > 0)
-	// 		console.warn('Property database integrity not guaranteed (' + this.cyclesCount + ').');
-
-	// 	this.processedIds = null;
-	// 	return (ret);
-	// }
-
-	// Recursive helper for buildObjectTree
-	// private buildObjectTreeRec(dbId: number, parentId: number, depth: number): number {
-	// 	// Check for cycles in the tree. There shouldn't be any cycles in the tree...
-	// 	if (this.processedIds[dbId]) {
-	// 		this.cyclesCount++;
-	// 		return (0);
-	// 	}
-
-	// 	this.processedIds[dbId] = parentId || dbId;
-	// 	let node: any = { dbId: dbId };
-	// 	//let children = this.getNodeNameAndChildren(node);
-	// 	const childrenIds = [];
-
-	// 	if (children) {
-	// 		for (let j = 0; j < children.length; j++) {
-	// 			const childHasChildren = this.buildObjectTreeRec(children[j].dbId, dbId, depth + 1);
-	// 			// For display purposes, prune children that are leafs without graphics and add the rest to the node
-	// 			if (childHasChildren)
-	// 				childrenIds.push(children[j].dbId);
-	// 		}
-	// 	}
-
-	// 	// Skip nodes that contain neither children nor any fragments
-	// 	if (childrenIds.length)
-	// 		nodeStorage.setNode(dbId, parentId, node.name, JsonProperties.NODE_TYPE_ASSEMBLY, childrenIds);
-
-
-	// 	return (childrenIds.length);
-	// }
+		nodeIds.forEach((nodeId: number): void => {
+			const node: any = traverseReverseNodes(nodeId, keepRef);
+		});
+		return (rootNode);
+	}
 
 }
 

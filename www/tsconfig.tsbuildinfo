@@ -157,8 +157,13 @@
         "affectsGlobalScope": true
       },
       "../src/client/js/main.ts": {
-        "version": "e0aca26c4951342559b93684f846d4a7543349c564883977ef1905bda277a780",
+        "version": "d29c69abf68eb88bb476638d4a8ed6e294aefaeaefabc54dc52c7fbfd104e08b",
         "signature": "098a4bad31f21f51f15b2544e1bbad4f1b074b6c49f650e1cd6eed5dcabcb903",
+        "affectsGlobalScope": true
+      },
+      "../src/client/js/wolfgang-ext1.ts": {
+        "version": "36d2d017b26e065629944509f5891ffdade1ca26b9024cac3dabc95c1f6d2c07",
+        "signature": "0e3031db319777b2fa71788a46acb021c75ef1096ef6fa13c5d179b703b2832f",
         "affectsGlobalScope": true
       },
       "../node_modules/@types/node/globals.d.ts": {
@@ -396,6 +401,11 @@
         "signature": "744e6430bafc6f39f66c4fc1e6a0d8c9551260ffd1782aa7e3f5166ac6aa1f86",
         "affectsGlobalScope": false
       },
+      "../node_modules/@types/adm-zip/index.d.ts": {
+        "version": "d88f34246174a6c685a172ae3cfc26f69e4adf35d17b5a6b61e7a4d1585db681",
+        "signature": "d88f34246174a6c685a172ae3cfc26f69e4adf35d17b5a6b61e7a4d1585db681",
+        "affectsGlobalScope": false
+      },
       "../node_modules/@types/connect/index.d.ts": {
         "version": "81c14b89fa607b86dd726e2e3e91360cf8155ce97468404324d404a5bd65b2eb",
         "signature": "81c14b89fa607b86dd726e2e3e91360cf8155ce97468404324d404a5bd65b2eb",
@@ -440,6 +450,11 @@
         "version": "12509b418cf3a93cf601026f9a82c496da31e355cd30b10bdd46c9e50a3e81c5",
         "signature": "12509b418cf3a93cf601026f9a82c496da31e355cd30b10bdd46c9e50a3e81c5",
         "affectsGlobalScope": true
+      },
+      "../node_modules/@types/cookiejar/index.d.ts": {
+        "version": "8d48b8f8a377ade8dd1f000625bc276eea067f2529cc9cafdf082d17142107d6",
+        "signature": "8d48b8f8a377ade8dd1f000625bc276eea067f2529cc9cafdf082d17142107d6",
+        "affectsGlobalScope": false
       },
       "../node_modules/@types/ejs/index.d.ts": {
         "version": "3e1884edd5ad7e5c6f8e900b767dfabc64db4a3588643e72535fa948cddf52cd",
@@ -647,8 +662,8 @@
         "affectsGlobalScope": false
       },
       "../node_modules/@types/forge-viewer/index.d.ts": {
-        "version": "a3fc7e6acade751d1088c1c2779417b1b996fc5f6814862911420c5b22cc20ea",
-        "signature": "a3fc7e6acade751d1088c1c2779417b1b996fc5f6814862911420c5b22cc20ea",
+        "version": "51a15afc258e1481b2ec2d8c668b11ca12c55427227c02615a5ea79b0e3e48c3",
+        "signature": "51a15afc258e1481b2ec2d8c668b11ca12c55427227c02615a5ea79b0e3e48c3",
         "affectsGlobalScope": true
       },
       "../node_modules/@types/minimatch/index.d.ts": {
@@ -680,6 +695,11 @@
         "version": "8fc0de90c7515086f70e37acc0243698ef803760badd707d6b98a9cdea396134",
         "signature": "8fc0de90c7515086f70e37acc0243698ef803760badd707d6b98a9cdea396134",
         "affectsGlobalScope": false
+      },
+      "../node_modules/@types/superagent/index.d.ts": {
+        "version": "022bb15c2fb40bb465a4511476b1796b9977e2bab463ffd8b2b3d1d1a56b00d1",
+        "signature": "022bb15c2fb40bb465a4511476b1796b9977e2bab463ffd8b2b3d1d1a56b00d1",
+        "affectsGlobalScope": false
       }
     },
     "options": {
@@ -697,6 +717,9 @@
       "configFilePath": "../src/client/tsconfig.json"
     },
     "referencedMap": {
+      "../node_modules/@types/adm-zip/index.d.ts": [
+        "../node_modules/@types/node/index.d.ts"
+      ],
       "../node_modules/@types/body-parser/index.d.ts": [
         "../node_modules/@types/connect/index.d.ts",
         "../node_modules/@types/node/http.d.ts",
@@ -921,6 +944,13 @@
         "../node_modules/@types/node/http.d.ts",
         "../node_modules/@types/node/https.d.ts",
         "../node_modules/@types/node/index.d.ts"
+      ],
+      "../node_modules/@types/superagent/index.d.ts": [
+        "../node_modules/@types/cookiejar/index.d.ts",
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/http.d.ts",
+        "../node_modules/@types/node/index.d.ts",
+        "../node_modules/@types/node/stream.d.ts"
       ],
       "../node_modules/@types/three/index.d.ts": [
         "../node_modules/@types/three/three-canvasrenderer.d.ts",
@@ -1085,6 +1115,9 @@
       ]
     },
     "exportedModulesMap": {
+      "../node_modules/@types/adm-zip/index.d.ts": [
+        "../node_modules/@types/node/index.d.ts"
+      ],
       "../node_modules/@types/body-parser/index.d.ts": [
         "../node_modules/@types/connect/index.d.ts",
         "../node_modules/@types/node/http.d.ts",
@@ -1309,6 +1342,13 @@
         "../node_modules/@types/node/http.d.ts",
         "../node_modules/@types/node/https.d.ts",
         "../node_modules/@types/node/index.d.ts"
+      ],
+      "../node_modules/@types/superagent/index.d.ts": [
+        "../node_modules/@types/cookiejar/index.d.ts",
+        "../node_modules/@types/node/fs.d.ts",
+        "../node_modules/@types/node/http.d.ts",
+        "../node_modules/@types/node/index.d.ts",
+        "../node_modules/@types/node/stream.d.ts"
       ],
       "../node_modules/@types/three/index.d.ts": [
         "../node_modules/@types/three/three-canvasrenderer.d.ts",
@@ -1504,9 +1544,11 @@
       "../../../.nvm/versions/node/v15.3.0/lib/node_modules/typescript/lib/lib.esnext.intl.d.ts",
       "../../../.nvm/versions/node/v15.3.0/lib/node_modules/typescript/lib/lib.scripthost.d.ts",
       "../../../.nvm/versions/node/v15.3.0/lib/node_modules/typescript/lib/lib.webworker.importscripts.d.ts",
+      "../node_modules/@types/adm-zip/index.d.ts",
       "../node_modules/@types/body-parser/index.d.ts",
       "../node_modules/@types/compression/index.d.ts",
       "../node_modules/@types/connect/index.d.ts",
+      "../node_modules/@types/cookiejar/index.d.ts",
       "../node_modules/@types/ejs/index.d.ts",
       "../node_modules/@types/express-serve-static-core/index.d.ts",
       "../node_modules/@types/express/index.d.ts",
@@ -1568,6 +1610,7 @@
       "../node_modules/@types/rimraf/index.d.ts",
       "../node_modules/@types/serve-static/index.d.ts",
       "../node_modules/@types/spdy/index.d.ts",
+      "../node_modules/@types/superagent/index.d.ts",
       "../node_modules/@types/three/index.d.ts",
       "../node_modules/@types/three/three-canvasrenderer.d.ts",
       "../node_modules/@types/three/three-colladaloader.d.ts",
@@ -1608,7 +1651,8 @@
       "../node_modules/@types/three/three-vrcontrols.d.ts",
       "../node_modules/@types/three/three-vreffect.d.ts",
       "../node_modules/moment/ts3.1-typings/moment.d.ts",
-      "../src/client/js/main.ts"
+      "../src/client/js/main.ts",
+      "../src/client/js/wolfgang-ext1.ts"
     ]
   },
   "version": "4.1.3"

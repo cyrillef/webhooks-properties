@@ -515,10 +515,10 @@ class LocalViewer {
 				self.viewer.loadDocumentNode(doc, viewable, options)
 					.then(resolve)
 					.catch(reject);
-			}
+			};
 			const onDocumentLoadFailure = (code: any): void => {
 				reject(`Could not load document (${code}).`);
-			}
+			};
 
 			if (!/^(urn|https?):.*$/g.test(urn) && urn[0] !== '/')
 				urn = 'urn:' + urn;
