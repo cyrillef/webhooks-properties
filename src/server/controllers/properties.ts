@@ -31,48 +31,6 @@ const _fsExists = util.promisify(_fs.exists);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
-// public static objects: any = {
-// 	master: { // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
-// 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTWFzdGVyJTIwLSUyMFBsYW50M0QuZHdn',
-// 		guids: [
-// 			'b7bb12b1-f832-5005-ca30-a0e6b00f9da5', // 2d
-// 			'e30bd031-d13a-a976-9153-78100829986a', // 3d
-// 		],
-// 		objid: 24,
-// 		objids: [/*1st level*/24, /*2nd level*/44735, /*3rd level*/481, 324, 300, 195, 199, 504, 656, 494],
-// 	},
-//	pier9: { // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
-//		ur: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
-// 		guids: [
-// 			'ee578c34-41d4-83e7-fd72-1c18a453c3b9', // 3d role: "graphics", mime: "application/autodesk-svf", type: "resource"
-//			//'ee578c34-41d4-83e7-fd72-1c18a453c3b9', // 3d role: "graphics", mime: "application/autodesk-svf2", type: "resource"
-// 			'6fda4fe6-0ceb-4525-a86d-20be4000dab5', // 2d role: "graphics", mime: "application/autodesk-f2d", type: "resource",
-// 			'e67f2035-8010-3ff5-e399-b9c9217c2366', // 2d role: "graphics", mime: "application/autodesk-f2d", type: "resource",
-// 		],
-// 		objid: 1,
-// 		objids: [
-//			1,
-//				2824,
-//					2825,
-//						2827,
-//							2828, 2829, 2830, 2831, 2968,
-//					2860,
-//						2971,
-//							2972,
-//								2977, 2980, ...
-//				...
-//		],
-//	},
-// 	dxf: { // rOlB7GtsAOmuvm6XqPAILp83ARMymAfL
-// 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIxL2FyYWIuZHhm',
-// 		guids: [
-// 			'115d2418-de8a-46bf-852a-b23ef9338de2', // 2d
-// 		],
-// 		objid: 109,
-// 		objids: [/*1st level*/109, /*2nd level*/19451, 19450, /*3rd level -1*/4099, 4102, 4103, 254, /*3rd level -2*/253, 4093, 4094, 4095], // and many more
-// 	},
-// };
-
 class PropertiesController implements Controller {
 
 	public pathTree: string = '/tree';
