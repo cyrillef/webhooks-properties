@@ -176,21 +176,14 @@ class PropertiesController implements Controller {
 			await propsDb.load(dbBuffers);
 
 			if (!guid || guid === '')
-				guid = dbBuffers.guids[0];
-			if (!dbBuffers.hasOwnProperty(guid))
-				return (response.status(404).end());
+				guid = Object.keys(dbBuffers.guids)[0];
+			if (!dbBuffers.guids.hasOwnProperty(guid))
+				//return (response.status(404).end());
+				guid = Object.keys(dbBuffers.guids)[0];
+			const viewable_in: string = dbBuffers.guids[guid];
 
 			// const rootIds: number[] = propsDb.findRootNodes();
-			// let trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId, true));
-			// for (let i = 0; i < trees.length; i++) {
-			// 	if (trees[i].objects) {
-			// 		trees = [...trees, ...trees[i].objects];
-			// 		delete trees[i].objects;
-			// 	}
-			// }
-			// trees.map((elt: any): any => delete elt.properties.__internal__);
-
-			let trees: any[] = [propsDb.buildTree(dbBuffers[guid], true)];
+			let trees: any[] = [propsDb.buildTree(viewable_in, true)];
 			for (let i = 0; i < trees.length; i++) {
 				if (trees[i].objects) {
 					trees = [...trees, ...trees[i].objects];
@@ -254,21 +247,38 @@ class PropertiesController implements Controller {
 			const urn: string = request.params.urn || '';
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
+			const withProperties: boolean = (request.query.properties as string || 'false') === 'true';
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb = new JsonProperties();
 			await propsDb.load(dbBuffers);
 
 			if (!guid || guid === '')
-				guid = dbBuffers.guids[0];
-			if (!dbBuffers.hasOwnProperty(guid))
+				guid = Object.keys(dbBuffers.guids)[0];
+			if (!dbBuffers.guids.hasOwnProperty(guid))
 				//return (response.status(404).end());
-				guid = dbBuffers.guids[0];
+				guid = Object.keys(dbBuffers.guids)[0];
+			const viewable_in: string = dbBuffers.guids[guid];
 
 			// const rootIds: number[] = propsDb.findRootNodes();
 			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));
+			const tree: any = propsDb.buildTree(viewable_in, withProperties);
 
-			const tree: any = propsDb.buildTree(dbBuffers[guid], false);
+			if (withProperties) {
+				const regex = new RegExp('^__(\\w+)__$');
+
+				const cleanup = (elt: any): void => {
+					if (elt.objects)
+						elt.objects.map((elt: any): void => cleanup(elt));
+					const keys = Object.keys(elt.properties);
+					keys
+						.filter((key: string): boolean => regex.test(key))
+						.map((key: string): any => delete elt.properties[key]);
+					delete elt.properties.Other;
+				};
+
+				cleanup(tree);
+			}
 
 			response.json({
 				data: {

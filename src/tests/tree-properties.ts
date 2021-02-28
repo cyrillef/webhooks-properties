@@ -19,6 +19,11 @@ import * as superagent from 'superagent';
 import * as moment from 'moment';
 import * as Forge from 'forge-apis';
 import AppSettings from './app-settings';
+import * as util from 'util';
+import * as _fs from 'fs';
+import * as _path from 'path';
+
+const _fsWriteFile = util.promisify(_fs.writeFile);
 
 (Object as any).equals = (x: any, y: any) => {
 	if (x === y)
@@ -75,7 +80,6 @@ class TreePropertiesTestsController {
 				'b7bb12b1-f832-5005-ca30-a0e6b00f9da5', // 2d
 			],
 			objid: 24,
-			objids: [/*1st level*/24, /*2nd level*/44735, /*3rd level*/481, 324, 300, 195, 199, 504, 656, 494],
 		},
 		pier9: { // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
 			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
@@ -86,18 +90,6 @@ class TreePropertiesTestsController {
 				'e67f2035-8010-3ff5-e399-b9c9217c2366', // 2d role: "graphics", mime: "application/autodesk-f2d", type: "resource",
 			],
 			objid: 1,
-			objids: [
-				1,
-				2824,
-				2825,
-				2827,
-				2828, 2829, 2830, 2831, 2968,
-				2860,
-				2971,
-				2972,
-				2977, 2980, //...
-				//...
-			],
 		},
 		dxf: { // rOlB7GtsAOmuvm6XqPAILp83ARMymAfL
 			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIxL2FyYWIuZHhm',
@@ -105,21 +97,17 @@ class TreePropertiesTestsController {
 				'115d2418-de8a-46bf-852a-b23ef9338de2', // 2d
 			],
 			objid: 109,
-			objids: [/*1st level*/109, /*2nd level*/19451, 19450, /*3rd level -1*/4099, 4102, 4103, 254, /*3rd level -2*/253, 4093, 4094, 4095], // and many more
 		},
 	};
 
-	private oauth: Forge.AuthClientTwoLegged = null;
-
-	public constructor(oauth: Forge.AuthClientTwoLegged) {
-		this.oauth = oauth;
+	public constructor() {
 	}
 
 	private static sleep(milliseconds: number): Promise<any> {
 		return (new Promise((resolve: (value?: any) => void) => setTimeout(resolve, milliseconds)));
 	}
 
-	private async request(url: string, message: string): Promise<void> {
+	private async request(url: string, message: string, fn?: string): Promise<void> {
 		try {
 			const jobs: Promise<any>[] = [
 				superagent('GET', url),
@@ -128,53 +116,52 @@ class TreePropertiesTestsController {
 			const results: any[] = await Promise.all(jobs);
 			const obj0 = JSON.parse(results[0].text);
 			const obj1 = JSON.parse(results[1].text);
+
+			obj1.data.objects[0].objects = obj1.data.objects[0].objects.filter ((elt: any): boolean => {
+				return (
+					elt.name !== 'Schedule Graphics' 
+					&& elt.name !== 'Title Blocks' 
+					&& elt.name !== ''
+
+					&& elt.name !== 'Survey Point'
+					&& elt.name !== 'Project Base Point'
+				);
+			});
+
 			//if (JSON.stringify(obj0) === JSON.stringify(obj1))
 			if ((Object as any).equals(obj0, obj1))
 				console.log(`${message} identical`);
 			else
 				console.warn(`${message} different`);
+
+			if ( fn) {
+				await _fsWriteFile(`${fn}.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
+				await _fsWriteFile(`${fn}-db.json`, Buffer.from(JSON.stringify(obj1, null, 4)));
+			}
 		} catch (ex) {
 			console.error(`failed - ${ex.message}`);
 		}
 	}
 
-	public async test1(): Promise<void> {
-		// const self = this;
-		// const oauth: Forge.AuthClientTwoLegged = this.oauth;
-		// const token: Forge.AuthToken = oauth.getCredentials();
-		// const api: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, Forge.DerivativesApi.RegionEnum.US);
-
+	public async pier9Default(index: number = 0): Promise<void> {
 		const urn: string = TreePropertiesTestsController.objects.pier9.urn;
-		await this.request(`http://localhost:3001/tree/${urn}`, 'default tree');
+		await this.request(`http://localhost:3001/tree/${urn}`, 'tree ${urn}', _path.resolve(__dirname, `tree-${urn}`));
 	}
 
-	public async test(): Promise<void> {
+	public async pier9(index: number = 0): Promise<void> {
 		const urn: string = TreePropertiesTestsController.objects.pier9.urn;
-		const guid: string = TreePropertiesTestsController.objects.pier9.guids[1];
-		await this.request(`http://localhost:3001/tree/${urn}/guids/${guid}`, 'tree guid[1]');
+		const guid: string = TreePropertiesTestsController.objects.pier9.guids[index];
+		await this.request(`http://localhost:3001/tree/${urn}/guids/${guid}`, `tree ${urn} ${guid}`, _path.resolve(__dirname, `tree-${urn}-${guid}`));
 	}
 
 }
 
-const run = async (fctName: string, profile: string) => {
-	const internalClient: Forge.AuthClientTwoLegged = new Forge.AuthClientTwoLegged(
-		AppSettings.main.forgeClientId,
-		AppSettings.main.forgeClientSecret,
-		AppSettings.main.forgeScope.internal.split(' ').map((elt: string) => (elt as Forge.Scope)),
-		true
-	);
+const run = async (fctName: string, index: string) => {
+	const Index: number = parseInt(index);
 
-	const authenticate = async (): Promise<void> => {
-		await internalClient.authenticate();
-		setTimeout(authenticate, (internalClient.getCredentials().expires_in - 300) * 100); // -5min
-	};
-	await authenticate();
-
-	const controller: TreePropertiesTestsController = new TreePropertiesTestsController(internalClient);
-	//await controller.test();
-
+	const controller: TreePropertiesTestsController = new TreePropertiesTestsController();
 	const fct = (controller as any)[fctName];
-	await (fct.bind(controller))();
+	await (fct.bind(controller))(Index);
 
 	process.exit(0);
 };
@@ -182,4 +169,4 @@ const run = async (fctName: string, profile: string) => {
 //console.log(process.argv);
 if (process.argv.length < 4)
 	process.exit(1);
-run(process.argv[2], process.argv[3]);
+run(process.argv[2], process.argv[3] || '0');

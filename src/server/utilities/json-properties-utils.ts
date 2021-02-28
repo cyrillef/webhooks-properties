@@ -97,9 +97,9 @@ class JsonPropertiesUtils {
 
 				const guids: string[] = JSON.parse((await _fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
-				jobs = guids.map((guid: string): Promise<Buffer> => _fsReadFile(_path.resolve(self.cachePath, urn, `${guid}.pack.idmap`), null));
-				results = await Promise.all(jobs);
-				guids.map((guid: string, index: number): any => self.cache[urn][guid] = JSON.parse(results[index].toString('utf8')));
+				// jobs = guids.map((guid: string): Promise<Buffer> => _fsReadFile(_path.resolve(self.cachePath, urn, `${guid}.pack.idmap`), null));
+				// results = await Promise.all(jobs);
+				// guids.map((guid: string, index: number): any => self.cache[urn][guid] = JSON.parse(results[index].toString('utf8')));
 
 				return (this.cache[urn]);
 			}
@@ -173,24 +173,29 @@ class JsonPropertiesUtils {
 				.flat();
 			const srcEntries = [...svfEntries, /*...svf2Entries,*/ ...f2dEntries];
 
-			paths = srcEntries.map((fn: any): string => fn.urn);
-			jobs = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
-			results = await Promise.all(jobs);
-			const dataGuids: string[] = [];
-			results.map((elt: Forge.ApiResponse, index: number): any => {
-				const ext: string = _path.extname(srcEntries[index].urn);
-				const fn: string = `${srcEntries[index].guid}${ext}`;
-				_fsWriteFile(_path.resolve(self.cachePath, urn, fn), elt.body);
-				derivativePath = paths[index].substring(0, paths[index].lastIndexOf('/') + 1);
-				_fsWriteFile(_path.resolve(self.cachePath, urn, fn + '.txt'), derivativePath);
-
-				if (ext === '.svf') {
-					self.getSvfFragmentList(urn, srcEntries[index].guid, derivativePath, elt.body, region);
-					dataGuids.push(srcEntries[index].guid);
-				}
-			});
-			_fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+			const dataGuids: any = {};
+			srcEntries.map((entry: any): any => dataGuids[entry.guid] = entry.viewableID);
 			this.cache[urn].guids = dataGuids;
+			_fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+
+			// paths = srcEntries.map((fn: any): string => fn.urn);
+			// jobs = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
+			// results = await Promise.all(jobs);
+			// const dataGuids: string[] = [];
+			// results.map((elt: Forge.ApiResponse, index: number): any => {
+			// 	const ext: string = _path.extname(srcEntries[index].urn);
+			// 	const fn: string = `${srcEntries[index].guid}${ext}`;
+			// 	_fsWriteFile(_path.resolve(self.cachePath, urn, fn), elt.body);
+			// 	derivativePath = paths[index].substring(0, paths[index].lastIndexOf('/') + 1);
+			// 	_fsWriteFile(_path.resolve(self.cachePath, urn, fn + '.txt'), derivativePath);
+
+			// 	if (ext === '.svf') {
+			// 		self.getSvfFragmentList(urn, srcEntries[index].guid, derivativePath, elt.body, region);
+			// 		dataGuids.push(srcEntries[index].guid);
+			// 	}
+			// });
+			// _fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+			// this.cache[urn].guids = dataGuids;
 
 			return (this.cache[urn]);
 		} catch (ex) {

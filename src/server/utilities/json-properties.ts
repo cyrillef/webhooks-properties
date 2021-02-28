@@ -268,7 +268,7 @@ export class JsonProperties {
 				else
 					value = Number.parseInt(this.vals[this.avs[valueId + 1]]);
 				//console.log(`AttributeType.DbKey => ${value}`);
-				break;			
+				break;
 			case AttributeType.DateTime: // ISO 8601 date
 				value = new Date(this.vals[this.avs[valueId + 1]]);
 				break;
@@ -329,10 +329,10 @@ export class JsonProperties {
 
 	public findRootNodes(): number[] {
 		const roots: number[] = [];
-		for (let dbId = 1; dbId < this.idMax; dbId++ ) {
+		for (let dbId = 1; dbId < this.idMax; dbId++) {
 			const node: any = this.read(dbId, false);
 			if (
-				   node.name && node.name !== ''
+				node.name && node.name !== ''
 				&& !node.properties.__internal__.parent
 				&& node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/
 			)
@@ -350,13 +350,58 @@ export class JsonProperties {
 		};
 		if (!node.properties.__internal__.child)
 			return (result);
-		if (typeof node.properties.__internal__.child === 'number' )
+		if (typeof node.properties.__internal__.child === 'number')
 			node.properties.__internal__.child = [node.properties.__internal__.child];
 		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, keepRef));
 		return (result);
 	}
 
-	public buildTree(nodeIds: number[], keepRef: boolean = false): any {
+	public buildTree(viewable_in: string, keepRef: boolean = false): any {
+		const nodeIds: number[] = this.findRootNodes();
+		const node: any = this.read(nodeIds[0], false);
+		let result: any = keepRef ? node : {
+			objectid: nodeIds[0],
+			name: node.name,
+			//objects: [],
+		};
+		if (!node.properties.__internal__.child)
+			return (result);
+		if (typeof node.properties.__internal__.child === 'number')
+			node.properties.__internal__.child = [node.properties.__internal__.child];
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, true));
+
+		const isIn = (node: any): boolean => {
+			if (node.objects)
+				node.objects = node.objects.filter((elt: any): boolean => isIn(elt));
+			if (node.objects && node.objects.length > 0) {
+				if (!keepRef) {
+					delete node.properties;
+					delete node.externalId;
+				}
+				return (true);
+			}
+			delete node.objects;
+			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in) {
+				if (!keepRef) {
+					delete node.properties;
+					delete node.externalId;
+				}
+				return (false);
+			}
+			const cmp: boolean = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
+			if (!keepRef) {
+				delete node.properties;
+				delete node.externalId;
+			}
+			return (cmp);
+		};
+
+		isIn(result);
+
+		return (result);
+	}
+
+	public buildReverseTree(nodeIds: number[], keepRef: boolean = false): any {
 		const nodes: any = {};
 		let rootNode: any = null;
 
@@ -371,7 +416,7 @@ export class JsonProperties {
 			const parentId = node.properties.__internal__ && node.properties.__internal__.parent;
 			if (!parentId)
 				return (rootNode = result);
-			
+
 			const parentNode: any = nodes.hasOwnProperty(parentId) ? nodes[parentId] : traverseReverseNodes(parentId, keepRef_);
 			if (!parentNode.objects)
 				parentNode.objects = [];
