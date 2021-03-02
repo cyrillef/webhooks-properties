@@ -102,7 +102,7 @@ export class JsonProperties {
 		return (this.offs.length - 1);
 	}
 
-	private static jsonGzRoot(res: Buffer): Promise<any> {
+	public static jsonGzRoot(res: Buffer): Promise<any> {
 		return (new Promise((resolve: (value: any) => void, reject: (reason?: any) => void) => {
 			zlib.gunzip(res, (error: Error | null, result: Buffer): void => {
 				try {

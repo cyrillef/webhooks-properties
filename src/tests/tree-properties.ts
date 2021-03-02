@@ -105,8 +105,8 @@ class TreePropertiesTestsController {
 	private async request(url: string, message: string, fn?: string): Promise<void> {
 		try {
 			const jobs: Promise<any>[] = [
+				superagent('GET', url + '/forge'),
 				superagent('GET', url),
-				superagent('GET', url + '/db'),
 			];
 			const results: any[] = await Promise.all(jobs);
 			const obj0 = JSON.parse(results[0].text);
@@ -132,7 +132,7 @@ class TreePropertiesTestsController {
 				console.warn(`${message} different`, cmp.toString(4));
 
 			if (fn) {
-				await _fsWriteFile(`${fn}.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
+				await _fsWriteFile(`${fn}-forge.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
 				await _fsWriteFile(`${fn}-db.json`, Buffer.from(JSON.stringify(obj1, null, 4)));
 			}
 		} catch (ex) {
