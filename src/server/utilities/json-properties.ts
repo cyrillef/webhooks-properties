@@ -215,6 +215,10 @@ export class JsonProperties {
 			let value: string = this._readPropertyAsString(attr, i);
 			if (attr[AttributeFieldIndex.iUNIT] !== null)
 				value += ' ' + attr[AttributeFieldIndex.iUNIT];
+			try { value = value.trimEnd(); } catch (ex) {}
+
+			const isHidden = Number.parseInt(attr[AttributeFieldIndex.iFLAGS]) & 1;
+			// In theory should we should also mark as hidden if in parent, child, viewable or externalRef category
 
 			//result.properties [category] [key] =value ;
 			if (result.properties[category].hasOwnProperty(key)) {
@@ -301,7 +305,8 @@ export class JsonProperties {
 			case AttributeType.Double:
 			case AttributeType.Float:
 				const precision: number = Number.parseInt(attr[AttributeFieldIndex.iDISPLAYPRECISION]) || 3;
-				value = Number.parseFloat(this.vals[this.avs[valueId + 1]]).toFixed(precision);
+				//value = Number.parseFloat(this.vals[this.avs[valueId + 1]]).toFixed(precision);
+				value = Number.parseFloat(this.vals[this.avs[valueId + 1]]).toFixed(3);
 				break;
 			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
 				if (attr[AttributeFieldIndex.iFLAGS] & AttributeFlags.afDirectStorage)
