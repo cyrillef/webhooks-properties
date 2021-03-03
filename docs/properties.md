@@ -4,7 +4,9 @@ The propertyServer server exercises a workaround to the Forge Model Derivative A
 
 Currently limited to the SVF format.
 
-<div style="color: white; background-color: gray; padding: 10px; width: 100%;">GET /properties/:urn/details</div>
+<details>
+   <summary>GET /properties/:urn/details</summary>
+
 Returns information about the cached database.
 
 URI Parameters
@@ -38,6 +40,7 @@ Response - 200
   }
 }
 ```
+</details>
 
 <div style="color: white; background-color: gray; padding: 10px; width: 100%;">GET /properties/:urn/release</div>
 Deletes the cached database from the server.
