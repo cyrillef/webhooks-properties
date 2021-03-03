@@ -29,100 +29,16 @@ This sample exercises the Node.js engine with typescript to demonstrate the Forg
 
 ## Setup/Usage Instructions
 
-  1. Install [NodeJS](https://nodejs.org)
-  2. Download (fork, or clone) this project
-  3. Install Node.js dependency modules:
-
-     ```bash
-     npm install
-     ```
-
-  4. Request your consumer key/secret key from [https://forge.autodesk.com](https://forge.autodesk.com).
-  5. Set 2 environment variables FORGE_CLIENT_ID / FORGE_CLIENT_SECRET  
-     Mac OSX/Linux (Terminal)
-
-     ```bash
-     export FORGE_CLIENT_ID=_YOUR_FORGE_CLIENT_ID
-     export FORGE_CLIENT_SECRET=YOUR_FORGE_CLIENT_SECRET
-     ```
-
-     Windows (use **Node.js command line** from Start menu)
-
-     ```batch
-     set FORGE_CLIENT_ID=_YOUR_FORGE_CLIENT_ID
-     set FORGE_CLIENT_SECRET=YOUR_FORGE_CLIENT_SECRET
-     ```
-
-  6. Set an environment variable PORT (This is for running either BIM360 API or the Viewer)  
-     Mac OSX/Linux (Terminal)
-
-     ```bash
-     export PORT=YOUR_PORT_NUMBER
-     ```
-
-     Windows (use **Node.js command line** from Start menu)
-
-     ```batch
-     set PORT=YOUR_PORT_NUMBER
-     ```
-
-  7. **Note** for the 3 legged commands: while registering your keys, make sure that the callback you define for your
-     callback (or redirect_uri) match your localhost and PORT number.  
-     Default is: [http://localhost:3001/oauth](http://localhost:3001/oauth)  
-     Mac OSX/Linux (Terminal)
-
-     ```bash
-     export FORGE_CALLBACK=YOUR_FORGE_CALLBACK_URL
-     ```
-
-     Windows (use **Node.js command line** from Start menu)
-
-     ```batch
-     set FORGE_CALLBACK=YOUR_FORGE_CALLBACK_URL
-     ```
-
-  8. Provision your application key on the BIM360 application integration page. [Learn about provisioning](https://forge.autodesk.com/blog/bim-360-docs-provisioning-forge-apps).
-  9. Set an environement variable FORGE_WEBHOOKS  
-     Mac OSX/Linux (Terminal)
-
-     ```bash
-     export FORGE_WEBHOOKS=YOUR_FORGE_WEBHOOK_URL
-     ```
-
-     Windows (use *Node.js command line** from Start menu)
-
-     ```batch
-     set FORGE_WEBHOOKS=YOUR_FORGE_WEBHOOK_URL
-     ```
-
-  10. Go on the terminal and compile typescript code by running the command **tsc** from both /src/client and /src/server folders.
-
-**Note**: If you do not want to set environment variables, edit the src/server/server/app-settings.ts file and replace the placeholders by the values listed above.
+[Setup instructions](/docs/setup.md)
 
 ## Usage
 
+TBD
 ### Property Server
 
 The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble json.gz property files.
 
 [API documentation](docs/properties.md)
-
-## Personal Notes
-
-```bash
-npm install -g typescript
-npm install -g tslint
-npm init
-  src/start.ts
-npm install express express-session body-parser compression spdy moment ejs forge-apis --save
-npm install "@types/express" "@types/node" "@types/compression" "@types/moment" "@types/ejs" "@types/three" "@types/forge-apis" "@types/forge-viewer" --save-dev
-create .jshintignore
-create tsconfig.json
-  we defined '"watch": true' in tsconfig, go in terminal and type 'tsc'
-create tslint.json
-create a bin, src, www folders
-create a src/start.ts file
-```
 
 ---
 
