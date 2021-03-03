@@ -88,7 +88,7 @@ Returns a list of externalID from requested dbID.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - Lsit of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
 **Example**
 
@@ -215,7 +215,7 @@ Returns a list of properties for each object in an object tree for the default v
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - Lsit of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
 * keepinternals (boolean, optional) - Outputs internal references if true - default is false.
 
@@ -275,7 +275,7 @@ Returns a list of properties for each object in an object tree. Properties are r
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - Lsit of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
 * keepinternals (boolean, optional) - Outputs internal references if true - default is false.
 
