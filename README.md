@@ -105,7 +105,7 @@ This sample exercises the Node.js engine with typescript to demonstrate the Forg
 
 The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble json.gz property files.
 
-[API documentation](doc/properties.md)
+[API documentation](docs/properties.md)
 
 ## Personal Notes
 
