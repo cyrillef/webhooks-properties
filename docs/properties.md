@@ -88,7 +88,7 @@ Returns a list of externalID from requested dbID.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {number[], optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'. If missing returns all.
 
 **Example**
 

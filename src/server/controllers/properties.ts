@@ -15,21 +15,28 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
+import * as util from 'util';
+import * as _fs from 'fs';
+import * as _path from 'path';
 import { Request, Response, Router } from 'express';
-import Controller from '../interfaces/controller';
+import { graphql, buildSchema } from 'graphql';
 import * as Forge from 'forge-apis';
+import Controller from '../interfaces/controller';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import AppSettings from '../server/app-settings';
 import { JsonProperties, JsonPropertiesSources } from '../utilities/json-properties';
 import JsonPropertiesUtils from '../utilities/json-properties-utils';
 import ExpressApp from '../server/express-server';
-import * as util from 'util';
-import * as _fs from 'fs';
-import * as _path from 'path';
 
 const _fsExists = util.promisify(_fs.exists);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
+
+const propertiesSchema = buildSchema(`
+  type Query {
+    hello: String
+  }
+`);
 
 class PropertiesController implements Controller {
 
@@ -127,7 +134,7 @@ class PropertiesController implements Controller {
 			const urn: string = request.params.urn || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 
-			this.utils.clear (urn, true); // no need to await
+			this.utils.clear(urn, true); // no need to await
 
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
@@ -142,11 +149,13 @@ class PropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
-			const dbIds: number[] = PropertiesController.csv(request.query.ids as string); // csv format
-
 			// const propsDb = new JsonProperties();
 			// await propsDb.load(dbBuffers);
-			const propsDb: string[] = await JsonProperties.jsonGzRoot(dbBuffers.objects_ids)
+			const propsDb: string[] = await JsonProperties.jsonGzRoot(dbBuffers.objects_ids);
+
+			let dbIds: number[] = PropertiesController.csv(request.query.ids as string); // csv format
+			if (!dbIds || isNaN(dbIds[0]))
+				dbIds = Array.from({ length: propsDb.length - 1 }, (_, i) => i + 1);
 
 			const externalIds: { [index: number]: string } = {};
 			dbIds.map((id: number): any => externalIds[id] = propsDb[id]);
@@ -237,7 +246,7 @@ class PropertiesController implements Controller {
 			await propsDb.load(dbBuffers);
 
 			let trees: any[] = null;
-			if ((!guid || guid === '') && dbIds ) {
+			if ((!guid || guid === '') && dbIds) {
 				trees = dbIds.map((id: number): any => propsDb.read(id, keepHiddens, keepInternals));
 			} else {
 				if (!guid || guid === '')
