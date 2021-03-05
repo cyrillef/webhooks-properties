@@ -20,7 +20,7 @@ import { Request, Response } from 'express';
 import * as ForgeAPI from 'forge-apis';
 import AppSettings from './app-settings';
 
-class Forge2Legged {
+export class Forge2Legged {
 
 	public name: string;
 	public internalClient: ForgeAPI.AuthClientTwoLegged;

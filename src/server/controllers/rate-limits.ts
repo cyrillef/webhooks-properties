@@ -22,7 +22,7 @@ import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import ExpressApp from '../server/express-server';
 
-class RateLimitsTestsController implements Controller {
+export class RateLimitsTestsController implements Controller {
 
 	public static readonly DEFAULT_PROFILE: string = 'master';
 	public static readonly DEFAULT_GUID: number = 0;

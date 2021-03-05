@@ -57,7 +57,6 @@ enum AttributeFlags {
 	afDirectStorage = 1 << 2, // Attribute is not worth de-duplicating (e.g. vertex data or dbId reference)
 	afReadOnly = 1 << 3 // Attribute is read-only (used when writing back to the design model, in e.g. Revit)
 }
-
 export interface JsonPropertiesSources {
 	objects_offs: Buffer,
 	objects_avs: Buffer,
@@ -67,7 +66,6 @@ export interface JsonPropertiesSources {
 
 	[index: string]: any,
 }
-
 export class JsonProperties {
 
 	private isV2: boolean = false;

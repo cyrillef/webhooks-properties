@@ -19,7 +19,6 @@ import * as util from 'util';
 import * as _fs from 'fs';
 import * as _path from 'path';
 import { Request, Response, Router } from 'express';
-import { graphql, buildSchema } from 'graphql';
 import * as Forge from 'forge-apis';
 import Controller from '../interfaces/controller';
 import Forge2Legged from '../server/forge-oauth-2legged';
@@ -32,13 +31,7 @@ const _fsExists = util.promisify(_fs.exists);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
-const propertiesSchema = buildSchema(`
-  type Query {
-    hello: String
-  }
-`);
-
-class PropertiesController implements Controller {
+export class PropertiesController implements Controller {
 
 	public path: string = '/properties';
 	public pathTree: string = '/tree';

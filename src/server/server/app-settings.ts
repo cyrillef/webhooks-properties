@@ -15,7 +15,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-const AppSettings = {
+export const AppSettings = {
 	PORT: parseInt(process.env.PORT, 10) || 80,
 	
 	// Forge

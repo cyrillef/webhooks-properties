@@ -15,15 +15,14 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as Forge from 'forge-apis';
-import Forge2Legged from '../server/forge-oauth-2legged';
-import { JsonProperties, JsonPropertiesSources } from './json-properties';
 import * as util from 'util';
 import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
 import * as rimraf from 'rimraf';
-import * as mkdirp from 'mkdirp';
+import * as mkdirp from 'mkdirp';import * as Forge from 'forge-apis';
+import Forge2Legged from '../server/forge-oauth-2legged';
+import { JsonProperties, JsonPropertiesSources } from './json-properties';
 
 const _fsExists = util.promisify(_fs.exists);
 const _fsReadFile = util.promisify(_fs.readFile);
@@ -34,7 +33,7 @@ interface CacheEntry extends JsonPropertiesSources {
 	lastVisited?: moment.Moment,
 }
 
-class JsonPropertiesUtils {
+export class JsonPropertiesUtils {
 
 	private cachePath: string = null;
 	private cache: CacheEntry = {} as CacheEntry;

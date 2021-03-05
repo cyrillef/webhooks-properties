@@ -16,15 +16,10 @@
 //
 
 import * as superagent from 'superagent';
-import * as moment from 'moment';
-import * as Forge from 'forge-apis';
-import AppSettings from './app-settings';
 import * as util from 'util';
 import * as _fs from 'fs';
 import * as _path from 'path';
 import JsonDiff from './json-diff';
-import * as diffx from 'deep-diff';
-import { REPL_MODE_SLOPPY } from 'repl';
 
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);

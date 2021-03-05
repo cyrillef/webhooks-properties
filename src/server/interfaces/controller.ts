@@ -18,7 +18,7 @@
 import { Router } from 'express';
 import ExpressApp from '../server/express-server';
 
-interface Controller {
+export interface Controller {
 	path: string;
 	router: Router;
 	expressApp: ExpressApp;

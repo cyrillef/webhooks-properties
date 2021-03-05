@@ -21,7 +21,7 @@ import Controller from '../interfaces/controller';
 import ExpressApp from '../server/express-server';
 import Forge2Legged from '../server/forge-oauth-2legged';
 
-class OAuth2leggedController implements Controller {
+export class OAuth2leggedController implements Controller {
 
 	public path = '/token';
 	public router = Router();

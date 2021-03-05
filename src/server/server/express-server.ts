@@ -27,7 +27,7 @@ import AppSettings from './app-settings';
 import Forge2Legged from './forge-oauth-2legged';
 import ForgeViewerProxy from './forge-proxy';
 
-class ExpressApp {
+export class ExpressApp {
 	public app: express.Application;
 	public oauth: Forge2Legged;
 

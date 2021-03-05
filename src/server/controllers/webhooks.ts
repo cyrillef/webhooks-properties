@@ -24,7 +24,7 @@ import * as crypto from 'crypto';
 import JsonProperties from '../utilities/json-properties';
 import ExpressApp from '../server/express-server';
 
-class WebHooksController implements Controller {
+export class WebHooksController implements Controller {
 
 	public path: string = '/webhooks';
 	public router: Router = Router();

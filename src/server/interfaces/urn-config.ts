@@ -15,7 +15,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-interface URN_Config {
+export interface URN_Config {
 	urn: string;
 	xform?: THREE.Matrix4;
 	offset?: THREE.Vector3;

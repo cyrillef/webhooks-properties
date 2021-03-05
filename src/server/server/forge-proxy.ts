@@ -22,7 +22,7 @@ import { IncomingHttpHeaders } from 'http';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import { IncomingMessage, ServerResponse } from 'http';
 
-class ForgeViewerProxy {
+export class ForgeViewerProxy {
 
 	protected static apiEndpoint: string = 'developer.api.autodesk.com';
 
