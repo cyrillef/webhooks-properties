@@ -146,13 +146,13 @@ class WebHooksController implements Controller {
 			await propsDb.load(dbBuffers);
 
 			// Ready to get properties
-			const test14 = propsDb.read(481, false);
+			const test14 = propsDb.read(481, false, false);
 			console.log (JSON.stringify(test14, null, 4));
 
-			const test199 = propsDb.read(199, false);
+			const test199 = propsDb.read(199, false, false);
 			console.log(JSON.stringify(test199, null, 4));
 
-			const test14all = propsDb.read(24, false); // get internal properties too
+			const test14all = propsDb.read(24, false, false); // get internal properties too
 			console.log(JSON.stringify(test14all, null, 4));
 
 			console.log('ok');

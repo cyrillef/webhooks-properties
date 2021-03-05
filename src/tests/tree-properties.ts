@@ -26,6 +26,7 @@ import JsonDiff from './json-diff';
 import * as diffx from 'deep-diff';
 import { REPL_MODE_SLOPPY } from 'repl';
 
+const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
 (Object as any).equals = (x: any, y: any, path: string = './') => {
@@ -124,216 +125,139 @@ class TreePropertiesTestsController {
 					},
 				},
 				properties: {
-					'ee578c34-41d4-83e7-fd72-1c18a453c3b9': {},
-					'6fda4fe6-0ceb-4525-a86d-20be4000dab5': {},
-					'e67f2035-8010-3ff5-e399-b9c9217c2366': {},
+					'ee578c34-41d4-83e7-fd72-1c18a453c3b9': {
+						"//data/collection/[objectid=2977]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2980]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2982]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2984]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2986]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2987]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2988]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2989]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2994]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2995]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2996]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2997]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2998]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2999]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3000]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3001]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3002]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3003]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3004]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3005]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3006]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3007]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3008]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3009]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3010]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3011]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3012]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3013]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3014]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3015]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3074]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3084]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3088]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3120]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3124]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3141]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3147]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3178]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3212]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3236]properties/Other/": "missing on left",
+						"//data/collection/": "arrays content are different"
+					},
+					'6fda4fe6-0ceb-4525-a86d-20be4000dab5': {
+						"//data/collection/[objectid=2977]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2980]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2982]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2984]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2998]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2999]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3000]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3001]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3002]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3005]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3010]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3011]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3012]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3074]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3084]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3088]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3120]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3124]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3141]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3147]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3167]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3178]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3193]properties/Graphics/View Scale/": "not equal",
+						"//data/collection/[objectid=3212]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3236]properties/Other/": "missing on left",
+						"//data/collection/[objectid=15]": "missing on left",
+						"//data/collection/[objectid=26]": "missing on left",
+						"//data/collection/[objectid=28]": "missing on left",
+						"//data/collection/[objectid=29]": "missing on left",
+						"//data/collection/[objectid=590]": "missing on left",
+						"//data/collection/[objectid=3184]": "missing on left",
+						"//data/collection/[objectid=3185]": "missing on left",
+						"//data/collection/[objectid=3187]": "missing on left",
+						"//data/collection/[objectid=3188]": "missing on left",
+						"//data/collection/[objectid=3203]": "missing on left",
+						"//data/collection/[objectid=3204]": "missing on left",
+						"//data/collection/": "warning: arrays do not have the same length"
+					},
+					'e67f2035-8010-3ff5-e399-b9c9217c2366': {
+						"//data/collection/[objectid=2994]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2995]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2996]properties/Other/": "missing on left",
+						"//data/collection/[objectid=2997]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3003]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3004]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3013]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3014]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3015]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3074]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3084]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3088]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3124]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3147]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3212]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3236]properties/Other/": "missing on left",
+						"//data/collection/[objectid=3270]properties/Graphics/View Scale/": "not equal",
+						"//data/collection/[objectid=15]": "missing on left",
+						"//data/collection/[objectid=596]": "missing on left",
+						"//data/collection/[objectid=1953]": "missing on left",
+						"//data/collection/[objectid=1954]": "missing on left",
+						"//data/collection/[objectid=1958]": "missing on left",
+						"//data/collection/[objectid=1959]": "missing on left",
+						"//data/collection/[objectid=3184]": "missing on left",
+						"//data/collection/[objectid=3185]": "missing on left",
+						"//data/collection/[objectid=3187]": "missing on left",
+						"//data/collection/[objectid=3203]": "missing on left",
+						"//data/collection/[objectid=3261]": "missing on left",
+						"//data/collection/[objectid=3265]": "missing on left",
+						"//data/collection/": "warning: arrays do not have the same length"
+					},
 				},
 			},
 		},
 		ModelIfc: { // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
 			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTW9kZWwuaWZj', // Model.ifc
 			guids: [
-				'cee12842-7fc5-40eb-a4c0-4a446293782d',
+				'87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d',
 			],
 			objid: 1,
 			diffs: {
 				tree: {
-					'cee12842-7fc5-40eb-a4c0-4a446293782d': {
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/[objectid=298]objects/[objectid=299]objects/[objectid=300]objects/[objectid=294]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/[objectid=298]objects/[objectid=299]objects/[objectid=300]objects/[objectid=295]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/[objectid=298]objects/[objectid=299]objects/[objectid=300]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/[objectid=298]objects/[objectid=299]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/[objectid=298]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/[objectid=297]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=296]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/[objectid=305]objects/[objectid=306]objects/[objectid=307]objects/[objectid=294]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/[objectid=305]objects/[objectid=306]objects/[objectid=307]objects/[objectid=295]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/[objectid=305]objects/[objectid=306]objects/[objectid=307]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/[objectid=305]objects/[objectid=306]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/[objectid=305]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/[objectid=304]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=303]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=121]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=129]": "missing on left",
+					'87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d': {
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=196]": "missing on left",
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=207]": "missing on left",
 						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/[objectid=1578]objects/[objectid=1579]objects/[objectid=1580]objects/[objectid=1574]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/[objectid=1578]objects/[objectid=1579]objects/[objectid=1580]objects/[objectid=1575]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/[objectid=1578]objects/[objectid=1579]objects/[objectid=1580]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/[objectid=1578]objects/[objectid=1579]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/[objectid=1578]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/[objectid=1577]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1576]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/[objectid=1588]objects/[objectid=1589]objects/[objectid=1590]objects/[objectid=1574]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/[objectid=1588]objects/[objectid=1589]objects/[objectid=1590]objects/[objectid=1575]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/[objectid=1588]objects/[objectid=1589]objects/[objectid=1590]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/[objectid=1588]objects/[objectid=1589]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/[objectid=1588]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/[objectid=1587]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/[objectid=1586]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1465]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/[objectid=1934]objects/[objectid=1935]objects/[objectid=1928]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/[objectid=1934]objects/[objectid=1935]objects/[objectid=1929]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/[objectid=1934]objects/[objectid=1935]objects/[objectid=1930]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/[objectid=1934]objects/[objectid=1935]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/[objectid=1934]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/[objectid=1933]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/[objectid=1932]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1931]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/[objectid=2119]objects/[objectid=2120]objects/[objectid=2121]objects/[objectid=2115]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/[objectid=2119]objects/[objectid=2120]objects/[objectid=2121]objects/[objectid=2116]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/[objectid=2119]objects/[objectid=2120]objects/[objectid=2121]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/[objectid=2119]objects/[objectid=2120]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/[objectid=2119]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/[objectid=2118]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2117]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/[objectid=2126]objects/[objectid=2127]objects/[objectid=2128]objects/[objectid=2115]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/[objectid=2126]objects/[objectid=2127]objects/[objectid=2128]objects/[objectid=2116]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/[objectid=2126]objects/[objectid=2127]objects/[objectid=2128]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/[objectid=2126]objects/[objectid=2127]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/[objectid=2126]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/[objectid=2125]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=2124]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/[objectid=1464]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1427]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/[objectid=4711]objects/[objectid=4712]objects/[objectid=4713]objects/[objectid=4706]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/[objectid=4711]objects/[objectid=4712]objects/[objectid=4713]objects/[objectid=4707]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/[objectid=4711]objects/[objectid=4712]objects/[objectid=4713]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/[objectid=4711]objects/[objectid=4712]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/[objectid=4711]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/[objectid=4710]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/[objectid=4709]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4708]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/[objectid=4719]objects/[objectid=4720]objects/[objectid=4721]objects/[objectid=4706]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/[objectid=4719]objects/[objectid=4720]objects/[objectid=4721]objects/[objectid=4707]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/[objectid=4719]objects/[objectid=4720]objects/[objectid=4721]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/[objectid=4719]objects/[objectid=4720]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/[objectid=4719]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/[objectid=4718]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/[objectid=4717]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4716]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/[objectid=4727]objects/[objectid=4728]objects/[objectid=4729]objects/[objectid=4706]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/[objectid=4727]objects/[objectid=4728]objects/[objectid=4729]objects/[objectid=4707]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/[objectid=4727]objects/[objectid=4728]objects/[objectid=4729]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/[objectid=4727]objects/[objectid=4728]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/[objectid=4727]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/[objectid=4726]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/[objectid=4725]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4724]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/[objectid=4866]objects/[objectid=4867]objects/[objectid=4868]objects/[objectid=1914]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/[objectid=4866]objects/[objectid=4867]objects/[objectid=4868]objects/[objectid=1915]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/[objectid=4866]objects/[objectid=4867]objects/[objectid=4868]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/[objectid=4866]objects/[objectid=4867]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/[objectid=4866]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/[objectid=4865]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4864]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/[objectid=4873]objects/[objectid=4874]objects/[objectid=4875]objects/[objectid=1944]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/[objectid=4873]objects/[objectid=4874]objects/[objectid=4875]objects/[objectid=1945]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/[objectid=4873]objects/[objectid=4874]objects/[objectid=4875]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/[objectid=4873]objects/[objectid=4874]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/[objectid=4873]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/[objectid=4872]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4871]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/[objectid=4880]objects/[objectid=4881]objects/[objectid=4882]objects/[objectid=1914]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/[objectid=4880]objects/[objectid=4881]objects/[objectid=4882]objects/[objectid=1915]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/[objectid=4880]objects/[objectid=4881]objects/[objectid=4882]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/[objectid=4880]objects/[objectid=4881]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/[objectid=4880]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/[objectid=4879]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4878]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/[objectid=4887]objects/[objectid=4888]objects/[objectid=4889]objects/[objectid=1914]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/[objectid=4887]objects/[objectid=4888]objects/[objectid=4889]objects/[objectid=1915]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/[objectid=4887]objects/[objectid=4888]objects/[objectid=4889]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/[objectid=4887]objects/[objectid=4888]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/[objectid=4887]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/[objectid=4886]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4885]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/[objectid=4894]objects/[objectid=4895]objects/[objectid=4896]objects/[objectid=1921]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/[objectid=4894]objects/[objectid=4895]objects/[objectid=4896]objects/[objectid=1922]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/[objectid=4894]objects/[objectid=4895]objects/[objectid=4896]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/[objectid=4894]objects/[objectid=4895]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/[objectid=4894]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/[objectid=4893]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4892]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/[objectid=4901]objects/[objectid=4902]objects/[objectid=4903]objects/[objectid=2096]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/[objectid=4901]objects/[objectid=4902]objects/[objectid=4903]objects/[objectid=2097]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/[objectid=4901]objects/[objectid=4902]objects/[objectid=4903]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/[objectid=4901]objects/[objectid=4902]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/[objectid=4901]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/[objectid=4900]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4899]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/[objectid=4915]objects/[objectid=4916]objects/[objectid=4917]objects/[objectid=4911]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/[objectid=4915]objects/[objectid=4916]objects/[objectid=4917]objects/[objectid=4912]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/[objectid=4915]objects/[objectid=4916]objects/[objectid=4917]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/[objectid=4915]objects/[objectid=4916]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/[objectid=4915]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/[objectid=4914]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4913]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/[objectid=4934]objects/[objectid=4935]objects/[objectid=4936]objects/[objectid=2074]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/[objectid=4934]objects/[objectid=4935]objects/[objectid=4936]objects/[objectid=2075]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/[objectid=4934]objects/[objectid=4935]objects/[objectid=4936]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/[objectid=4934]objects/[objectid=4935]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/[objectid=4934]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/[objectid=4933]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4932]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/[objectid=4941]objects/[objectid=4942]objects/[objectid=4943]objects/[objectid=2074]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/[objectid=4941]objects/[objectid=4942]objects/[objectid=4943]objects/[objectid=2075]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/[objectid=4941]objects/[objectid=4942]objects/[objectid=4943]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/[objectid=4941]objects/[objectid=4942]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/[objectid=4941]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/[objectid=4940]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4939]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/[objectid=4948]objects/[objectid=4949]objects/[objectid=4950]objects/[objectid=2081]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/[objectid=4948]objects/[objectid=4949]objects/[objectid=4950]objects/[objectid=2082]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/[objectid=4948]objects/[objectid=4949]objects/[objectid=4950]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/[objectid=4948]objects/[objectid=4949]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/[objectid=4948]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/[objectid=4947]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4946]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/[objectid=4959]objects/[objectid=4960]objects/[objectid=4961]objects/[objectid=2074]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/[objectid=4959]objects/[objectid=4960]objects/[objectid=4961]objects/[objectid=2075]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/[objectid=4959]objects/[objectid=4960]objects/[objectid=4961]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/[objectid=4959]objects/[objectid=4960]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/[objectid=4959]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/[objectid=4958]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4957]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/[objectid=4966]objects/[objectid=4967]objects/[objectid=4968]objects/[objectid=2081]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/[objectid=4966]objects/[objectid=4967]objects/[objectid=4968]objects/[objectid=2082]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/[objectid=4966]objects/[objectid=4967]objects/[objectid=4968]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/[objectid=4966]objects/[objectid=4967]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/[objectid=4966]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/[objectid=4965]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4964]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/[objectid=4973]objects/[objectid=4974]objects/[objectid=4975]objects/[objectid=2074]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/[objectid=4973]objects/[objectid=4974]objects/[objectid=4975]objects/[objectid=2075]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/[objectid=4973]objects/[objectid=4974]objects/[objectid=4975]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/[objectid=4973]objects/[objectid=4974]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/[objectid=4973]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/[objectid=4972]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4971]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/[objectid=4980]objects/[objectid=4981]objects/[objectid=4982]objects/[objectid=2103]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/[objectid=4980]objects/[objectid=4981]objects/[objectid=4982]objects/[objectid=2104]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/[objectid=4980]objects/[objectid=4981]objects/[objectid=4982]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/[objectid=4980]objects/[objectid=4981]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/[objectid=4980]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/[objectid=4979]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=4978]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/[objectid=5042]objects/[objectid=5043]objects/[objectid=5044]objects/[objectid=4706]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/[objectid=5042]objects/[objectid=5043]objects/[objectid=5044]objects/[objectid=4707]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/[objectid=5042]objects/[objectid=5043]objects/[objectid=5044]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/[objectid=5042]objects/[objectid=5043]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/[objectid=5042]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/[objectid=5041]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5040]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/[objectid=5039]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=4699]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/[objectid=6729]objects/[objectid=6730]objects/[objectid=6731]objects/[objectid=6725]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/[objectid=6729]objects/[objectid=6730]objects/[objectid=6731]objects/[objectid=6726]": "missing on left",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/[objectid=6729]objects/[objectid=6730]objects/[objectid=6731]objects/": "warning: arrays do not have the same length",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/[objectid=6729]objects/[objectid=6730]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/[objectid=6729]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/[objectid=6728]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/[objectid=6727]objects/": "arrays content are different",
-						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6715]objects/": "arrays content are different",
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1971]objects/[objectid=2031]": "missing on left",
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1971]objects/": "warning: arrays do not have the same length",
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6831]objects/[objectid=7342]": "missing on left",
+						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6831]objects/": "warning: arrays do not have the same length",
 						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/": "arrays content are different",
 						"//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/": "arrays content are different",
 						"//data/objects/[objectid=1]objects/[objectid=2]objects/": "arrays content are different",
@@ -342,7 +266,7 @@ class TreePropertiesTestsController {
 					},
 				},
 				properties: {
-					'cee12842-7fc5-40eb-a4c0-4a446293782d': {},
+					'87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d': 'properties-dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTW9kZWwuaWZj-87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d-accepted.json',
 				},
 			},
 		},
@@ -365,7 +289,7 @@ class TreePropertiesTestsController {
 		return (new Promise((resolve: (value?: any) => void) => setTimeout(resolve, milliseconds)));
 	}
 
-	private async request(url: string, message: string, diff: string, fn?: string): Promise<void> {
+	private async requestDiff(url: string, message: string, diff: string, fn?: string): Promise<void> {
 		try {
 			const jobs: Promise<any>[] = [
 				superagent('GET', url + '/forge'),
@@ -373,7 +297,7 @@ class TreePropertiesTestsController {
 			];
 			const results: any[] = await Promise.all(jobs);
 			const obj0 = JSON.parse(results[0].text);
-			const obj1 = JSON.parse(results[1].text);
+			const obj1 = JSON.parse(results[1].text); // Automatically sorted :)
 
 			// obj1.data.objects[0].objects = obj1.data.objects[0].objects.filter ((elt: any): boolean => {
 			// 	return (
@@ -387,15 +311,41 @@ class TreePropertiesTestsController {
 			// });
 
 			const cmp: JsonDiff = new JsonDiff(obj0, obj1, ['objectid']);
-			if (cmp.areEquals || (diff && diff === cmp.toString()))
+			if (cmp.areEquals || (diff && diff === cmp.toString())) {
 				console.log(`${message} ok`);
-			else
+			} else {
 				console.warn(`${message} `, cmp.toString(4));
-			console.log(' ');
+				await _fsWriteFile(`${fn}-diff.json`, Buffer.from(cmp.toString(4)));
+				console.log(' ');
+			}
+
+			// if (fn) {
+			// 	await _fsWriteFile(`${fn}-forge.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
+			// 	await _fsWriteFile(`${fn}-db.json`, Buffer.from(JSON.stringify(obj1, null, 4)));
+			// }
+		} catch (ex) {
+			console.error(`failed - ${ex.message}`);
+		}
+	}
+
+	private async request(url: string, message: string, fn?: string): Promise<void> {
+		try {
+			const jobs: Promise<any>[] = [
+				superagent('GET', url),
+				superagent('GET', url + '/forge'),
+			];
+			const results: any[] = await Promise.all(jobs);
+			const obj0 = JSON.parse(results[0].text); // Automatically sorted :)
+			const obj1 = JSON.parse(results[1].text);
+
+			JsonDiff.sortObjectProperties(obj0, ['objectid']);
+			JsonDiff.sortObjectProperties(obj1, ['objectid']);
+
+			console.log(`${message} `, JSON.stringify(obj0, null, 4));
 
 			if (fn) {
-				await _fsWriteFile(`${fn}-forge.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
-				await _fsWriteFile(`${fn}-db.json`, Buffer.from(JSON.stringify(obj1, null, 4)));
+				await _fsWriteFile(`${fn}-db.json`, Buffer.from(JSON.stringify(obj0, null, 4)));
+				await _fsWriteFile(`${fn}-forge.json`, Buffer.from(JSON.stringify(obj1, null, 4)));
 			}
 		} catch (ex) {
 			console.error(`failed - ${ex.message}`);
@@ -403,7 +353,7 @@ class TreePropertiesTestsController {
 	}
 
 	public async help(index: string = ''): Promise<void> {
-		console.log(`comamnds: help, list, all, run <model>`)
+		console.log(`comamnds: help, list, testall, test <model>, runall, run <model>`)
 		this.list();
 	}
 
@@ -411,11 +361,11 @@ class TreePropertiesTestsController {
 		console.log('models: ', Object.keys(TreePropertiesTestsController.objects));
 	}
 
-	public async all(index: string = ''): Promise<void> {
+	public async all(cmd: (index: string) => Promise<void>, index: string = ''): Promise<void> {
 		const self = this;
 
 		const runTest = async (model: string): Promise<void> => {
-			await self.run(model);
+			await self.test(model);
 		};
 
 		const runTests = (models: string[]): Promise<void> => {
@@ -426,6 +376,14 @@ class TreePropertiesTestsController {
 
 		const toTest: string[] = Object.keys(TreePropertiesTestsController.objects);
 		await runTests(toTest);
+	}
+
+	public async testall(index: string = ''): Promise<void> {
+		await this.all(this.test.bind(this), index);
+	}
+
+	public async runall(index: string = ''): Promise<void> {
+		await this.all(this.run.bind(this), index);
 	}
 
 	// public async run(index: string = ''): Promise<void> {
@@ -442,6 +400,63 @@ class TreePropertiesTestsController {
 	// 	await Promise.all(jobs);
 	// }
 
+	protected async loadDiffDefinition(ref: any): Promise<string> {
+		let diff: string = JSON.stringify(ref);
+		try {
+			if (typeof ref === 'string') {
+				const buffer: Buffer = await _fsReadFile(_path.resolve(__dirname, ref));
+				diff = JSON.stringify(JSON.parse(buffer.toString('utf8')));
+			}
+		} catch (ex) {}
+		return (diff);
+	}
+
+	public async test(index: string = ''): Promise<void> {
+		const self = this;
+		const models: string[] = Object.keys(TreePropertiesTestsController.objects);
+		if (models.indexOf(index) === -1)
+			return (console.log(`model ${index} does not exist!`));
+
+		const model: any = TreePropertiesTestsController.objects[index];
+		const urn: string = model.urn;
+
+		const runTest = async (test: TestParams): Promise<void> => {
+			console.log(`Model\n  urn  = ${test.urn}\n  guid = ${test.guid}\n`);
+			let diff: string = await self.loadDiffDefinition(TreePropertiesTestsController.objects[test.model].diffs.tree[test.guid]);
+			await self.requestDiff(
+				`http://localhost:3001/tree/${test.urn}/guids/${test.guid}`,
+				`  => Tree: `,
+				diff,
+				_path.resolve(__dirname, `tree-${test.urn}-${test.guid}`)
+			);
+
+			diff = await self.loadDiffDefinition(TreePropertiesTestsController.objects[test.model].diffs.properties[test.guid]);
+			await self.requestDiff(
+				`http://localhost:3001/properties/${test.urn}/guids/${test.guid}`,
+				`  => Properties: `,
+				diff,
+				_path.resolve(__dirname, `properties-${test.urn}-${test.guid}`)
+			);
+			console.log(' ');
+		};
+
+		const runTests = (tests: TestParams[]): Promise<void> => {
+			return (tests.reduce((p, test): Promise<void> => {
+				return (p.then((): Promise<void> => runTest(test)));
+			}, Promise.resolve())); // initial
+		};
+
+		const toTest: TestParams[] = model.guids.map((guid: string): TestParams => {
+			return ({
+				model: index,
+				urn: urn,
+				guid: guid,
+				diff: model.diffs[guid],
+			});
+		});
+		await runTests(toTest);
+	}
+
 	public async run(index: string = ''): Promise<void> {
 		const self = this;
 		const models: string[] = Object.keys(TreePropertiesTestsController.objects);
@@ -452,11 +467,18 @@ class TreePropertiesTestsController {
 		const urn: string = model.urn;
 
 		const runTest = async (test: TestParams): Promise<void> => {
-			let diff: string = JSON.stringify(TreePropertiesTestsController.objects[test.model].diffs.tree[test.guid]);
-			await self.request(`http://localhost:3001/tree/${test.urn}/guids/${test.guid}`, `Tree\n  urn  = ${test.urn}\n  guid = ${test.guid}\n  Result: `, diff, _path.resolve(__dirname, `tree-${test.urn}-${test.guid}`));
-
-			diff = JSON.stringify(TreePropertiesTestsController.objects[test.model].diffs.properties[test.guid]);
-			await self.request(`http://localhost:3001/properties/${test.urn}/guids/${test.guid}`, `Properties\n  Result: `, diff, _path.resolve(__dirname, `tree-${test.urn}-${test.guid}`));
+			console.log(`Model\n  urn  = ${test.urn}\n  guid = ${test.guid}`);
+			await self.request(
+				`http://localhost:3001/tree/${test.urn}/guids/${test.guid}`,
+				`  => Tree: `,
+				_path.resolve(__dirname, `tree-${test.urn}-${test.guid}`)
+			);
+			await self.request(
+				`http://localhost:3001/properties/${test.urn}/guids/${test.guid}`,
+				`  => Properties: `,
+				_path.resolve(__dirname, `properties-${test.urn}-${test.guid}`)
+			);
+			console.log(' ');
 		};
 
 		const runTests = (tests: TestParams[]): Promise<void> => {

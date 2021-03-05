@@ -111,9 +111,9 @@ class PropertiesController implements Controller {
 
 			response.json({
 				data: {
-					type: 'details',
+					dbs: sizes,
 					maxId: propsDb.idMax,
-					dbs: sizes
+					type: 'details',
 				}
 			});
 		} catch (ex) {
@@ -153,8 +153,8 @@ class PropertiesController implements Controller {
 
 			response.json({
 				data: {
-					type: 'externalIds',
 					collection: externalIds,
+					type: 'externalIds',
 				}
 			});
 		} catch (ex) {
@@ -180,8 +180,8 @@ class PropertiesController implements Controller {
 
 			response.json({
 				data: {
-					type: 'objectids',
 					collection: ids,
+					type: 'objectids',
 				}
 			});
 		} catch (ex) {
@@ -214,7 +214,7 @@ class PropertiesController implements Controller {
 				() => api.getModelviewProperties(urn, guid, { forceget: true, objectid: objid }, oauth.internalClient, token)
 			);
 			if (results === null || results.statusCode !== 200)
-				return (response.status(results.statusCode || 500).end());
+				return (response.status((results && results.statusCode) || 404).end());
 			response.json(results.body);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -230,6 +230,7 @@ class PropertiesController implements Controller {
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const dbIds: number[] = PropertiesController.csv(request.query.ids as string); // csv format
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';
 
 			const propsDb = new JsonProperties();
@@ -237,7 +238,7 @@ class PropertiesController implements Controller {
 
 			let trees: any[] = null;
 			if ((!guid || guid === '') && dbIds ) {
-				trees = dbIds.map((id: number): any => propsDb.read(id, keepInternals));
+				trees = dbIds.map((id: number): any => propsDb.read(id, keepHiddens, keepInternals));
 			} else {
 				if (!guid || guid === '')
 					guid = Object.keys(dbBuffers.guids)[0];
@@ -247,7 +248,7 @@ class PropertiesController implements Controller {
 				const viewable_in: string = dbBuffers.guids[guid];
 
 				// const rootIds: number[] = propsDb.findRootNodes();
-				trees = [propsDb.buildTree(viewable_in, true)];
+				trees = [propsDb.buildTree(viewable_in, true, keepHiddens, keepInternals)];
 				for (let i = 0; i < trees.length; i++) {
 					if (trees[i].objects) {
 						trees = [...trees, ...trees[i].objects];
@@ -265,15 +266,15 @@ class PropertiesController implements Controller {
 					keys
 						.filter((key: string): boolean => regex.test(key))
 						.map((key: string): any => delete elt.properties[key]);
-					delete elt.properties.Other;
+					//delete elt.properties.Other;
 				});
 			}
 			trees.sort((a: any, b: any): number => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0));
 
 			response.json({
 				data: {
-					type: 'properties',
 					collection: trees,
+					type: 'properties',
 				}
 			});
 		} catch (ex) {
@@ -304,7 +305,7 @@ class PropertiesController implements Controller {
 				() => api.getModelviewMetadata(urn, guid, { forceget: true }, oauth.internalClient, token)
 			);
 			if (results === null || results.statusCode !== 200)
-				return (response.status(results.statusCode || 500).end());
+				return (response.status((results && results.statusCode) || 404).end());
 			response.json(results.body);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -317,7 +318,9 @@ class PropertiesController implements Controller {
 			const urn: string = request.params.urn || '';
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const withProperties: boolean = (request.query.properties as string || 'false') === 'true';
+			const withProperties: boolean = (request.query.properties as string) === 'true';
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
+			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb = new JsonProperties();
@@ -332,7 +335,7 @@ class PropertiesController implements Controller {
 
 			// const rootIds: number[] = propsDb.findRootNodes();
 			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));
-			const tree: any = propsDb.buildTree(viewable_in, withProperties);
+			const tree: any = propsDb.buildTree(viewable_in, withProperties, keepHiddens, keepInternals);
 
 			if (withProperties) {
 				const regex = new RegExp('^__(\\w+)__$');

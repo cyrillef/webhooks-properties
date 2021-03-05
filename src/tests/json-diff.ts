@@ -83,7 +83,7 @@ class JsonDiff {
 		if (!this.keys || this.keys.length === 0)
 			return (obj);
 		const orderKey: string = this.orderKey(level);
-		if ( orderKey !== '')
+		if (orderKey !== '')
 			obj = obj.sort((a: any, b: any): number => {
 				if (a[orderKey] === b[orderKey])
 					return (0);
@@ -145,12 +145,12 @@ class JsonDiff {
 			const orderKey: string = this.orderKey(level);
 			lhs.map((elt: any, index: number): any => {
 				let findElt: any = -1;
-				if ( orderKey !== '' )
+				if (orderKey !== '')
 					findElt = rhs.filter((relt: any): boolean => elt[orderKey] === relt[orderKey]);
 				else
 					findElt = rhs.length > index ? [rhs[index]] : [];
-				
-				if ( !findElt || findElt.length === 0 )
+
+				if (!findElt || findElt.length === 0)
 					return (self.logDiff(`${path}[${orderKey}=${elt[orderKey || index]}]`, 'missing on right'));
 				return (self.compareObjects(elt, findElt[0], `${path}[${orderKey || index}=${elt[orderKey || index]}]`));
 			});
@@ -190,12 +190,20 @@ class JsonDiff {
 	}
 
 	public toString(indent: number = 0): string {
-		if ( this.diffs === null )
+		if (this.diffs === null)
 			return ('');
 		const obj: any = {}
 		for (let [k, v] of this.diffs.entries())
 			obj[k] = v;
 		return (JSON.stringify(obj, null, indent));
+	}
+
+	// Utils
+
+	public static sortObjectProperties(obj: any, keys?: string[]): any {
+		const jsonDiif: JsonDiff = new JsonDiff({}, {}, keys);
+		jsonDiif.reorderObject(obj, 0);
+		return (obj);
 	}
 
 }
