@@ -217,7 +217,9 @@ Returns a list of properties for each object in an object tree for the default v
 
 * ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
-* keepinternals (boolean, optional) - Outputs internal references if true - default is false.
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node, Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node, Default is false.
 
 **Example**
 
@@ -277,7 +279,9 @@ Returns a list of properties for each object in an object tree. Properties are r
 
 * ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
-* keepinternals (boolean, optional) - Outputs internal references if true - default is false.
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node, Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node, Default is false.
 
 **Example**
 
@@ -373,7 +377,11 @@ Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* properties {string, optional} - Includes properties in the tree, Default is false.
+* properties {boolean, optional} - Includes properties in the tree, Default is false.
+
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
 
 **Example**
 
@@ -429,7 +437,11 @@ Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* properties {string, optional} - Includes properties in the tree, Default is false.
+* properties {boolean, optional} - Includes properties in the tree, Default is false.
+
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
 
 **Example**
 
