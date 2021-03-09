@@ -69,11 +69,11 @@ export interface JsonPropertiesSources {
 export class JsonProperties {
 
 	private isV2: boolean = false;
-	private offs: any = null;
-	private avs: any = null;
-	private vals: any = null;
-	private attrs: any = null;
-	private ids: any = null;
+	public offs: any = null;
+	public avs: any = null;
+	public vals: any = null;
+	public attrs: any = null;
+	public ids: any = null;
 
 	// Cached ids of commonly used well known attributes (child, parent, name)
 	private childAttrId: number = -1;

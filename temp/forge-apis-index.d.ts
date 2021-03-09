@@ -966,9 +966,7 @@ export class ObjectsApi {
      */
     deleteSignedResource(
         id: string,
-        region: string,
-        oauth2Client: AuthClient,
-        credentials: AuthToken,
+        region: string
     ): Promise<ApiResponse>;
 
     /**
@@ -1014,9 +1012,7 @@ export class ObjectsApi {
             ifModifiedSince?: string;
             acceptEncoding?: string;
             region?: string;
-        },
-        oauth2Client: AuthClient,
-        credentials: AuthToken,
+        }
     ): Promise<ApiResponse>;
 
     /**
@@ -1067,9 +1063,7 @@ export class ObjectsApi {
         id: string,
         contentLength: number,
         body: string | Buffer,
-        opts: { contentDisposition?: string; xAdsRegion?: string; ifMatch?: string },
-        oauth2Client: AuthClient,
-        credentials: AuthToken,
+        opts: { contentDisposition?: string; xAdsRegion?: string; ifMatch?: string }
     ): Promise<ApiResponse>;
 
     /**
@@ -1077,12 +1071,10 @@ export class ObjectsApi {
      */
     uploadSignedResourcesChunk(
         id: string,
-        contentLength: number,
+        contentRange: number,
         sessionId: string,
         body: string | Buffer,
-        opts: { contentDisposition?: string; ifMatch?: string },
-        oauth2Client: AuthClient,
-        credentials: AuthToken,
+        opts: { contentDisposition?: string; xAdsRegion?: string; ifMatch?: string }
     ): Promise<ApiResponse>;
 }
 

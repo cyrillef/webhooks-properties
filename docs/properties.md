@@ -8,9 +8,9 @@ Currently limited to the SVF format.
 (click &#9658; to expand):
 
 <details>
-  <summary>GET /properties/:urn/details</summary>
+  <summary>GET /properties/:urn/load</summary>
 
-Returns information about the cached database.
+Loads and returns information about the cached database.
 
 **URI Parameters**
 
@@ -23,7 +23,7 @@ Returns information about the cached database.
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/details
+curl -X GET http://localhost:3001/properties/dx...Z0/load
 ```
 
 Response - 200
@@ -49,20 +49,41 @@ Response - 200
 <details>
   <summary>GET /properties/:urn/release</summary>
 
+Releases the cached database from the server memorey.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+**Example**
+
+```bash
+curl -X GET http://localhost:3001/properties/dx...Z0/release
+```
+
+Response - 202
+
+```json
+{
+  "status": "success"
+}
+```
+
+</details>
+
+<details>
+  <summary>GET /properties/:urn/delete</summary>
+
 Deletes the cached database from the server.
 
 **URI Parameters**
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
-
-* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
-
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/release
+curl -X GET http://localhost:3001/properties/dx...Z0/delete
 ```
 
 Response - 202
@@ -478,6 +499,55 @@ Response - 200
                       },
                       // ...
 
+```
+
+</details>
+
+<details>
+  <summary>GET /properties/:urn/search</summary>
+
+Returns a list of properties for each object in a model. Properties are returned according to the query.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+**Query String Parameters**
+
+* q {string} - URL encoded query string. Supports Regular Expression.
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+* bruteforce {boolean, optional} - Method to run teh query, Default is true.
+
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
+
+*** Operators
+
+* not / ! / and / & / or / |
+
+* == / != / ~= / > / >= / < / <=
+
+**Example**
+
+```bash
+# q = !(Dimensions.Length == 7.292) & (Identity Data.GLOBALID ~= "3K.*")
+curl -X GET "http://localhost:3001/properties/dx...Z0/search?q=%21%28Dimensions.Length%20%3D%3D%207.292%29%20%26%20%28Identity%20Data.GLOBALID%20~%3D%20%223K.%2A%22%29"
+```
+
+Response - 200
+
+```json
+{
+  "data": {
+    "type": "properties",
+    "collection": [
+      ...
+    ]
+  }
+}
 ```
 
 </details>

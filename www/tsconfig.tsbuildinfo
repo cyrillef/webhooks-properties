@@ -456,19 +456,14 @@
         "signature": "8d48b8f8a377ade8dd1f000625bc276eea067f2529cc9cafdf082d17142107d6",
         "affectsGlobalScope": false
       },
-      "../node_modules/@types/deep-diff/index.d.ts": {
-        "version": "fb6d2d4e6b93cd3b310ba286b1044d25e2c3f665f9eaac780bc41208d6e73616",
-        "signature": "fb6d2d4e6b93cd3b310ba286b1044d25e2c3f665f9eaac780bc41208d6e73616",
-        "affectsGlobalScope": false
-      },
       "../node_modules/@types/ejs/index.d.ts": {
         "version": "3e1884edd5ad7e5c6f8e900b767dfabc64db4a3588643e72535fa948cddf52cd",
         "signature": "3e1884edd5ad7e5c6f8e900b767dfabc64db4a3588643e72535fa948cddf52cd",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/forge-apis/index.d.ts": {
-        "version": "bed60708cfcb14ecf419b222dc5da8f584577f17f9cd7b83c3c9aecf066dfca7",
-        "signature": "bed60708cfcb14ecf419b222dc5da8f584577f17f9cd7b83c3c9aecf066dfca7",
+        "version": "f7c3adb8071f98ea847900596a65b958b10a5f3d44d55d71a309bcf5270e346a",
+        "signature": "f7c3adb8071f98ea847900596a65b958b10a5f3d44d55d71a309bcf5270e346a",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/three/three-core.d.ts": {
@@ -1547,7 +1542,6 @@
       "../node_modules/@types/compression/index.d.ts",
       "../node_modules/@types/connect/index.d.ts",
       "../node_modules/@types/cookiejar/index.d.ts",
-      "../node_modules/@types/deep-diff/index.d.ts",
       "../node_modules/@types/ejs/index.d.ts",
       "../node_modules/@types/express-serve-static-core/index.d.ts",
       "../node_modules/@types/express/index.d.ts",
