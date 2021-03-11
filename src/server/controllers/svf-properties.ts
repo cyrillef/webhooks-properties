@@ -32,7 +32,7 @@ const _fsExists = util.promisify(_fs.exists);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
-export class PropertiesController implements Controller {
+export class SvfPropertiesController implements Controller {
 
 	public path: string = '/properties';
 	public pathTree: string = '/tree';
@@ -76,7 +76,7 @@ export class PropertiesController implements Controller {
 		return (new Promise((resolve: (value?: any) => void) => setTimeout(resolve, milliseconds)));
 	}
 
-	private async runTestUntilSuccess(generator: any): Promise<Forge.ApiResponse> {
+	private async runUntilSuccess(generator: any): Promise<Forge.ApiResponse> {
 		try {
 			let result: Forge.ApiResponse = null;
 			while (true) {
@@ -86,10 +86,10 @@ export class PropertiesController implements Controller {
 					case 201:
 						return (result);
 					case 429:
-						await PropertiesController.sleep(PropertiesController.WAIT_429);
+						await SvfPropertiesController.sleep(SvfPropertiesController.WAIT_429);
 						break;
 					case 202:
-						await PropertiesController.sleep(PropertiesController.WAIT_202);
+						await SvfPropertiesController.sleep(SvfPropertiesController.WAIT_202);
 						break;
 					default:
 						return (result);
@@ -104,7 +104,7 @@ export class PropertiesController implements Controller {
 
 	private async databasePropertiesLoad(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
@@ -129,7 +129,7 @@ export class PropertiesController implements Controller {
 
 	private async databasePropertiesRelease(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			this.utils.clear(urn, false); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
@@ -140,7 +140,7 @@ export class PropertiesController implements Controller {
 
 	private async databasePropertiesDelete(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			this.utils.clear(urn, true); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
@@ -151,7 +151,7 @@ export class PropertiesController implements Controller {
 
 	private async databaseIds(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
@@ -159,7 +159,7 @@ export class PropertiesController implements Controller {
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await JsonProperties.jsonGzRoot(dbBuffers.objects_ids);
 
-			let dbIds: number[] = PropertiesController.csv(request.query.ids as string); // csv format
+			let dbIds: number[] = SvfPropertiesController.csv(request.query.ids as string); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: propsDb.length - 1 }, (_, i) => i + 1);
 
@@ -180,7 +180,7 @@ export class PropertiesController implements Controller {
 
 	private async databaseExternalIds(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
@@ -207,7 +207,7 @@ export class PropertiesController implements Controller {
 
 	private async modelDerivativesProperties(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || 'US';
 
@@ -225,7 +225,7 @@ export class PropertiesController implements Controller {
 			// Rate Limit        - 60 calls per minute for force getting large resource - Otherwise engineering said it is 14.000
 			// forceget {string} - To force get the large resource even if it exceeded the expected maximum length(20 MB).
 			//                     Possible values: true, false. The the implicit value is false.
-			const results: Forge.ApiResponse = await this.runTestUntilSuccess(
+			const results: Forge.ApiResponse = await this.runUntilSuccess(
 				() => api.getModelviewProperties(urn, guid, { forceget: true, objectid: objid }, oauth.internalClient, token)
 			);
 			if (results === null || results.statusCode !== 200)
@@ -239,16 +239,14 @@ export class PropertiesController implements Controller {
 
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
-			const dbIds: number[] = PropertiesController.csv(request.query.ids as string); // csv format
-			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
-			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';
-
-			//const search: string = (request.query.serach as string) || '';
+			const dbIds: number[] = SvfPropertiesController.csv(request.query.ids as string); // csv format
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
+			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 
 			const propsDb = new JsonProperties();
 			await propsDb.load(dbBuffers);
@@ -302,7 +300,7 @@ export class PropertiesController implements Controller {
 
 	private async modelDerivativesObjectTree(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || 'US';
 
@@ -318,7 +316,7 @@ export class PropertiesController implements Controller {
 			// Rate Limit        - 60 calls per minute for force getting large resource - Otherwise engineering said it is 14.000
 			// forceget {string} - To force get the large resource even if it exceeded the expected maximum length(20 MB).
 			//                     Possible values: true, false. The the implicit value is false.
-			const results: Forge.ApiResponse = await this.runTestUntilSuccess(
+			const results: Forge.ApiResponse = await this.runUntilSuccess(
 				() => api.getModelviewMetadata(urn, guid, { forceget: true }, oauth.internalClient, token)
 			);
 			if (results === null || results.statusCode !== 200)
@@ -332,12 +330,12 @@ export class PropertiesController implements Controller {
 
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const withProperties: boolean = (request.query.properties as string) === 'true';
-			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
-			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';
+			const withProperties: boolean = (request.query.properties as string) === 'true'; // defaults to false
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
+			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb = new JsonProperties();
@@ -354,21 +352,21 @@ export class PropertiesController implements Controller {
 			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));
 			const tree: any = propsDb.buildTree(viewable_in, withProperties, keepHiddens, keepInternals);
 
-			if (withProperties) {
-				const regex = new RegExp('^__(\\w+)__$');
+			// if (withProperties) {
+			// 	const regex = new RegExp('^__(\\w+)__$');
 
-				const cleanup = (elt: any): void => {
-					if (elt.objects)
-						elt.objects.map((elt: any): void => cleanup(elt));
-					const keys = Object.keys(elt.properties);
-					keys
-						.filter((key: string): boolean => regex.test(key))
-						.map((key: string): any => delete elt.properties[key]);
-					delete elt.properties.Other;
-				};
+			// 	const cleanup = (elt: any): void => {
+			// 		if (elt.objects)
+			// 			elt.objects.map((elt: any): void => cleanup(elt));
+			// 		const keys = Object.keys(elt.properties);
+			// 		keys
+			// 			.filter((key: string): boolean => regex.test(key))
+			// 			.map((key: string): any => delete elt.properties[key]);
+			// 		delete elt.properties.Other;
+			// 	};
 
-				cleanup(tree);
-			}
+			// 	cleanup(tree);
+			// }
 
 			response.json({
 				data: {
@@ -387,7 +385,7 @@ export class PropertiesController implements Controller {
 	// q=[objectid|name|externalid]=whatever and/or cat.prop=whatever
 	private async databasePropertiesSearch(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = request.params.urn || '';
+			const urn: string = JsonPropertiesUtils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: JsonPropertiesSources = await this.utils.get(urn, region);
 
@@ -464,4 +462,4 @@ export class PropertiesController implements Controller {
 
 }
 
-export default PropertiesController;
+export default SvfPropertiesController;

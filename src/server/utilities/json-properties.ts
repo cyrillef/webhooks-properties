@@ -57,6 +57,7 @@ enum AttributeFlags {
 	afDirectStorage = 1 << 2, // Attribute is not worth de-duplicating (e.g. vertex data or dbId reference)
 	afReadOnly = 1 << 3 // Attribute is read-only (used when writing back to the design model, in e.g. Revit)
 }
+
 export interface JsonPropertiesSources {
 	objects_offs: Buffer,
 	objects_avs: Buffer,
@@ -66,6 +67,7 @@ export interface JsonPropertiesSources {
 
 	[index: string]: any,
 }
+
 export class JsonProperties {
 
 	private isV2: boolean = false;
@@ -162,7 +164,7 @@ export class JsonProperties {
 			properties: {}
 		};
 
-		let parent: any = this._read(dbId, result, keepHidden, keepInternals);
+		let parent: number = this._read(dbId, result, keepHidden, keepInternals);
 		if (keepInternals === false)
 			//delete result.properties.__internal__;
 			JsonProperties.deleteInternals(result);
@@ -188,7 +190,7 @@ export class JsonProperties {
 			// }
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				this._read(parseInt(this.vals[this.avs[i + 1]]), result);
+				this._read(parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals);
 				continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
@@ -224,9 +226,11 @@ export class JsonProperties {
 
 			//result.properties [category] [key] =value ;
 			if (result.properties[category].hasOwnProperty(key)) {
-				if (!Array.isArray(result.properties[category][key])) {
+				if (category === '__internal__' && key === 'viewable_in' 
+					&& (value === result.properties[category][key] || (Array.isArray(result.properties[category][key]) && result.properties[category][key].indexOf (value) !== -1)))
+					continue;
+				if (!Array.isArray(result.properties[category][key]))
 					result.properties[category][key] = [result.properties[category][key]];
-				}
 				result.properties[category][key].push(value);
 			} else {
 				result.properties[category][key] = value;
@@ -364,9 +368,9 @@ export class JsonProperties {
 		return (roots);
 	}
 
-	public buildFullTree(nodeId: number, keepNode: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildFullTree(nodeId: number, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const node: any = this.read(nodeId, keepHidden, true);
-		let result: any = keepNode ? node : {
+		let result: any = withProperties ? node : {
 			name: node.name,
 			objectid: nodeId,
 			//objects: [],
@@ -375,14 +379,14 @@ export class JsonProperties {
 			return (result);
 		if (typeof node.properties.__internal__.child === 'number')
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, keepNode, keepHidden, keepInternals));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, withProperties, keepHidden, keepInternals));
 		return (result);
 	}
 
-	public buildTree(viewable_in: string, keepNode: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildTree(viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const nodeIds: number[] = this.findRootNodes();
 		const node: any = this.read(nodeIds[0], keepHidden, true);
-		let result: any = keepNode ? node : {
+		let result: any = withProperties ? node : {
 			name: node.name,
 			objectid: nodeIds[0],
 			//objects: [],
@@ -397,7 +401,7 @@ export class JsonProperties {
 			if (node.objects)
 				node.objects = node.objects.filter((elt: any): boolean => isIn(elt));
 			if (node.objects && node.objects.length > 0) {
-				if (!keepNode) {
+				if (!withProperties) {
 					delete node.properties;
 					delete node.externalId;
 				}
@@ -405,14 +409,14 @@ export class JsonProperties {
 			}
 			delete node.objects;
 			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in) {
-				if (!keepNode) {
+				if (!withProperties) {
 					delete node.properties;
 					delete node.externalId;
 				}
 				return (false);
 			}
 			const cmp: boolean = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
-			if (!keepNode) {
+			if (!withProperties) {
 				delete node.properties;
 				delete node.externalId;
 			}
@@ -424,13 +428,13 @@ export class JsonProperties {
 		return (result);
 	}
 
-	public buildReverseTree(nodeIds: number[], keepNode: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildReverseTree(nodeIds: number[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const nodes: any = {};
 		let rootNode: any = null;
 
 		const traverseReverseNodes = (nodeId: number): any => {
 			const node: any = this.read(nodeId, keepHidden, true);
-			const result: any = keepNode ? node : {
+			const result: any = withProperties ? node : {
 				name: node.name,
 				objectid: nodeId,
 				//objects: [],

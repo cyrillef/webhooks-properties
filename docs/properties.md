@@ -2,7 +2,8 @@
 
 The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble json.gz property files.
 
-Currently limited to the SVF format.
+Currently limited to the SVF format. Supports both .json.gz Viewer optimized files and sqlite database. The documentation below documents 
+the .json.gz endpoints. sqlite database endpoints have a /sql/ prefix (ex: /sql/properties/:urn/load).
 
 
 (click &#9658; to expand):

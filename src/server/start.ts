@@ -24,7 +24,8 @@ import * as _fs from 'fs';
 import OAuth2leggedController from './controllers/oauth-2legged';
 import WebHooksController from './controllers/webhooks';
 import RateLimitsTestsController from './controllers/rate-limits';
-import PropertiesController from './controllers/properties';
+import SvfPropertiesController from './controllers/svf-properties';
+import SqlPropertiesController from './controllers/sql-properties';
 
 const useHTTP2: Boolean = false;
 const dev: Boolean = process.env.NODE_ENV !== 'production';
@@ -38,7 +39,8 @@ expressApp.initializeControllers([
 	new OAuth2leggedController(expressApp),
 	new WebHooksController(expressApp),
 	new RateLimitsTestsController(expressApp),
-	new PropertiesController(expressApp),
+	new SvfPropertiesController(expressApp),
+	new SqlPropertiesController(expressApp),
 ]);
 
 if (useHTTP2 === true) {

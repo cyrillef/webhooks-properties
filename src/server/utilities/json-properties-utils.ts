@@ -20,7 +20,8 @@ import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
 import * as rimraf from 'rimraf';
-import * as mkdirp from 'mkdirp';import * as Forge from 'forge-apis';
+import * as mkdirp from 'mkdirp';
+import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import { JsonProperties, JsonPropertiesSources } from './json-properties';
 
@@ -39,7 +40,7 @@ export class JsonPropertiesUtils {
 	private cache: CacheEntry = {} as CacheEntry;
 	private cacheDuration: any = moment.duration(20, 'minutes');
 	private cacheCleanupJob: NodeJS.Timeout = null;
-	
+
 	constructor(cachePath: string, cacheDuration: number = null) {
 		this.cachePath = _path.resolve(__dirname, '../..', cachePath);
 		if (cacheDuration)
@@ -48,8 +49,9 @@ export class JsonPropertiesUtils {
 	}
 
 	public dispose(): void {
-		clearInterval (this.cacheCleanupJob);
+		clearInterval(this.cacheCleanupJob);
 		this.cacheCleanupJob = null;
+		this.clearAll();
 	}
 
 	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
@@ -60,7 +62,7 @@ export class JsonPropertiesUtils {
 		try {
 			const self = this;
 			const jobs: Promise<void>[] = [];
-			Object.keys(this.cache).map((urn: string): any => jobs.push(self.clear(urn)));
+			Object.keys(this.cache).map((urn: string): any => jobs.push(self.clear(urn, false)));
 			await Promise.all(jobs)
 		} catch (ex) {
 		}
@@ -92,11 +94,11 @@ export class JsonPropertiesUtils {
 			if (cached) {
 				this.cache[urn] = { lastVisited: moment() };
 				const dbFiles: string[] = JsonProperties.dbNames;
-				let jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => _fsReadFile(_path.resolve(self.cachePath, urn, elt), null));
-				let results: Buffer[] = await Promise.all(jobs);
+				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => _fsReadFile(_path.resolve(self.cachePath, urn, elt), null));
+				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
 
-				const guids: string[] = JSON.parse((await _fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
+				const guids: any = JSON.parse((await _fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
 				return (this.cache[urn]);
@@ -143,7 +145,7 @@ export class JsonPropertiesUtils {
 				//.map((entry: any): any => entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf'))
 				.map((entry: any): any => {
 					let items: any = entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf');
-					items = items.map ((item: any): any => {
+					items = items.map((item: any): any => {
 						item.parent = entry.guid;
 						item.viewableID = entry.viewableID;
 						return (item);
