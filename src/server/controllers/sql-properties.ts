@@ -15,29 +15,25 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as util from 'util';
+
 import * as _fs from 'fs';
 import * as _path from 'path';
 import { Request, Response, Router } from 'express';
 import * as Forge from 'forge-apis';
 import Controller from '../interfaces/controller';
-import Forge2Legged from '../server/forge-oauth-2legged';
 import AppSettings from '../server/app-settings';
+import ExpressApp from '../server/express-server';
+import Utils from '../utilities/utils';
 import SqlPropertiesUtils from '../utilities/sql-properties-utils';
 import { SqlPropertiesSources, SqlProperties } from '../utilities/sql-properties';
-import ExpressApp from '../server/express-server';
 
 export class SqlPropertiesController implements Controller {
 
-	public path: string = '/sql/properties';
-	public pathTree: string = '/sql/tree';
+	public path: string = '/sql';
 	public router: Router = Router();
 	public expressApp: ExpressApp = null;
 
 	private utils: SqlPropertiesUtils = new SqlPropertiesUtils(AppSettings.cacheFolder);
-
-	public static readonly WAIT_429: number = 20000;
-	public static readonly WAIT_202: number = 1000;
 
 	public constructor(expressApp: ExpressApp) {
 		this.expressApp = expressApp;
@@ -45,61 +41,25 @@ export class SqlPropertiesController implements Controller {
 	}
 
 	private initializeRoutes(): void {
-		this.router.get(`${this.path}/:urn/load`, this.databasePropertiesLoad.bind(this));
-		this.router.get(`${this.path}/:urn/release`, this.databasePropertiesRelease.bind(this));
-		this.router.get(`${this.path}/:urn/delete`, this.databasePropertiesDelete.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/load`, this.databasePropertiesLoad.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/release`, this.databasePropertiesRelease.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/delete`, this.databasePropertiesDelete.bind(this));
 
-		this.router.get(`${this.path}/:urn/externalids`, this.databaseIds.bind(this));
-		this.router.get(`${this.path}/:urn/ids`, this.databaseExternalIds.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/externalids`, this.databaseIds.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/ids`, this.databaseExternalIds.bind(this));
 
-		this.router.get(`${this.path}/:urn/forge`, this.modelDerivativesProperties.bind(this));
-		this.router.get(`${this.path}/:urn/guids/:guid/forge`, this.modelDerivativesProperties.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/properties`, this.databaseProperties.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/:guid/properties`, this.databaseProperties.bind(this));
 
-		this.router.get(`${this.path}/:urn`, this.databaseProperties.bind(this));
-		this.router.get(`${this.path}/:urn/guids/:guid`, this.databaseProperties.bind(this));
+		this.router.get(`${this.path}/:urn/metadata`, this.databaseObjectTree.bind(this));
+		this.router.get(`${this.path}/:urn/metadata/:guid`, this.databaseObjectTree.bind(this));
 
-		this.router.get(`${this.pathTree}/:urn/forge`, this.modelDerivativesObjectTree.bind(this));
-		this.router.get(`${this.pathTree}/:urn/guids/:guid/forge`, this.modelDerivativesObjectTree.bind(this));
-
-		this.router.get(`${this.pathTree}/:urn`, this.databaseObjectTree.bind(this));
-		this.router.get(`${this.pathTree}/:urn/guids/:guid`, this.databaseObjectTree.bind(this));
-
-		this.router.get(`${this.path}/:urn/search`, this.databasePropertiesSearch.bind(this));
-	}
-
-	private static sleep(milliseconds: number): Promise<any> {
-		return (new Promise((resolve: (value?: any) => void) => setTimeout(resolve, milliseconds)));
-	}
-
-	private async runUntilSuccess(generator: any): Promise<Forge.ApiResponse> {
-		try {
-			let result: Forge.ApiResponse = null;
-			while (true) {
-				result = await generator();
-				switch (result.statusCode) {
-					case 200:
-					case 201:
-						return (result);
-					case 429:
-						await SqlPropertiesController.sleep(SqlPropertiesController.WAIT_429);
-						break;
-					case 202:
-						await SqlPropertiesController.sleep(SqlPropertiesController.WAIT_202);
-						break;
-					default:
-						return (result);
-				}
-			};
-		} catch (ex) {
-			// If any non 20x status code is returned, we endup here
-			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
-		}
-		return (null);
+		this.router.get(`${this.path}/:urn/metadata/search`, this.databasePropertiesSearch.bind(this));
 	}
 
 	private async databasePropertiesLoad(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
 
@@ -128,7 +88,7 @@ export class SqlPropertiesController implements Controller {
 
 	private async databasePropertiesRelease(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			this.utils.clear(urn, false); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
@@ -139,7 +99,7 @@ export class SqlPropertiesController implements Controller {
 
 	private async databasePropertiesDelete(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			this.utils.clear(urn, true); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
@@ -150,13 +110,13 @@ export class SqlPropertiesController implements Controller {
 
 	private async databaseIds(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
-			let dbIds: number[] = SqlPropertiesController.csv(request.query.ids as string); // csv format
+			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: await propsDb.idMax() - 1 }, (_, i) => i + 1);
 
@@ -178,7 +138,7 @@ export class SqlPropertiesController implements Controller {
 
 	private async databaseExternalIds(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
 
@@ -202,46 +162,14 @@ export class SqlPropertiesController implements Controller {
 		}
 	}
 
-	private async modelDerivativesProperties(request: Request, response: Response): Promise<void> {
-		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
-			const region: string = request.query.region as string || 'US';
-
-			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
-			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
-			const api: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, region);
-
-			if (!guid || guid === '') {
-				const guids: Forge.ApiResponse = await api.getMetadata(urn, null, oauth.internalClient, token);
-				guid = guids.body.data.metadata[0].guid;
-			}
-
-			const objid: number = request.query.objectid ? parseInt(request.query.objectid as string) : undefined;
-
-			// Rate Limit        - 60 calls per minute for force getting large resource - Otherwise engineering said it is 14.000
-			// forceget {string} - To force get the large resource even if it exceeded the expected maximum length(20 MB).
-			//                     Possible values: true, false. The the implicit value is false.
-			const results: Forge.ApiResponse = await this.runUntilSuccess(
-				() => api.getModelviewProperties(urn, guid, { forceget: true, objectid: objid }, oauth.internalClient, token)
-			);
-			if (results === null || results.statusCode !== 200)
-				return (response.status((results && results.statusCode) || 404).end());
-			response.json(results.body);
-		} catch (ex) {
-			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
-			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
-		}
-	}
-
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
 
-			const dbIds: number[] = SqlPropertiesController.csv(request.query.ids as string); // csv format
+			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 
@@ -295,39 +223,9 @@ export class SqlPropertiesController implements Controller {
 		}
 	}
 
-	private async modelDerivativesObjectTree(request: Request, response: Response): Promise<void> {
-		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
-			const region: string = request.query.region as string || 'US';
-
-			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
-			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
-			const api: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, region);
-
-			if (!guid || guid === '') {
-				const guids: Forge.ApiResponse = await api.getMetadata(urn, null, oauth.internalClient, token);
-				guid = guids.body.data.metadata[0].guid;
-			}
-
-			// Rate Limit        - 60 calls per minute for force getting large resource - Otherwise engineering said it is 14.000
-			// forceget {string} - To force get the large resource even if it exceeded the expected maximum length(20 MB).
-			//                     Possible values: true, false. The the implicit value is false.
-			const results: Forge.ApiResponse = await this.runUntilSuccess(
-				() => api.getModelviewMetadata(urn, guid, { forceget: true }, oauth.internalClient, token)
-			);
-			if (results === null || results.statusCode !== 200)
-				return (response.status((results && results.statusCode) || 404).end());
-			response.json(results.body);
-		} catch (ex) {
-			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
-			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
-		}
-	}
-
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const withProperties: boolean = (request.query.properties as string) === 'true'; // defaults to false
@@ -378,7 +276,7 @@ export class SqlPropertiesController implements Controller {
 
 	private async databasePropertiesSearch(request: Request, response: Response): Promise<void> {
 		try {
-			const urn: string = SqlPropertiesUtils.makeSafeUrn(request.params.urn || '');
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
 
@@ -392,28 +290,6 @@ export class SqlPropertiesController implements Controller {
 			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 		}
 	}
-
-	// Utils
-
-	// uses ',' separated Ids
-	// ids are either a number, or a range with 2 numbers separated with a '-'
-	private static csv(st: string): number[] {
-		if (!st)
-			return (undefined);
-		const dbIds: (number | number[])[] = st
-			.split(',')
-			.map((elt: string): number | number[] => {
-				const r: RegExpMatchArray = elt.match(/^(\d+)-(\d+)$/);
-				if (r === null)
-					return (parseInt(elt));
-				const t: number[] = [];
-				for (let i = parseInt(r[1]); i <= parseInt(r[2]); i++)
-					t.push(i);
-				return (t);
-			});
-		return ([].concat.apply([], dbIds));
-	}
-
 
 }
 

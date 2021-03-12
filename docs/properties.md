@@ -2,18 +2,18 @@
 
 The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble json.gz property files.
 
-Currently limited to the SVF format. Supports both .json.gz Viewer optimized files and sqlite database. The documentation below documents 
-the .json.gz endpoints. sqlite database endpoints have a /sql/ prefix (ex: /sql/properties/:urn/load).
-
+Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL (sqllite database), and SVF2 (.idx, .pack, .json optimized files).
 
 (click &#9658; to expand):
 
 <details>
-  <summary>GET /properties/:urn/load</summary>
+  <summary>GET /:format/:urn/metadata/load</summary>
 
 Loads and returns information about the cached database.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -24,7 +24,7 @@ Loads and returns information about the cached database.
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/load
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/load
 ```
 
 Response - 200
@@ -48,18 +48,20 @@ Response - 200
 </details>
 
 <details>
-  <summary>GET /properties/:urn/release</summary>
+  <summary>GET /:format/:urn/metadata/release</summary>
 
-Releases the cached database from the server memorey.
+Releases the cached database from the server memory.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/release
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/release
 ```
 
 Response - 202
@@ -73,18 +75,20 @@ Response - 202
 </details>
 
 <details>
-  <summary>GET /properties/:urn/delete</summary>
+  <summary>GET /:format/:urn/metadata/delete</summary>
 
-Deletes the cached database from the server.
+Deletes the cached database from the server (memory and storage).
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/delete
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/delete
 ```
 
 Response - 202
@@ -97,12 +101,16 @@ Response - 202
 
 </details>
 
+----
+
 <details>
-  <summary>GET /properties/:urn/externalids</summary>
+  <summary>GET /:format/:urn/metadata/externalids</summary>
 
 Returns a list of externalID from requested dbID.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -115,7 +123,7 @@ Returns a list of externalID from requested dbID.
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/externalids?ids=2824,2830,3270-3277,5
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/externalids?ids=2824,2830,3270-3277,5
 ```
 
 Response - 200
@@ -144,11 +152,13 @@ Response - 200
 </details>
 
 <details>
-  <summary>GET /properties/:urn/ids</summary>
+  <summary>GET /:format/:urn/metadata/ids</summary>
 
 Returns a list of dbId from requested externalID.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -161,7 +171,7 @@ Returns a list of dbId from requested externalID.
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/ids?ids=c8923f5e-6a14-4420-9b1d-c31d7ae067d2-00000024,425fa4b5-cf64-4260-8581-2345290e5c67-0005833c
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/ids?ids=c8923f5e-6a14-4420-9b1d-c31d7ae067d2-00000024,425fa4b5-cf64-4260-8581-2345290e5c67-0005833c
 ```
 
 Response - 200
@@ -180,16 +190,16 @@ Response - 200
 
 </details>
 
+----
+
 <details>
-  <summary>GET /properties/:urn/forge</summary>
+  <summary>GET /:format/:urn/metadata</summary>
 
-Returns a list of properties for each object in an object tree for the default viewable node. Properties are returned according to object ID and do not follow a hierarchical structure.
-
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
-
-See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
+Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -197,20 +207,59 @@ See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/r
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* objectid {long, optional} - Object id which you want to query properties for. If objectid is omitted, the server will return properties for all objects.
+* properties {boolean, optional} - Includes properties in the tree, Default is false.
+
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
+
+**Example**
+
+```bash
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata
+```
+
+Response - 200
+
+```json
+{
+  "data": {
+    "type": "objects",
+    "objects": [
+      {
+        "objectid": 1,
+        "name": "Model",
+        "objects": [
+          {
+            "objectid": 2824,
+            "name": "Walls",
+            "objects": [
+              {
+                "objectid": 2825,
+                "name": "Basic Wall",
+                "objects": [
+                  {
+                    "objectid": 2827,
+                    "name": "Generic - 12\" Masonry",
+                    "objects": [
+                      {
+                        "objectid": 2828,
+                        "name": "Basic Wall [309068]"
+                      },
+                      // ...
+
+```
 
 </details>
 
 <details>
-  <summary>GET /properties//:urn/guids/:guid/forge</summary>
+  <summary>GET /:format/:urn/metadata/:guid</summary>
 
-Returns a list of properties for each object in an object tree. Properties are returned according to object ID and do not follow a hierarchical structure.
-
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
-
-See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
+Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -220,16 +269,59 @@ See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/r
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* objectid {long, optional} - Object id which you want to query properties for. If objectid is omitted, the server will return properties for all objects.
+* properties {boolean, optional} - Includes properties in the tree, Default is false.
+
+* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
+
+* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
+
+**Example**
+
+```bash
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/1234-...-4321
+```
+
+Response - 200
+
+```json
+{
+  "data": {
+    "type": "objects",
+    "objects": [
+      {
+        "objectid": 1,
+        "name": "Model",
+        "objects": [
+          {
+            "objectid": 2824,
+            "name": "Walls",
+            "objects": [
+              {
+                "objectid": 2825,
+                "name": "Basic Wall",
+                "objects": [
+                  {
+                    "objectid": 2827,
+                    "name": "Generic - 12\" Masonry",
+                    "objects": [
+                      {
+                        "objectid": 2828,
+                        "name": "Basic Wall [309068]"
+                      },
+                      // ...
+
+```
 
 </details>
 
 <details>
-  <summary>GET /properties/:urn</summary>
+  <summary>GET /:format/:urn/metadata/properties</summary>
 
 Returns a list of properties for each object in an object tree for the default viewable node. Properties are returned according to object ID and do not follow a hierarchical structure.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -237,7 +329,7 @@ Returns a list of properties for each object in an object tree for the default v
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {string, optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
 * keephiddens {boolean, optional} - Keeps hidden properties in the properties node, Default is false.
 
@@ -246,7 +338,7 @@ Returns a list of properties for each object in an object tree for the default v
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0?ids=2824,2828
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/properties?ids=2824,2828
 ```
 
 Response - 200
@@ -285,11 +377,13 @@ Response - 200
 </details>
 
 <details>
-  <summary>GET /properties/:urn/guids/:guid</summary>
+  <summary>GET /:format/:urn/metadata/:guid/properties</summary>
 
 Returns a list of properties for each object in an object tree. Properties are returned according to object ID and do not follow a hierarchical structure.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -299,7 +393,7 @@ Returns a list of properties for each object in an object tree. Properties are r
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {string, optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
 
 * keephiddens {boolean, optional} - Keeps hidden properties in the properties node, Default is false.
 
@@ -308,7 +402,7 @@ Returns a list of properties for each object in an object tree. Properties are r
 **Example**
 
 ```bash
-curl -X GET http://localhost:3001/properties/dx...Z0/guids/1234-...-4321?ids=2824,2828
+curl -X GET http://localhost:3001/svf/dx...Z0/metadata/1234-...-4321/properties?ids=2824,2828
 ```
 
 Response - 200
@@ -346,170 +440,16 @@ Response - 200
 
 </details>
 
-<details>
-  <summary>GET /tree/:urn/forge</summary>
-
-Returns an object tree, i.e., a hierarchical list of objects for the default model view.
-
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
-
-See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
-
-**URI Parameters**
-
-* urn {string} - The Base64 (URL Safe) encoded design URN.
-
-**Query String Parameters**
-
-* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
-
-</details>
+----
 
 <details>
-  <summary>GET /tree/:urn/guids/:guid/forge</summary>
-
-Returns an object tree, i.e., a hierarchical list of objects for the model view.
-
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
-
-See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
-
-**URI Parameters**
-
-* urn {string} - The Base64 (URL Safe) encoded design URN.
-
-* guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
-
-**Query String Parameters**
-
-* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
-
-</details>
-
-<details>
-  <summary>GET /tree/:urn</summary>
-
-Returns an object tree, i.e., a hierarchical list of objects for the model view.
-
-**URI Parameters**
-
-* urn {string} - The Base64 (URL Safe) encoded design URN.
-
-**Query String Parameters**
-
-* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
-
-* properties {boolean, optional} - Includes properties in the tree, Default is false.
-
-* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
-
-* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
-
-**Example**
-
-```bash
-curl -X GET "http://localhost:3001/tree/dx...Z0"
-```
-
-Response - 200
-
-```json
-{
-  "data": {
-    "type": "objects",
-    "objects": [
-      {
-        "objectid": 1,
-        "name": "Model",
-        "objects": [
-          {
-            "objectid": 2824,
-            "name": "Walls",
-            "objects": [
-              {
-                "objectid": 2825,
-                "name": "Basic Wall",
-                "objects": [
-                  {
-                    "objectid": 2827,
-                    "name": "Generic - 12\" Masonry",
-                    "objects": [
-                      {
-                        "objectid": 2828,
-                        "name": "Basic Wall [309068]"
-                      },
-                      // ...
-
-```
-
-</details>
-
-<details>
-  <summary>GET /tree/:urn/guids/:guid</summary>
-
-Returns an object tree, i.e., a hierarchical list of objects for the model view.
-
-**URI Parameters**
-
-* urn {string} - The Base64 (URL Safe) encoded design URN.
-
-* guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
-
-**Query String Parameters**
-
-* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
-
-* properties {boolean, optional} - Includes properties in the tree, Default is false.
-
-* keephiddens {boolean, optional} - Keeps hidden properties in the properties node (requires properties=true), Default is false.
-
-* keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
-
-**Example**
-
-```bash
-curl -X GET "http://localhost:3001/tree/dx...Z0/guids/1234-...-4321"
-```
-
-Response - 200
-
-```json
-{
-  "data": {
-    "type": "objects",
-    "objects": [
-      {
-        "objectid": 1,
-        "name": "Model",
-        "objects": [
-          {
-            "objectid": 2824,
-            "name": "Walls",
-            "objects": [
-              {
-                "objectid": 2825,
-                "name": "Basic Wall",
-                "objects": [
-                  {
-                    "objectid": 2827,
-                    "name": "Generic - 12\" Masonry",
-                    "objects": [
-                      {
-                        "objectid": 2828,
-                        "name": "Basic Wall [309068]"
-                      },
-                      // ...
-
-```
-
-</details>
-
-<details>
-  <summary>GET /properties/:urn/search</summary>
+  <summary>GET /:format/:urn/metadata/search</summary>
 
 Returns a list of properties for each object in a model. Properties are returned according to the query.
 
 **URI Parameters**
+
+* format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
@@ -535,7 +475,7 @@ Returns a list of properties for each object in a model. Properties are returned
 
 ```bash
 # q = !(Dimensions.Length == 7.292) & (Identity Data.GLOBALID ~= "3K.*")
-curl -X GET "http://localhost:3001/properties/dx...Z0/search?q=%21%28Dimensions.Length%20%3D%3D%207.292%29%20%26%20%28Identity%20Data.GLOBALID%20~%3D%20%223K.%2A%22%29"
+curl -X GET "http://localhost:3001/svf/dx...Z0/metadata/search?q=%21%28Dimensions.Length%20%3D%3D%207.292%29%20%26%20%28Identity%20Data.GLOBALID%20~%3D%20%223K.%2A%22%29"
 ```
 
 Response - 200
@@ -550,5 +490,91 @@ Response - 200
   }
 }
 ```
+
+</details>
+
+----
+
+<details>
+  <summary>GET /forge/:urn/metadata</summary>
+
+Returns an object tree, i.e., a hierarchical list of objects for the default model view.
+
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+
+See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+**Query String Parameters**
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+</details>
+
+<details>
+  <summary>GET /forge/:urn/metadata/:guid</summary>
+
+Returns an object tree, i.e., a hierarchical list of objects for the model view.
+
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+
+See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+* guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
+
+**Query String Parameters**
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+</details>
+
+<details>
+  <summary>GET /forge/:urn/metadata/properties</summary>
+
+Returns a list of properties for each object in an object tree for the default viewable node. Properties are returned according to object ID and do not follow a hierarchical structure.
+
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+
+See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+**Query String Parameters**
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+* objectid {long, optional} - Object id which you want to query properties for. If objectid is omitted, the server will return properties for all objects.
+
+</details>
+
+<details>
+  <summary>GET /forge/:urn/metadata/:guid/properties</summary>
+
+Returns a list of properties for each object in an object tree. Properties are returned according to object ID and do not follow a hierarchical structure.
+
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+
+See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+* guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
+
+**Query String Parameters**
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+* objectid {long, optional} - Object id which you want to query properties for. If objectid is omitted, the server will return properties for all objects.
 
 </details>

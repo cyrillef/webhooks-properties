@@ -15,20 +15,14 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as util from 'util';
 import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
-import * as rimraf from 'rimraf';
 import * as mkdirp from 'mkdirp';
 import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import { JsonProperties, JsonPropertiesSources } from './json-properties';
-
-const _fsExists = util.promisify(_fs.exists);
-const _fsReadFile = util.promisify(_fs.readFile);
-const _fsWriteFile = util.promisify(_fs.writeFile);
-const _rimraf = util.promisify(rimraf);
+import Utils from './utils'
 
 interface CacheEntry extends JsonPropertiesSources {
 	lastVisited?: moment.Moment,
@@ -70,11 +64,11 @@ export class JsonPropertiesUtils {
 
 	public async clear(urn: string, clearOnDisk: boolean = true): Promise<void> {
 		try {
-			urn = JsonPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 			if (this.cache[urn])
 				delete this.cache[urn];
 			if (clearOnDisk)
-				await _rimraf(_path.resolve(this.cachePath, urn));
+				await Utils.rimraf(_path.resolve(this.cachePath, urn));
 		} catch (ex) {
 		}
 	}
@@ -82,7 +76,7 @@ export class JsonPropertiesUtils {
 	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
 		const self = this;
 		try {
-			urn = JsonPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 
 			if (this.cache[urn]) {
 				this.cache[urn].lastVisited = moment();
@@ -90,15 +84,15 @@ export class JsonPropertiesUtils {
 			}
 
 			const cachePath: string = _path.resolve(this.cachePath, urn);
-			const cached: boolean = await _fsExists(cachePath);
+			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
 				this.cache[urn] = { lastVisited: moment() };
 				const dbFiles: string[] = JsonProperties.dbNames;
-				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => _fsReadFile(_path.resolve(self.cachePath, urn, elt), null));
+				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(self.cachePath, urn, elt), null));
 				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
 
-				const guids: any = JSON.parse((await _fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
+				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
 				return (this.cache[urn]);
@@ -113,7 +107,7 @@ export class JsonPropertiesUtils {
 	private async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
 		const self = this;
 		try {
-			urn = JsonPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
@@ -136,7 +130,7 @@ export class JsonPropertiesUtils {
 			await mkdirp(_path.resolve(this.cachePath, urn));
 			dbFiles.map((elt: string, index: number): any => {
 				self.cache[urn][elt] = dbBuffers[index];
-				_fsWriteFile(_path.resolve(self.cachePath, urn, elt), dbBuffers[index]);
+				Utils.fsWriteFile(_path.resolve(self.cachePath, urn, elt), dbBuffers[index]);
 			});
 
 			// svf / svf2 / f2d
@@ -176,30 +170,13 @@ export class JsonPropertiesUtils {
 			const dataGuids: any = {};
 			srcEntries.map((entry: any): any => dataGuids[entry.guid] = entry.viewableID);
 			this.cache[urn].guids = dataGuids;
-			_fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+			Utils.fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
 
 			return (this.cache[urn]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
 		}
-	}
-
-	// Utils
-
-	public static makeSafeUrn(urn: string): string {
-		return (urn.replace(/\+/g, '-') // Convert '+' to '-'
-			.replace(/\//g, '_') // Convert '/' to '_'
-			.replace(/=+$/, '') // Remove trailing '='
-		);
-	}
-
-	public static fromSafeUrn(urn: string): string {
-		return (urn
-			.replace(/-/g, '+') // Convert '-' to '+'
-			.replace(/_/g, '/') // Convert '_' to '/'
-			+ Array(5 - urn.length % 4).join('=') // Add trainling '='
-		);
 	}
 
 }

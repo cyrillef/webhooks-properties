@@ -24,8 +24,10 @@ import * as _fs from 'fs';
 import OAuth2leggedController from './controllers/oauth-2legged';
 import WebHooksController from './controllers/webhooks';
 import RateLimitsTestsController from './controllers/rate-limits';
+import ForgePropertiesController from './controllers/forge-properties';
 import SvfPropertiesController from './controllers/svf-properties';
 import SqlPropertiesController from './controllers/sql-properties';
+import Svf2PropertiesController from './controllers/svf2-properties';
 
 const useHTTP2: Boolean = false;
 const dev: Boolean = process.env.NODE_ENV !== 'production';
@@ -39,8 +41,10 @@ expressApp.initializeControllers([
 	new OAuth2leggedController(expressApp),
 	new WebHooksController(expressApp),
 	new RateLimitsTestsController(expressApp),
+	new ForgePropertiesController(expressApp),
 	new SvfPropertiesController(expressApp),
 	new SqlPropertiesController(expressApp),
+	//new Svf2PropertiesController(expressApp),
 ]);
 
 if (useHTTP2 === true) {

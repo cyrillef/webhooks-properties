@@ -27,9 +27,9 @@ import { JsonProperties, JsonPropertiesSources } from '../utilities/json-propert
 import JsonPropertiesUtils from '../utilities/json-properties-utils';
 import { Literal, ExpressionParser, ExpressionEval } from '../utilities/expression-parser';
 
-export class SvfPropertiesController implements Controller {
+export class Svf2PropertiesController implements Controller {
 
-	public path: string = '/svf';
+	public path: string = '/svf2';
 	public router: Router = Router();
 	public expressApp: ExpressApp = null;
 
@@ -334,4 +334,4 @@ export class SvfPropertiesController implements Controller {
 
 }
 
-export default SvfPropertiesController;
+export default Svf2PropertiesController;

@@ -23,11 +23,7 @@ import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import { SqlProperties, SqlPropertiesSources } from './sql-properties';
 import { Sequelize } from 'sequelize';
-
-const _fsExists = util.promisify(_fs.exists);
-const _fsUnlink = util.promisify(_fs.unlink);
-const _fsReadFile = util.promisify(_fs.readFile);
-const _fsWriteFile = util.promisify(_fs.writeFile);
+import Utils from '../utilities/utils';
 
 interface CacheEntry extends SqlPropertiesSources {
 	lastVisited?: moment.Moment,
@@ -69,12 +65,12 @@ export class SqlPropertiesUtils {
 
 	public async clear(urn: string, clearOnDisk: boolean = true): Promise<void> {
 		try {
-			urn = SqlPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 			if (this.cache[urn]) {
 				await this.cache[urn].sequelize.Close();
 				if (clearOnDisk) {
-					await _fsUnlink(this.cache[urn].path2SqlDB);
-					await _fsUnlink(this.cache[urn].path2SqlDB + '.json');
+					await Utils.fsUnlink(this.cache[urn].path2SqlDB);
+					await Utils.fsUnlink(this.cache[urn].path2SqlDB + '.json');
 				}
 				delete this.cache[urn];
 			}
@@ -84,7 +80,7 @@ export class SqlPropertiesUtils {
 
 	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesSources> {
 		try {
-			urn = SqlPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 
 			if (this.cache[urn]) {
 				this.cache[urn].lastVisited = moment();
@@ -92,7 +88,7 @@ export class SqlPropertiesUtils {
 			}
 
 			const cachePath: string = _path.resolve(this.cachePath, urn) + '.db';
-			const cached: boolean = await _fsExists(cachePath);
+			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
 				this.cache[urn] = {
 					lastVisited: moment(),
@@ -101,7 +97,7 @@ export class SqlPropertiesUtils {
 						dialect: 'sqlite',
 						storage: cachePath
 					}),
-					guids: JSON.parse((await _fsReadFile(cachePath + '.json', null)).toString('utf8')),
+					guids: JSON.parse((await Utils.fsReadFile(cachePath + '.json', null)).toString('utf8')),
 				};
 				return (this.cache[urn]);
 			}
@@ -114,7 +110,7 @@ export class SqlPropertiesUtils {
 
 	private async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesSources> {
 		try {
-			urn = SqlPropertiesUtils.makeSafeUrn(urn);
+			urn = Utils.makeSafeUrn(urn);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
@@ -129,11 +125,11 @@ export class SqlPropertiesUtils {
 			const dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
 
 			const cachePath: string = _path.resolve(this.cachePath, urn) + '.db';
-			await _fsWriteFile(cachePath, dbBuffer.body);
+			await Utils.fsWriteFile(cachePath, dbBuffer.body);
 
 			const guids: any = {};
 			metadata.body.data.metadata.map((elt: any): void => guids[elt.guid] = elt.name);
-			_fsWriteFile(cachePath + '.json', Buffer.from(JSON.stringify(guids)));
+			Utils.fsWriteFile(cachePath + '.json', Buffer.from(JSON.stringify(guids)));
 			this.cache[urn] = {
 				lastVisited: moment(),
 				path2SqlDB: cachePath,
@@ -149,23 +145,6 @@ export class SqlPropertiesUtils {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
 		}
-	}
-
-	// Utils
-
-	public static makeSafeUrn(urn: string): string {
-		return (urn.replace(/\+/g, '-') // Convert '+' to '-'
-			.replace(/\//g, '_') // Convert '/' to '_'
-			.replace(/=+$/, '') // Remove trailing '='
-		);
-	}
-
-	public static fromSafeUrn(urn: string): string {
-		return (urn
-			.replace(/-/g, '+') // Convert '-' to '+'
-			.replace(/_/g, '/') // Convert '_' to '/'
-			+ Array(5 - urn.length % 4).join('=') // Add trainling '='
-		);
 	}
 
 }

@@ -16,11 +16,13 @@
 //
 
 import * as superagent from 'superagent';
-import * as util from 'util';
+import JsonDiff from './json-diff';
 import * as _fs from 'fs';
 import * as _path from 'path';
-import JsonDiff from './json-diff';
+import * as util from 'util';
 
+const _fsExists = util.promisify(_fs.exists);
+const _fsUnlink = util.promisify(_fs.unlink);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
