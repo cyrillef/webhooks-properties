@@ -21,7 +21,7 @@ import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
 import AppSettings from '../server/app-settings';
 import * as crypto from 'crypto';
-import JsonProperties from '../utilities/json-properties';
+import SvfProperties from '../properties/svf-properties';
 import ExpressApp from '../server/express-server';
 
 export class WebHooksController implements Controller {
@@ -129,7 +129,7 @@ export class WebHooksController implements Controller {
 			// 	'objects_attrs.json.gz',
 			// 	'objects_ids.json.gz',
 			// ];
-			const dbFiles: string[] = JsonProperties.dbNames;
+			const dbFiles: string[] = SvfProperties.dbNames;
 			// `urn:adsk.viewing:fs.file:${urn}/output/objects_attrs.json.gz`
 			// `urn:adsk.viewing:fs.file:${urn}/${derivativePath}`
 			const paths: string[] = dbFiles.map((fn: string): string => `urn:adsk.viewing:fs.file:${urn}/output/${fn}.json.gz`);
@@ -142,7 +142,7 @@ export class WebHooksController implements Controller {
 			const results: Forge.ApiResponse[] = await Promise.all(jobs);
 			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
-			const propsDb = new JsonProperties();
+			const propsDb = new SvfProperties();
 			await propsDb.load(dbBuffers);
 
 			// Ready to get properties

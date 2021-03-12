@@ -24,8 +24,8 @@ import Controller from '../interfaces/controller';
 import AppSettings from '../server/app-settings';
 import ExpressApp from '../server/express-server';
 import Utils from '../utilities/utils';
-import SqlPropertiesUtils from '../utilities/sql-properties-utils';
-import { SqlPropertiesSources, SqlProperties } from '../utilities/sql-properties';
+import SqlPropertiesUtils from '../properties/sql-properties-utils';
+import { SqlPropertiesCache, SqlProperties } from '../properties/sql-properties';
 
 export class SqlPropertiesController implements Controller {
 
@@ -33,7 +33,7 @@ export class SqlPropertiesController implements Controller {
 	public router: Router = Router();
 	public expressApp: ExpressApp = null;
 
-	private utils: SqlPropertiesUtils = new SqlPropertiesUtils(AppSettings.cacheFolder);
+	private utils: SqlPropertiesUtils = SqlPropertiesUtils.singleton(AppSettings.cacheFolder);
 
 	public constructor(expressApp: ExpressApp) {
 		this.expressApp = expressApp;
@@ -61,7 +61,7 @@ export class SqlPropertiesController implements Controller {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 			const idMax: number = await propsDb.idMax();
@@ -89,7 +89,7 @@ export class SqlPropertiesController implements Controller {
 	private async databasePropertiesRelease(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			this.utils.clear(urn, false); // no need to await
+			this.utils.release(urn, false); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -100,7 +100,7 @@ export class SqlPropertiesController implements Controller {
 	private async databasePropertiesDelete(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			this.utils.clear(urn, true); // no need to await
+			this.utils.release(urn, true); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -112,7 +112,7 @@ export class SqlPropertiesController implements Controller {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
@@ -140,7 +140,7 @@ export class SqlPropertiesController implements Controller {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
@@ -167,7 +167,7 @@ export class SqlPropertiesController implements Controller {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			let guid: string = request.params.guid || '';
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
@@ -231,7 +231,7 @@ export class SqlPropertiesController implements Controller {
 			const withProperties: boolean = (request.query.properties as string) === 'true'; // defaults to false
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const propsDb = new SqlProperties(sources.sequelize);
 
@@ -278,7 +278,7 @@ export class SqlPropertiesController implements Controller {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesSources = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';

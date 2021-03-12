@@ -15,16 +15,13 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as zlib from 'zlib';
 import { Sequelize, Model, DataTypes, QueryTypes } from 'sequelize';
-import e = require('express');
+import { PropertiesUtils, PropertiesCache } from './common';
 
-export interface SqlPropertiesSources {
+export interface SqlPropertiesCache extends PropertiesCache {
 	path2SqlDB: string,
 	sequelize: Sequelize,
 	guids: any,
-
-	[index: string]: any,
 }
 
 export class SqlProperties {
@@ -94,7 +91,7 @@ export class SqlProperties {
 		let parent: number = await this._read(dbId, result, keepHidden, keepInternals);
 		if (keepInternals === false)
 			//delete result.properties.__internal__;
-			SqlProperties.deleteInternals(result);
+			PropertiesUtils.deleteInternals(result);
 
 		//while ( parent !== null && parent !== 1 )
 		//	parent =this._read (parent, result) ;
@@ -173,19 +170,6 @@ export class SqlProperties {
 			}
 		}
 		return (parent);
-	}
-
-	private static deleteInternals(node: any) {
-		// __parent__
-		// __child__
-		// __viewable_in__
-		// __externalref__
-		const regex = new RegExp('^__(\\w+)__$');
-		const keys = Object.keys(node.properties);
-		keys
-			.filter((key: string): boolean => regex.test(key))
-			.map((key: string): any => delete node.properties[key]);
-		//delete elt.properties.Other;
 	}
 
 	public async findRootNodes(): Promise<number[]> {

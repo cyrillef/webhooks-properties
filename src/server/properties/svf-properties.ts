@@ -15,60 +15,18 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as zlib from 'zlib';
+import Utils from '../utilities/utils';
+import { PropertiesUtils, PropertiesCache, AttributeFieldIndex, AttributeFlags, AttributeType } from './common';
 
-enum AttributeType {
-	// Numeric types
-	Unknown = 0,
-	Boolean = 1,
-	Integer = 2, // Color
-	Double = 3,
-	Float = 4,
-
-	// Special types
-	BLOB = 10,
-	DbKey = 11, // represents a link to another object in the database, using database internal ID
-
-	// String types 
-	String = 20,
-	LocalizableString = 21,
-	DateTime = 22,// ISO 8601 date
-	GeoLocation = 23, // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
-	Position = 24 // "x y z w" space separated string representing vector with 2,3 or 4 elements
-}
-
-enum AttributeFieldIndex {
-	iNAME = 0,
-	iCATEGORY = 1,
-	iTYPE = 2, // Type (1 = Boolean, 2 = Color, 3 = Numeric, 11 = ObjectReference, 20 = String)
-	iUNIT = 3,
-	// The PropertyDB use GNU Units to specify units of properties. For compound units, like for density,
-	// which don’t have an atomic name you can for expressions like kg/m^3
-	iDESCRIPTION = 4,
-	iDISPLAYNAME = 5,
-	iFLAGS = 6,
-	iDISPLAYPRECISION = 7
-}
-
-// Bitmask values for boolean attribute options
-enum AttributeFlags {
-	afHidden = 1 << 0, // Attribute will not be displayed in default GUI property views.
-	afDontIndex = 1 << 1, // Attribute will not be indexed by the search service.
-	afDirectStorage = 1 << 2, // Attribute is not worth de-duplicating (e.g. vertex data or dbId reference)
-	afReadOnly = 1 << 3 // Attribute is read-only (used when writing back to the design model, in e.g. Revit)
-}
-
-export interface JsonPropertiesSources {
+export interface SvfPropertiesCache extends PropertiesCache {
 	objects_offs: Buffer,
 	objects_avs: Buffer,
 	objects_vals: Buffer,
 	objects_attrs: Buffer,
 	objects_ids: Buffer,
-
-	[index: string]: any,
 }
 
-export class JsonProperties {
+export class SvfProperties {
 
 	private isV2: boolean = false;
 	public offs: any = null;
@@ -102,32 +60,19 @@ export class JsonProperties {
 		return (this.offs.length - 1);
 	}
 
-	public static jsonGzRoot(res: Buffer): Promise<any> {
-		return (new Promise((resolve: (value: any) => void, reject: (reason?: any) => void) => {
-			zlib.gunzip(res, (error: Error | null, result: Buffer): void => {
-				try {
-					resolve(JSON.parse(result.toString('utf-8')));
-				} catch (ex) {
-					console.error(ex.message, name);
-					reject(ex);
-				}
-			});
-		}));
-	}
-
-	public async load(dbs: JsonPropertiesSources | Buffer[]): Promise<void> {
+	public async load(dbs: SvfPropertiesCache | Buffer[]): Promise<void> {
 		const self = this;
 		Array.isArray(dbs)
-		if (Array.isArray(dbs) && JsonProperties.dbNames.length !== dbs.length)
+		if (Array.isArray(dbs) && SvfProperties.dbNames.length !== dbs.length)
 			return;
 		let temp: any[] = null;
 		if (Array.isArray(dbs)) {
-			temp = dbs.map((elt: Buffer): Promise<any> => JsonProperties.jsonGzRoot(elt));
+			temp = dbs.map((elt: Buffer): Promise<any> => Utils.jsonGzRoot(elt));
 		} else {
-			temp = JsonProperties.dbNames.map((id: string): Promise<any> => JsonProperties.jsonGzRoot(dbs[id]));
+			temp = SvfProperties.dbNames.map((id: string): Promise<any> => Utils.jsonGzRoot(dbs[id]));
 		}
 		temp = await Promise.all(temp);
-		JsonProperties.dbNames.map((id: string, index: number): any => (self as any)[id.substring(8)] = temp[index]);
+		SvfProperties.dbNames.map((id: string, index: number): any => (self as any)[id.substring(8)] = temp[index]);
 
 		if (this.attrs[0] === 'pdb version 2')
 			this.isV2 = true;
@@ -167,7 +112,7 @@ export class JsonProperties {
 		let parent: number = this._read(dbId, result, keepHidden, keepInternals);
 		if (keepInternals === false)
 			//delete result.properties.__internal__;
-			JsonProperties.deleteInternals(result);
+			PropertiesUtils.deleteInternals(result);
 
 		//while ( parent !== null && parent !== 1 )
 		//	parent =this._read (parent, result) ;
@@ -251,19 +196,6 @@ export class JsonProperties {
 		// 	return (true);
 		// });
 		return (parent);
-	}
-
-	private static deleteInternals(node: any) {
-		// __parent__
-		// __child__
-		// __viewable_in__
-		// __externalref__
-		const regex = new RegExp('^__(\\w+)__$');
-		const keys = Object.keys(node.properties);
-		keys
-			.filter((key: string): boolean => regex.test(key))
-			.map((key: string): any => delete node.properties[key]);
-		//delete elt.properties.Other;
 	}
 
 	private _readProperty(attr: any, valueId: number): boolean | number | string | number[] | string[] | Date {
@@ -457,4 +389,4 @@ export class JsonProperties {
 
 }
 
-export default JsonProperties;
+export default SvfProperties;

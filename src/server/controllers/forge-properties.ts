@@ -21,7 +21,7 @@ import { Request, Response, Router } from 'express';
 import * as Forge from 'forge-apis';
 import Controller from '../interfaces/controller';
 import Forge2Legged from '../server/forge-oauth-2legged';
-import JsonPropertiesUtils from '../utilities/json-properties-utils';
+import SvfPropertiesUtils from '../properties/svf-properties-utils';
 import ExpressApp from '../server/express-server';
 import Utils from '../utilities/utils';
 

@@ -15,60 +15,41 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as util from 'util';
 import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
 import * as Forge from 'forge-apis';
+import AppSettings from '../server/app-settings';
 import Forge2Legged from '../server/forge-oauth-2legged';
-import { SqlProperties, SqlPropertiesSources } from './sql-properties';
+import { PropertiesUtils } from './common';
+import { SqlPropertiesCache } from './sql-properties';
 import { Sequelize } from 'sequelize';
 import Utils from '../utilities/utils';
 
-interface CacheEntry extends SqlPropertiesSources {
-	lastVisited?: moment.Moment,
-}
+export class SqlPropertiesUtils extends PropertiesUtils {
 
-export class SqlPropertiesUtils {
-
-	private cachePath: string = null;
-	private cache: CacheEntry = {} as CacheEntry;
-	private cacheDuration: any = moment.duration(20, 'minutes');
-	private cacheCleanupJob: NodeJS.Timeout = null;
-
-	constructor(cachePath: string, cacheDuration: number = null) {
-		this.cachePath = _path.resolve(__dirname, '../..', cachePath);
-		if (cacheDuration)
-			this.cacheDuration = moment.duration(cacheDuration);
-		this.cacheCleanupJob = setInterval(this.clearAll.bind(this), this.cacheDuration);
+	protected constructor(cachePath: string = AppSettings.cacheFolder, cacheDuration: number = null) {
+		super(cachePath, cacheDuration);
 	}
 
-	public dispose(): void {
-		clearInterval(this.cacheCleanupJob);
-		this.cacheCleanupJob = null;
-		this.clearAll();
+	public static singleton(cachePath: string = AppSettings.cacheFolder): SqlPropertiesUtils {
+		return (new SqlPropertiesUtils(cachePath));
 	}
 
-	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesSources> {
+	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		return (this.loadInCache(urn, region));
 	}
 
-	private async clearAll(): Promise<void> {
-		try {
-			const self = this;
-			const jobs: Promise<void>[] = [];
-			Object.keys(this.cache).map((urn: string): any => jobs.push(self.clear(urn, false)));
-			await Promise.all(jobs)
-		} catch (ex) {
-		}
+	public getPath(urn: string): string {
+		return (_path.resolve(this.cachePath, urn) + '.db');
 	}
 
-	public async clear(urn: string, clearOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 			if (this.cache[urn]) {
 				await this.cache[urn].sequelize.Close();
-				if (clearOnDisk) {
+				if (deleteOnDisk) {
 					await Utils.fsUnlink(this.cache[urn].path2SqlDB);
 					await Utils.fsUnlink(this.cache[urn].path2SqlDB + '.json');
 				}
@@ -78,7 +59,7 @@ export class SqlPropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesSources> {
+	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 
@@ -87,7 +68,7 @@ export class SqlPropertiesUtils {
 				return (this.cache[urn]);
 			}
 
-			const cachePath: string = _path.resolve(this.cachePath, urn) + '.db';
+			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
 				this.cache[urn] = {
@@ -108,7 +89,7 @@ export class SqlPropertiesUtils {
 		}
 	}
 
-	private async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesSources> {
+	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 
@@ -124,7 +105,7 @@ export class SqlPropertiesUtils {
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
 			const dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
 
-			const cachePath: string = _path.resolve(this.cachePath, urn) + '.db';
+			const cachePath: string = this.getPath(urn);
 			await Utils.fsWriteFile(cachePath, dbBuffer.body);
 
 			const guids: any = {};

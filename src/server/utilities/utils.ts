@@ -18,6 +18,7 @@
 import * as util from 'util';
 import * as _fs from 'fs';
 import * as rimraf from 'rimraf';
+import * as zlib from 'zlib';
 
 const _fsExists = util.promisify(_fs.exists);
 const _fsUnlink = util.promisify(_fs.unlink);
@@ -44,6 +45,19 @@ export class Utils {
 
 	public static sleep(milliseconds: number): Promise<any> {
 		return (new Promise((resolve: (value?: any) => void) => setTimeout(resolve, milliseconds)));
+	}
+
+	public static jsonGzRoot(res: Buffer): Promise<any> {
+		return (new Promise((resolve: (value: any) => void, reject: (reason?: any) => void) => {
+			zlib.gunzip(res, (error: Error | null, result: Buffer): void => {
+				try {
+					resolve(JSON.parse(result.toString('utf-8')));
+				} catch (ex) {
+					console.error(ex.message, name);
+					reject(ex);
+				}
+			});
+		}));
 	}
 
 	// uses ',' separated Ids

@@ -19,61 +19,40 @@ import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
 import * as mkdirp from 'mkdirp';
+import AppSettings from '../server/app-settings';
 import * as Forge from 'forge-apis';
 import Forge2Legged from '../server/forge-oauth-2legged';
-import { JsonProperties, JsonPropertiesSources } from './json-properties';
-import Utils from './utils'
+import { PropertiesUtils } from './common';
+import { SvfProperties, SvfPropertiesCache } from './svf-properties';
+import Utils from '../utilities/utils'
 
-interface CacheEntry extends JsonPropertiesSources {
-	lastVisited?: moment.Moment,
-}
+export class SvfPropertiesUtils extends PropertiesUtils {
 
-export class JsonPropertiesUtils {
-
-	private cachePath: string = null;
-	private cache: CacheEntry = {} as CacheEntry;
-	private cacheDuration: any = moment.duration(20, 'minutes');
-	private cacheCleanupJob: NodeJS.Timeout = null;
-
-	constructor(cachePath: string, cacheDuration: number = null) {
-		this.cachePath = _path.resolve(__dirname, '../..', cachePath);
-		if (cacheDuration)
-			this.cacheDuration = moment.duration(cacheDuration);
-		this.cacheCleanupJob = setInterval(this.clearAll.bind(this), this.cacheDuration);
+	protected constructor(cachePath: string = AppSettings.cacheFolder, cacheDuration: number = null) {
+		super(cachePath, cacheDuration);
 	}
 
-	public dispose(): void {
-		clearInterval(this.cacheCleanupJob);
-		this.cacheCleanupJob = null;
-		this.clearAll();
+	public static singleton(cachePath: string = AppSettings.cacheFolder): SvfPropertiesUtils {
+		return (new SvfPropertiesUtils(cachePath));
 	}
 
-	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
+
+	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		return (this.loadInCache(urn, region));
 	}
 
-	private async clearAll(): Promise<void> {
-		try {
-			const self = this;
-			const jobs: Promise<void>[] = [];
-			Object.keys(this.cache).map((urn: string): any => jobs.push(self.clear(urn, false)));
-			await Promise.all(jobs)
-		} catch (ex) {
-		}
-	}
-
-	public async clear(urn: string, clearOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 			if (this.cache[urn])
 				delete this.cache[urn];
-			if (clearOnDisk)
-				await Utils.rimraf(_path.resolve(this.cachePath, urn));
+			if (deleteOnDisk)
+				await Utils.rimraf(this.getPath(urn));
 		} catch (ex) {
 		}
 	}
 
-	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
+	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -83,16 +62,16 @@ export class JsonPropertiesUtils {
 				return (this.cache[urn]);
 			}
 
-			const cachePath: string = _path.resolve(this.cachePath, urn);
+			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
 				this.cache[urn] = { lastVisited: moment() };
-				const dbFiles: string[] = JsonProperties.dbNames;
-				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(self.cachePath, urn, elt), null));
+				const dbFiles: string[] = SvfProperties.dbNames;
+				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(self.getPath(urn), elt), null));
 				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
 
-				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.cachePath, urn, 'idmap.json'), null)).toString('utf8'));
+				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'idmap.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
 				return (this.cache[urn]);
@@ -104,7 +83,7 @@ export class JsonPropertiesUtils {
 		}
 	}
 
-	private async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<JsonPropertiesSources> {
+	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -120,17 +99,17 @@ export class JsonPropertiesUtils {
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
 			let derivativePath: string = dbEntry[0].urn.substring(0, dbEntry[0].urn.lastIndexOf('/') + 1);
 
-			const dbFiles: string[] = JsonProperties.dbNames;
+			const dbFiles: string[] = SvfProperties.dbNames;
 			let paths: string[] = dbFiles.map((fn: string): string => `${derivativePath}${fn}.json.gz`);
 			let jobs: Promise<Forge.ApiResponse>[] = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
 			let results: Forge.ApiResponse[] = await Promise.all(jobs);
 			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
 			this.cache[urn] = { lastVisited: moment() };
-			await mkdirp(_path.resolve(this.cachePath, urn));
+			await mkdirp(this.getPath(urn));
 			dbFiles.map((elt: string, index: number): any => {
 				self.cache[urn][elt] = dbBuffers[index];
-				Utils.fsWriteFile(_path.resolve(self.cachePath, urn, elt), dbBuffers[index]);
+				Utils.fsWriteFile(_path.resolve(self.getPath(urn), elt), dbBuffers[index]);
 			});
 
 			// svf / svf2 / f2d
@@ -170,7 +149,7 @@ export class JsonPropertiesUtils {
 			const dataGuids: any = {};
 			srcEntries.map((entry: any): any => dataGuids[entry.guid] = entry.viewableID);
 			this.cache[urn].guids = dataGuids;
-			Utils.fsWriteFile(_path.resolve(this.cachePath, urn, 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+			Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
 
 			return (this.cache[urn]);
 		} catch (ex) {
@@ -181,4 +160,4 @@ export class JsonPropertiesUtils {
 
 }
 
-export default JsonPropertiesUtils;
+export default SvfPropertiesUtils;

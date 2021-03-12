@@ -44,7 +44,7 @@ expressApp.initializeControllers([
 	new ForgePropertiesController(expressApp),
 	new SvfPropertiesController(expressApp),
 	new SqlPropertiesController(expressApp),
-	//new Svf2PropertiesController(expressApp),
+	new Svf2PropertiesController(expressApp),
 ]);
 
 if (useHTTP2 === true) {
