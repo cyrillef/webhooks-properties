@@ -41,7 +41,7 @@ export class OAuth2leggedController implements Controller {
 		const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 		if (oauth && oauth.externalToken && oauth.externalToken.access_token) {
 			const token: { [index: string]: any } = oauth.externalToken as object;
-			const expires_in = parseInt(moment.duration(moment(token.expires_at).diff(moment())).as('seconds').toString());
+			const expires_in = Number.parseInt(moment.duration(moment(token.expires_at).diff(moment())).as('seconds').toString());
 			response.json({ access_token: oauth.externalToken.access_token, expires_in: expires_in });
 		} else {
 			response.json({});

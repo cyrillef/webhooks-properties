@@ -129,13 +129,13 @@ export class SvfProperties {
 			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
 			let key: string = attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME];
 			// if ( key === '__parent__/parent' ) {
-			// 	parent =parseInt (this.vals [this.avs [i + 1]]) ;
+			// 	parent =Number.parseInt (this.vals [this.avs [i + 1]]) ;
 			// 	result.parents.push (parent) ;
 			// 	continue ;
 			// }
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				this._read(parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals);
+				this._read(Number.parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals);
 				continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
@@ -171,8 +171,8 @@ export class SvfProperties {
 
 			//result.properties [category] [key] =value ;
 			if (result.properties[category].hasOwnProperty(key)) {
-				if (category === '__internal__' && key === 'viewable_in' 
-					&& (value === result.properties[category][key] || (Array.isArray(result.properties[category][key]) && result.properties[category][key].indexOf (value) !== -1)))
+				if (category === '__internal__' && key === 'viewable_in'
+					&& (value === result.properties[category][key] || (Array.isArray(result.properties[category][key]) && result.properties[category][key].indexOf(value) !== -1)))
 					continue;
 				if (!Array.isArray(result.properties[category][key]))
 					result.properties[category][key] = [result.properties[category][key]];
@@ -288,6 +288,7 @@ export class SvfProperties {
 
 	public findRootNodes(): number[] {
 		const roots: number[] = [];
+		// Slow method
 		for (let dbId = 1; dbId < this.idMax; dbId++) {
 			const node: any = this.read(dbId, true, true);
 			if (

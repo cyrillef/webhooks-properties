@@ -70,9 +70,9 @@ export class Utils {
 			.map((elt: string): number | number[] => {
 				const r: RegExpMatchArray = elt.match(/^(\d+)-(\d+)$/);
 				if (r === null)
-					return (parseInt(elt));
+					return (Number.parseInt(elt));
 				const t: number[] = [];
-				for (let i = parseInt(r[1]); i <= parseInt(r[2]); i++)
+				for (let i = Number.parseInt(r[1]); i <= Number.parseInt(r[2]); i++)
 					t.push(i);
 				return (t);
 			});

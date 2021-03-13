@@ -184,7 +184,7 @@ var TransformTool = /** @class */ (function () {
     TransformTool.prototype.getTransformMap = function () {
         var transformMap = {};
         for (var fragId in this._modifiedFragIdMap) {
-            var fragProxy = this.viewer.impl.getFragmentProxy(this.viewer.model, parseInt(fragId));
+            var fragProxy = this.viewer.impl.getFragmentProxy(this.viewer.model, Number.parseInt(fragId));
             fragProxy.getAnimTransform();
             transformMap[fragId] = {
                 position: fragProxy.position

@@ -110,7 +110,7 @@ export class SvfPropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
 
-			// const propsDb = new JsonProperties();
+			// const propsDb: SvfProperties = new SvfProperties();
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids);
 
@@ -141,7 +141,7 @@ export class SvfPropertiesController implements Controller {
 
 			const externalIds: string[] = (request.query.ids as string).split(','); // csv format
 
-			// const propsDb = new JsonProperties();
+			// const propsDb: SvfProperties = new SvfProperties();
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids)
 

@@ -16,7 +16,7 @@
 //
 
 const AppSettings = {
-	PORT: parseInt(process.env.PORT, 10) || 80,
+	PORT: Number.parseInt(process.env.PORT, 10) || 80,
 	
 	// Forge
 	main: {

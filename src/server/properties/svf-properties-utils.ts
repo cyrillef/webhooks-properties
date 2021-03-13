@@ -36,7 +36,6 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		return (new SvfPropertiesUtils(cachePath));
 	}
 
-
 	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		return (this.loadInCache(urn, region));
 	}

@@ -190,6 +190,57 @@ Response - 200
 
 </details>
 
+<details>
+  <summary>GET /svf2/:urn/metadata/svf-svf2</summary>
+
+Returns a list of SVF2 dbId from a lits of SVF dbId .
+
+**URI Parameters**
+
+* urn {string} - The Base64 (URL Safe) encoded design URN.
+
+**Query String Parameters**
+
+* region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
+
+* ids {string} - List of externalID. CSV formatted, using ',' separator.
+
+* reverse {boolean, optional} - Invert the mapping - if true would convert SVF2 dbId to SVF dbId. Detault to false.
+
+**Example**
+
+```bash
+curl -X GET http://localhost:3001/svf2/dx...Z0/metadata/svf-svf2?ids=1,2,2724
+curl -X GET http://localhost:3001/svf2/dx...Z0/metadata/svf-svf2?ids=1,2,3177&reverse=true
+```
+
+Response - 200
+
+```json
+{
+  "data": {
+    "type": "svf->svf2",
+    "mapping": {
+      "1": 1,
+      "2": 2,
+      "2724": 3177,
+    }
+  }
+}
+{
+  "data": {
+    "type": "svf2->svf",
+    "mapping": {
+      "1": 1,
+      "2": 2,
+      "3177": 2724,
+    }
+  }
+}
+```
+
+</details>
+
 ----
 
 <details>

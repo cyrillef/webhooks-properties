@@ -207,7 +207,7 @@ class TransformTool {
 	protected getTransformMap(): void {
 		const transformMap: any = {};
 		for (let fragId in this._modifiedFragIdMap) {
-			let fragProxy = this.viewer.impl.getFragmentProxy(this.viewer.model, parseInt(fragId));
+			let fragProxy = this.viewer.impl.getFragmentProxy(this.viewer.model, Number.parseInt(fragId));
 			fragProxy.getAnimTransform();
 			transformMap[fragId] = {
 				position: fragProxy.position

@@ -120,13 +120,13 @@ export class SqlProperties {
 			let category: string = elt.category || '__internal__';
 			let key: string = `${elt.category}/${elt.name}`;
 			// if ( key === '__parent__/parent' ) {
-			// 	parent =parseInt (elt.value) ;
+			// 	parent =Number.parseInt (elt.value) ;
 			// 	result.parents.push (parent) ;
 			// 	continue ;
 			// }
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				await this._read(parseInt(elt.value), result, keepHidden, keepInternals);
+				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals);
 				continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
@@ -246,12 +246,12 @@ export class SqlProperties {
 				const objId: number = (results[i] as any).entity_id;
 				//const external_id: number = (results[i] as any).external_id;
 				const nodeViewableIn: string = (results[i++] as any).value;
-				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? parseInt((results[i++] as any).value) : null;
-				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? parseInt((results[i++] as any).value) : null;
+				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : null;
+				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : null;
 				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : null;
 				// const nodeChild: number[] = [];
 				// while (i < results.length && results[i] && (results[i] as any).name === 'child')
-				// 	nodeChild.push(parseInt((results[i++] as any).value));
+				// 	nodeChild.push(Number.parseInt((results[i++] as any).value));
 
 				if (refObjId) {
 					if (nodes[refObjId]) {

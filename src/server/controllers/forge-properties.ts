@@ -88,7 +88,7 @@ export class ForgePropertiesController implements Controller {
 				guid = guids.body.data.metadata[0].guid;
 			}
 
-			const objid: number = request.query.objectid ? parseInt(request.query.objectid as string) : undefined;
+			const objid: number = request.query.objectid ? Number.parseInt(request.query.objectid as string) : undefined;
 
 			// Rate Limit        - 60 calls per minute for force getting large resource - Otherwise engineering said it is 14.000
 			// forceget {string} - To force get the large resource even if it exceeded the expected maximum length(20 MB).

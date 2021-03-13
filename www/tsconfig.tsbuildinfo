@@ -157,7 +157,7 @@
         "affectsGlobalScope": true
       },
       "../src/client/extensions/transform-tool.ts": {
-        "version": "e7af8422f9c8e21f77ee61f8f0d27519598522b1d6890e4c17581e8d24658a8a",
+        "version": "a9fb3232ec3f0a54d1ac80fe281a8076f1a1274d3c78af4875beab30b30ed045",
         "signature": "05babe9b2d75ef29c09b11be7c37399c3129f0b79d290125cfdf3af037133b7a",
         "affectsGlobalScope": true
       },
