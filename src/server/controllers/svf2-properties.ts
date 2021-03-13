@@ -25,6 +25,7 @@ import ExpressApp from '../server/express-server';
 import Utils from '../utilities/utils';
 import { Svf2Properties, Svf2PropertiesCache } from '../properties/svf2-properties';
 import Svf2PropertiesUtils from '../properties/svf2-properties-utils';
+import { Literal, ExpressionParser, ExpressionEval } from '../utilities/expression-parser';
 
 export class Svf2PropertiesController implements Controller {
 
@@ -190,7 +191,63 @@ export class Svf2PropertiesController implements Controller {
 	}
 
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
+		try {
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			let guid: string = request.params.guid || '';
+			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
+			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
 
+			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
+			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
+
+			const propsDb = new Svf2Properties(dbBuffers);
+
+			let trees: any[] = null;
+			if ((!guid || guid === '') && dbIds) {
+				trees = dbIds.map((id: number): any => propsDb.read(id, keepHiddens, keepInternals));
+			} else {
+				if (!guid || guid === '')
+					guid = Object.keys(dbBuffers.guids)[0];
+				if (!dbBuffers.guids.hasOwnProperty(guid))
+					//return (response.status(404).end());
+					guid = Object.keys(dbBuffers.guids)[0];
+				const viewable_in: string = dbBuffers.guids[guid];
+
+				// const rootIds: number[] = propsDb.findRootNodes();
+				trees = [propsDb.buildTree(viewable_in, true, keepHiddens, keepInternals)];
+				for (let i = 0; i < trees.length; i++) {
+					if (trees[i].objects) {
+						trees = [...trees, ...trees[i].objects];
+						delete trees[i].objects;
+					}
+				}
+				if (dbIds)
+					trees = trees.filter((elt: any): boolean => dbIds.indexOf(elt.objectid) !== -1);
+			}
+
+			if (!keepInternals) {
+				const regex = new RegExp('^__(\\w+)__$');
+				trees.map((elt: any): any => {
+					const keys = Object.keys(elt.properties);
+					keys
+						.filter((key: string): boolean => regex.test(key))
+						.map((key: string): any => delete elt.properties[key]);
+					//delete elt.properties.Other;
+				});
+			}
+			trees.sort((a: any, b: any): number => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0));
+
+			response.json({
+				data: {
+					collection: trees,
+					type: 'properties',
+				}
+			});
+		} catch (ex) {
+			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+		}
 	}
 
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
@@ -248,7 +305,58 @@ export class Svf2PropertiesController implements Controller {
 	// q=name=whatever
 	// q=[objectid|name|externalid]=whatever and/or cat.prop=whatever
 	private async databasePropertiesSearch(request: Request, response: Response): Promise<void> {
-		
+		try {
+			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
+			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
+
+			//const bruteforce: boolean = (request.query.bruteforce as string) === 'true';
+			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
+			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';
+
+			const search: string = (request.query.q as string) || ''; // ((request.query.q as string) || '').split('/');
+			const parsed: Literal[] = ExpressionParser.parse(search);
+
+			const propsDb = new Svf2Properties(dbBuffers);
+
+			let trees: any[] = null;
+			let dbIds: number[] = [];
+			//if (bruteforce) { // Brute Force
+				dbIds = Array.from({ length: propsDb.idMax }, (_, i) => i + 1);
+			// } else {
+			// 	// Here, we find all categories/keys from the search expression (think about not) TBD
+			// 	// Then, we go in the 'attrs' list to find their index
+			// 	// Go to the 'avs' and find all the even index value matching the Attribut ID
+			// 	// Divide that index by 2, and go to the 'offs' list and find the index of the maximum value for the AVS index
+			// 	// That gives the objID
+			// 	const keys: string[] = ExpressionEval.literalList(parsed);
+			// 	const idSet: Set<number> = new Set<number>();
+			// 	keys.map((key: string): void => {
+			// 		const values: string[] = key.split('.');
+			// 		const attrID: number = values.length === 2 ?
+			// 			propsDb.attrs.findIndex((elt: any): boolean => elt[1] === values[0] && elt[5] === values[1])
+			// 			: propsDb.attrs.findIndex((elt: any): boolean => elt[5] === values[0]);
+			// 		const avsIDs: number[] = propsDb.avs.map((elt: number, index: number): number | string => elt === attrID && (index % 2 === 0) ? index / 2 : '').filter(String);
+			// 		dbIds = avsIDs.map((elt: number): number => propsDb.offs.filter((offset: number): boolean => offset <= elt).length - 1);
+			// 		dbIds.map((id: number): Set<number> => idSet.add(id));
+			// 	});
+			// 	dbIds = Array.from(idSet);
+			// }
+			trees = dbIds.map((id: number): any => propsDb.read(id, true, true));
+			trees = trees.filter((elt: any): boolean => ExpressionEval.eval(elt, parsed));
+			if (!keepHiddens || !keepInternals)
+				trees = trees.map((elt: any): any => propsDb.read(elt.objectid, keepHiddens, keepInternals));
+
+			response.json({
+				data: {
+					collection: trees,
+					type: 'properties',
+				}
+			});
+		} catch (ex) {
+			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+			response.status(ex.statusCode || 500).send(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+		}
 	}
 
 }
