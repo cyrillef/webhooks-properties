@@ -145,10 +145,12 @@ export class SqlPropertiesController implements Controller {
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
 			const ids: { [index: string]: number } = {};
-			let externalIds: string[] = (request.query.ids as string).split(','); // csv format
-			externalIds = externalIds.map((extid: string): any => `external_id = '${extid}'`);
-			const results: any = await propsDb.selectQuery(`select id, external_id from _objects_id where ${externalIds.join(' or ')};`);
-			results.map((elt: any): void => ids[elt.external_id] = elt.id);
+			let externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
+			if ( externalIds.length > 0 ) {
+				externalIds = externalIds.map((extid: string): any => `external_id = '${extid}'`);
+				const results: any = await propsDb.selectQuery(`select id, external_id from _objects_id where ${externalIds.join(' or ')};`);
+				results.map((elt: any): void => ids[elt.external_id] = elt.id);
+			}
 
 			response.json({
 				data: {

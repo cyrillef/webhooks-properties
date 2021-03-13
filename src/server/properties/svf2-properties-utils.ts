@@ -80,9 +80,9 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'idmap.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
-				// this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
-				// this.cache[urn].vals = JSON.parse(this.cache[urn].vals.toString('utf8'));
-				// this.cache[urn].ids = JSON.parse(this.cache[urn].ids.toString('utf8'));
+				this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
+				this.cache[urn].values = JSON.parse(this.cache[urn].values.toString('utf8'));
+				this.cache[urn].ids = JSON.parse(this.cache[urn].ids.toString('utf8'));
 
 				return (this.cache[urn]);
 			}

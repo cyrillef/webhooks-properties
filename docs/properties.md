@@ -551,7 +551,7 @@ Response - 200
 
 Returns an object tree, i.e., a hierarchical list of objects for the default model view.
 
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions. Since no GUID is requested on this endpoint, it uses the first (main) GUID from the manifest. Use the next method if you want to provide the GUID.
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
 
@@ -591,7 +591,7 @@ See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/r
 
 Returns a list of properties for each object in an object tree for the default viewable node. Properties are returned according to object ID and do not follow a hierarchical structure.
 
-This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions.
+This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429 conditions. Since no GUID is requested on this endpoint, it uses the first (main) GUID from the manifest. Use the next method if you want to provide the GUID.
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
 

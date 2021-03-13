@@ -23,9 +23,9 @@ export interface Svf2PropertiesCache extends PropertiesCache {
 	avs: Buffer,
 	offsets: Buffer,
 
-	values: Buffer,
-	attrs: Buffer,
-	ids: Buffer,
+	values: string[],
+	attrs: string[],
+	ids: string[],
 }
 
 export class Svf2Properties {
@@ -56,9 +56,12 @@ export class Svf2Properties {
 		this.avsIdx = new Uint32Array(dbs.offsets.buffer, dbs.offsets.byteOffset, dbs.offsets.byteLength / Uint32Array.BYTES_PER_ELEMENT);
 		this.avsPack = dbs.avs;
 
-		this.attrs = JSON.parse(dbs.attrs.toString('utf8'));
-		this.vals = JSON.parse(dbs.values.toString('utf8'));
-		this.ids = JSON.parse(dbs.ids.toString('utf8'));
+		// this.attrs = JSON.parse(dbs.attrs.toString('utf8'));
+		// this.vals = JSON.parse(dbs.values.toString('utf8'));
+		// this.ids = JSON.parse(dbs.ids.toString('utf8'));
+		this.attrs = dbs.attrs;
+		this.vals = dbs.values;
+		this.ids = dbs.ids;
 	}
 
 	public read(dbId: number, keepHidden: boolean, keepInternals: boolean): any {

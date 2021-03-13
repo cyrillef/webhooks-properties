@@ -15,7 +15,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-class JsonDiff {
+export class JsonDiff {
 
 	private lhs: any = null;
 	private rhs: any = null;

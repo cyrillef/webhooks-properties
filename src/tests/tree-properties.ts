@@ -26,42 +26,6 @@ const _fsUnlink = util.promisify(_fs.unlink);
 const _fsReadFile = util.promisify(_fs.readFile);
 const _fsWriteFile = util.promisify(_fs.writeFile);
 
-(Object as any).equals = (x: any, y: any, path: string = './') => {
-	if (x === y) // if both x and y are null or undefined and exactly the same
-		return (true);
-
-	// if they are not strictly equal, they both need to be Objects
-	if (!(x instanceof Object) || !(y instanceof Object))
-		return (console.log(`- diff @ ${path}`), false);
-	// they must have the exact same prototype chain, the closest we can do is test there constructor.
-	if (x.constructor !== y.constructor)
-		return (console.log(`- diff @ ${path}`), false);
-
-	for (let p in x) {
-		// other properties were tested using x.constructor === y.constructor
-		if (!x.hasOwnProperty(p))
-			continue;
-		// allows to compare x[ p ] and y[ p ] when set to undefined
-		if (!y.hasOwnProperty(p))
-			return (console.log(`- diff @ ${path}`), false);
-		if (x[p] === y[p]) // if they have the same strict value or identity then they are equal
-			continue;
-		// Numbers, Strings, Functions, Booleans must be strictly equal
-		if (typeof (x[p]) !== 'object')
-			return (console.log(`- diff @ ${path}`), false);
-		// Objects and Arrays must be tested recursively
-		if (!(Object as any).equals(x[p], y[p], `${path}${p}/`))
-			return (/*console.log(`${path}${p} are different`),*/ false);
-	}
-
-	for (let p in y) {
-		if (y.hasOwnProperty(p) && !x.hasOwnProperty(p))
-			return (console.log(`- diff @ ${path}`), false);
-		// allows x[ p ] to be set to undefined
-	}
-	return (true);
-};
-
 interface TestParams {
 	model: string;
 	urn: string;

@@ -139,14 +139,14 @@ export class SvfPropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
 
-			const externalIds: string[] = (request.query.ids as string).split(','); // csv format
+			const externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
 
 			// const propsDb: SvfProperties = new SvfProperties();
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids)
 
 			const ids: { [index: string]: number } = {};
-			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid));
+			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
 
 			response.json({
 				data: {

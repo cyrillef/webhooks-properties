@@ -67,7 +67,7 @@ export class Svf2PropertiesController implements Controller {
 			const propsDb = new Svf2Properties(dbBuffers);
 
 			const sizes: any = {};
-			Object.keys(dbBuffers).map((key: string): number => sizes[key] = dbBuffers[key].length); //(dbBuffers[key].length / 1024).toFixed(2));
+			Object.keys(dbBuffers).map((key: string): number => sizes[key] = dbBuffers[key].length);
 
 			response.json({
 				data: {
@@ -111,7 +111,7 @@ export class Svf2PropertiesController implements Controller {
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
 
 			// const propsDb = new Svf2Properties(dbBuffers);
-			const propsDb: string[] = JSON.parse(dbBuffers.ids.toString('utf8'));
+			const propsDb: string[] = dbBuffers.ids;
 
 			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
@@ -138,13 +138,13 @@ export class Svf2PropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
 
-			const externalIds: string[] = (request.query.ids as string).split(','); // csv format
+			const externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
 
 			// const propsDb = new Svf2Properties(dbBuffers);
-			const propsDb: string[] = JSON.parse(dbBuffers.ids.toString('utf8'));
+			const propsDb: string[] = dbBuffers.ids;
 
 			const ids: { [index: string]: number } = {};
-			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid));
+			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
 
 			response.json({
 				data: {
