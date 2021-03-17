@@ -120,7 +120,7 @@ export class SvfProperties {
 		return (result);
 	}
 
-	private _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false): number {
+	private _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false, instanceOf: boolean = false): number {
 		let parent: number = null;
 		const propStart: number = 2 * this.offs[dbId];
 		const propStop: number = (this.offs.length <= dbId + 1) ? this.avs.length : 2 * this.offs[dbId + 1];
@@ -133,10 +133,12 @@ export class SvfProperties {
 			// 	result.parents.push (parent) ;
 			// 	continue ;
 			// }
+			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
+				continue;
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				this._read(Number.parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals);
-				continue;
+				this._read(Number.parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals, true);
+				//continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
 				|| key === '__parent__/parent'
@@ -145,6 +147,7 @@ export class SvfProperties {
 				|| key === '__document__/schema_name'
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
+				|| key === '__instanceof__/instanceof_objid'
 			) {
 				category = '__internal__';
 			}
@@ -158,10 +161,10 @@ export class SvfProperties {
 				result.properties[category] = {};
 
 			key = attr[AttributeFieldIndex.iDISPLAYNAME] || attr[AttributeFieldIndex.iNAME];
-			let value: string = this._readPropertyAsString(attr, i);
+			let value: string | number = this._readPropertyAsString(attr, i);
 			if (attr[AttributeFieldIndex.iUNIT] !== null)
 				value += ' ' + attr[AttributeFieldIndex.iUNIT];
-			try { value = value.trimEnd(); } catch (ex) { }
+			value = typeof value === 'string' ? value.trimEnd() : value;
 
 			//let isHidden: boolean = (Number.parseInt(attr[AttributeFieldIndex.iFLAGS]) & 1) !== 1;
 			// In theory should we should also mark as hidden if in parent, child, viewable or externalRef category
@@ -238,8 +241,8 @@ export class SvfProperties {
 		return (value);
 	}
 
-	private _readPropertyAsString(attr: any, valueId: number): string {
-		let value: string = '';
+	private _readPropertyAsString(attr: any, valueId: number): string | number {
+		let value: string | number = '';
 		const tp: number = Number.parseInt(attr[AttributeFieldIndex.iTYPE]);
 		switch (tp) {
 			case AttributeType.Unknown:
@@ -264,9 +267,9 @@ export class SvfProperties {
 				break;
 			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
 				if (attr[AttributeFieldIndex.iFLAGS] & AttributeFlags.afDirectStorage)
-					value = (valueId + 1).toString();
+					value = valueId + 1;
 				else
-					value = this.vals[this.avs[valueId + 1]];
+					value = Number.parseInt(this.vals[this.avs[valueId + 1]]);
 				//console.log(`AttributeType.DbKey => ${value}`);
 				break;
 			case AttributeType.DateTime: // ISO 8601 date
@@ -326,7 +329,7 @@ export class SvfProperties {
 		};
 		if (!node.properties.__internal__.child)
 			return (result);
-		if (typeof node.properties.__internal__.child === 'number')
+		if (!Array.isArray(node.properties.__internal__.child))
 			node.properties.__internal__.child = [node.properties.__internal__.child];
 		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, true, keepHidden, keepInternals));
 

@@ -144,7 +144,10 @@ export class Svf2PropertiesController implements Controller {
 			const propsDb: string[] = dbBuffers.ids;
 
 			const ids: { [index: string]: number } = {};
-			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
+			if ( externalIds.length )
+				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
+			else
+				propsDb.slice(1).map((extId: string): any => ids[extId] = propsDb.indexOf(extId));
 
 			response.json({
 				data: {

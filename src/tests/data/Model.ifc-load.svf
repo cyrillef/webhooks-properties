@@ -1,1 +1,13 @@
-{"data":{"dbs":{"objects_attrs":4355,"objects_avs":209089,"objects_ids":25566,"objects_offs":29336,"objects_vals":254780},"maxId":10841,"type":"details"}}
+{
+    "data": {
+        "dbs": {
+            "objects_attrs": 4355,
+            "objects_avs": 209089,
+            "objects_ids": 25566,
+            "objects_offs": 29336,
+            "objects_vals": 254780
+        },
+        "maxId": 10841,
+        "type": "details"
+    }
+}

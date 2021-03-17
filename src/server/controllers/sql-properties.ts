@@ -118,7 +118,7 @@ export class SqlPropertiesController implements Controller {
 
 			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
-				dbIds = Array.from({ length: await propsDb.idMax() - 1 }, (_, i) => i + 1);
+				dbIds = Array.from({ length: await propsDb.idMax() }, (_, i) => i + 1);
 
 			const externalIds: { [index: number]: string } = {};
 			const results : any = await propsDb.selectQuery(`select id, external_id from _objects_id where id in (${dbIds.join(',')});`);
@@ -146,11 +146,13 @@ export class SqlPropertiesController implements Controller {
 
 			const ids: { [index: string]: number } = {};
 			let externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
-			if ( externalIds.length > 0 ) {
+			let conditions: string = '1=1';
+			if ( externalIds.length ) {
 				externalIds = externalIds.map((extid: string): any => `external_id = '${extid}'`);
-				const results: any = await propsDb.selectQuery(`select id, external_id from _objects_id where ${externalIds.join(' or ')};`);
-				results.map((elt: any): void => ids[elt.external_id] = elt.id);
+				conditions = externalIds.join(' or ');
 			}
+			const results: any = await propsDb.selectQuery(`select id, external_id from _objects_id where ${conditions};`);
+			results.map((elt: any): void => ids[elt.external_id] = elt.id);
 
 			response.json({
 				data: {
@@ -201,16 +203,16 @@ export class SqlPropertiesController implements Controller {
 					trees = trees.filter((elt: any): boolean => dbIds.indexOf(elt.objectid) !== -1);
 			}
 
-			// if (!keepInternals) {
-			// 	const regex = new RegExp('^__(\\w+)__$');
-			// 	trees.map((elt: any): any => {
-			// 		const keys = Object.keys(elt.properties);
-			// 		keys
-			// 			.filter((key: string): boolean => regex.test(key))
-			// 			.map((key: string): any => delete elt.properties[key]);
-			// 		//delete elt.properties.Other;
-			// 	});
-			// }
+			if (!keepInternals) {
+				const regex = new RegExp('^__(\\w+)__$');
+				trees.map((elt: any): any => {
+					const keys = Object.keys(elt.properties);
+					keys
+						.filter((key: string): boolean => regex.test(key))
+						.map((key: string): any => delete elt.properties[key]);
+					//delete elt.properties.Other;
+				});
+			}
 			trees.sort((a: any, b: any): number => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0));
 
 			response.json({

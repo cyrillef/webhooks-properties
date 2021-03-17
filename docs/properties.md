@@ -1,8 +1,64 @@
 # Property Server
 
-The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble json.gz property files.
+The propertyServer server exercises a workaround to the Forge Model Derivative API limitations of the [request properties](https://developer.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) endpoint such as object queries or quota limits. It also demonstrates how to parse the bubble SVF/SVF2 property files.
 
 Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL (sqllite database), and SVF2 (.idx, .pack, .json optimized files).
+
+## Format and ObjectID
+
+### Formats
+
+#### SVF
+
+* objects_attrs.json.gz {common} - Attribute Definition list (JSON array), you should ignore the first element. Indexed on the AttrID starting with index 1. For Attribute Definition details see below.
+
+* objects_vals.json.gz {common} - Attribute Values list (JSON array), you should ignore the first element. Indexed on the ValID starting with index 1.
+
+* objects_ids.json.gz {common} - Unique ID (aka externalID) list (JSON ARRAY), you should ignore the first element. Indexed on the ObjID starting with index 1.
+
+* objects_avs.json.gz {view dependant} - tbd
+
+* objects_offs.json.gz {view dependant} - tbd
+
+![PropertiesJson](PropertiesJson.svg)
+
+* model.db or model (.sdb) {common} - sqlite database containing all detaisl from .json.gz files. Contains 4 tables only since the OnjID/AttrID/ValID triplets are already built into a table.
+
+  * _objects_attr - Attribute Definition list, you should ignore the first element. Indexed on the AttrID(id) starting with index 1. For Attribute Definition details see below.
+
+  * _objects_val - Attribute Values list, you should ignore the first element. Indexed on the ValID(id) starting with index 1.
+
+  * _objects_id - Unique ID (aka externalID) / ViewableID list, you should ignore the first element. Indexed on the ObjID(id) starting with index 1.
+
+  * _objects_eav - ObjID/AttrID/ValID triplets
+
+![PropertiesSql](PropertiesSql.svg)
+
+#### SVF2
+
+SVF2 is a post process of the SVF format. So under the hood the SVF format still exists, and can be retrieved from the OTG manifest (SVF2 manifest). Remeber SVF is for 3D view only, so SVF2 covers 3D views only as well. The SVF2 Property Database is composed of 3 common files, and 3 view dependant files.
+
+* attrs.json {common} - Attribute Definition list (JSON array), you should ignore the first element. Indexed on the AttrID starting with index 1. For Attribute Definition details see below.
+
+* vals.json {common} - Attribute Values list (JSON array), you should ignore the first element. Indexed on the ValID starting with index 1.
+
+* ids.json {common} - Unique ID (aka externalID) list (JSON ARRAY), you should ignore the first element. Indexed on the ObjID starting with index 1.
+
+* avs.idx {view dependant} - Offset in pack file to retrieve attributes for a given ObjID (Uint32 array), you should ignore the first element. Indexed on the ObjID starting with index 1.
+
+* avs.pack {view dependant} - AttrID / ValID pair list (Uint32 encoded value). AttrID is delta encoded from the previously seen ID. ValID is read directly from the stream. (see _buildEAV()/readUint32() method for details)
+
+* dbid.idx {view dependant} - SVF to SVF2 ID mapping (Uint32 array), you should ignore the first element. Indexed on the SVF ObjID starting with index 1.
+
+#### Attribute Definition
+
+tbd
+
+### ObjectID
+
+tbd
+
+## API definition
 
 (click &#9658; to expand):
 
@@ -11,17 +67,17 @@ Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL 
 
 Loads and returns information about the cached database.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/load
@@ -52,13 +108,13 @@ Response - 200
 
 Releases the cached database from the server memory.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/release
@@ -79,13 +135,13 @@ Response - 202
 
 Deletes the cached database from the server (memory and storage).
 
-**URI Parameters**
+### URI Parameter
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/delete
@@ -108,19 +164,19 @@ Response - 202
 
 Returns a list of externalID from requested dbID.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
 * ids {number[], optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'. If missing returns all.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/externalids?ids=2824,2830,3270-3277,5
@@ -156,19 +212,19 @@ Response - 200
 
 Returns a list of dbId from requested externalID.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
 * ids {string} - List of externalID. CSV formatted, using ',' separator.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/ids?ids=c8923f5e-6a14-4420-9b1d-c31d7ae067d2-00000024,425fa4b5-cf64-4260-8581-2345290e5c67-0005833c
@@ -195,11 +251,11 @@ Response - 200
 
 Returns a list of SVF2 dbId from a lits of SVF dbId .
 
-**URI Parameters**
+### URI Parameters
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -207,7 +263,7 @@ Returns a list of SVF2 dbId from a lits of SVF dbId .
 
 * reverse {boolean, optional} - Invert the mapping - if true would convert SVF2 dbId to SVF dbId. Detault to false.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf2/dx...Z0/metadata/svf-svf2?ids=1,2,2724
@@ -248,13 +304,13 @@ Response - 200
 
 Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -264,7 +320,7 @@ Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 * keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata
@@ -308,7 +364,7 @@ Response - 200
 
 Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
@@ -316,7 +372,7 @@ Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 * guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -326,7 +382,7 @@ Returns an object tree, i.e., a hierarchical list of objects for the model view.
 
 * keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/1234-...-4321
@@ -370,13 +426,13 @@ Response - 200
 
 Returns a list of properties for each object in an object tree for the default viewable node. Properties are returned according to object ID and do not follow a hierarchical structure.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -386,7 +442,7 @@ Returns a list of properties for each object in an object tree for the default v
 
 * keepinternals {boolean, optional} - Keeps internal properties in the properties node, Default is false.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/properties?ids=2824,2828
@@ -432,7 +488,7 @@ Response - 200
 
 Returns a list of properties for each object in an object tree. Properties are returned according to object ID and do not follow a hierarchical structure.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
@@ -440,7 +496,7 @@ Returns a list of properties for each object in an object tree. Properties are r
 
 * guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -450,7 +506,7 @@ Returns a list of properties for each object in an object tree. Properties are r
 
 * keepinternals {boolean, optional} - Keeps internal properties in the properties node, Default is false.
 
-**Example**
+### Example
 
 ```bash
 curl -X GET http://localhost:3001/svf/dx...Z0/metadata/1234-...-4321/properties?ids=2824,2828
@@ -498,13 +554,13 @@ Response - 200
 
 Returns a list of properties for each object in a model. Properties are returned according to the query.
 
-**URI Parameters**
+### URI Parameters
 
 * format {string} - Possible values are svf, sql, svf2.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * q {string} - URL encoded query string. Supports Regular Expression.
 
@@ -516,13 +572,13 @@ Returns a list of properties for each object in a model. Properties are returned
 
 * keepinternals {boolean, optional} - Keeps internal properties in the properties node (requires properties=true), Default is false.
 
-*** Operators
+#### Operators
 
 * not / ! / and / & / or / |
 
 * == / != / ~= / > / >= / < / <=
 
-**Example**
+### Example
 
 ```bash
 # q = !(Dimensions.Length == 7.292) & (Identity Data.GLOBALID ~= "3K.*")
@@ -555,11 +611,11 @@ This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
 
-**URI Parameters**
+### URI Parameters
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -574,13 +630,13 @@ This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-GET/) for more details.
 
-**URI Parameters**
+### URI Parameters
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
 * guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -595,11 +651,11 @@ This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
 
-**URI Parameters**
+### URI Parameters
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
@@ -616,13 +672,13 @@ This endpoint forwards the call to the Forge endpoint, and managed the 202 / 429
 
 See [the documentation](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-guid-properties-GET/) for more details.
 
-**URI Parameters**
+### URI Parameters
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
 * guid {string} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID.
 
-**Query String Parameters**
+### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 

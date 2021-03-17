@@ -16,7 +16,7 @@
 //
 
 import { Sequelize, Model, DataTypes, QueryTypes } from 'sequelize';
-import { PropertiesUtils, PropertiesCache } from './common';
+import { PropertiesUtils, PropertiesCache, AttributeType, AttributeFlags, AttributeFieldIndex } from './common';
 
 export interface SqlPropertiesCache extends PropertiesCache {
 	path2SqlDB: string,
@@ -99,7 +99,7 @@ export class SqlProperties {
 		return (result);
 	}
 
-	private async _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false): Promise<number> {
+	private async _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false, instanceOf: boolean = false): Promise<number> {
 		let parent: number = null;
 		const query: string = `
 		select 
@@ -124,10 +124,12 @@ export class SqlProperties {
 			// 	result.parents.push (parent) ;
 			// 	continue ;
 			// }
+			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
+				continue;
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals);
-				continue;
+				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals, true);
+				//continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
 				|| key === '__parent__/parent'
@@ -136,6 +138,7 @@ export class SqlProperties {
 				|| key === '__document__/schema_name'
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
+				|| key === '__instanceof__/instanceof_objid'
 			) {
 				category = '__internal__';
 			}
@@ -148,10 +151,11 @@ export class SqlProperties {
 				result.properties[category] = {};
 
 			key = elt.name;
-			let value: string = elt.value;
+			//let value: string = elt.value;
+			let value: string | number = this._readPropertyAsString(elt);
 			if (elt.data_type_context !== null)
 				value += ' ' + elt.data_type_context;
-			try { value = value.trimEnd(); } catch (ex) { }
+			value = typeof value === 'string'? value.trimEnd() : value;
 
 			// In theory should we should also mark as hidden if in parent, child, viewable or externalRef category
 			if (!(category === '__internal__' && keepInternals) && !(category !== '__internal__' && keepHidden))
@@ -170,6 +174,45 @@ export class SqlProperties {
 			}
 		}
 		return (parent);
+	}
+
+	private _readPropertyAsString(attr: any): string | number {
+		let value: string | number = '';
+		const tp: number = attr.data_type;
+		switch (tp) {
+			case AttributeType.Unknown:
+			case AttributeType.String:
+			case AttributeType.LocalizableString:
+			case AttributeType.BLOB:
+			case AttributeType.GeoLocation: // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
+			default:
+				value = attr.value;
+				break;
+			case AttributeType.Boolean:
+				value = attr.value === 0 ? 'No' : 'Yes';
+				break;
+			case AttributeType.Integer:
+				value = attr.value.toString();
+				break;
+			case AttributeType.Double:
+			case AttributeType.Float:
+				const precision: number = Number.parseInt(attr[AttributeFieldIndex.iDISPLAYPRECISION]) || 3;
+				//value = attr.value.toFixed(precision);
+				value = attr.value.toFixed(3);
+				break;
+			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
+				//if (attr.flags & AttributeFlags.afDirectStorage)
+				value = Number.parseInt(attr.value);
+				//console.log(`AttributeType.DbKey => ${value}`);
+				break;
+			case AttributeType.DateTime: // ISO 8601 date
+				value = attr.value.toString();
+				break;
+			case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
+				value = attr.value;
+				break;
+		}
+		return (value);
 	}
 
 	public async findRootNodes(): Promise<number[]> {

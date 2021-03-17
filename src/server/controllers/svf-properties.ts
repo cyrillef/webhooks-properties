@@ -146,7 +146,10 @@ export class SvfPropertiesController implements Controller {
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids)
 
 			const ids: { [index: string]: number } = {};
-			externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
+			if (externalIds.length)
+				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
+			else
+				propsDb.slice(1).map((extId: string): any => ids[extId.trim()] = propsDb.indexOf(extId));
 
 			response.json({
 				data: {

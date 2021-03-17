@@ -16,7 +16,7 @@
 //
 
 import Utils from '../utilities/utils';
-import { PropertiesUtils, AttributeFieldIndex, AttributeType, PropertiesCache } from './common';
+import { PropertiesUtils, AttributeFieldIndex, AttributeFlags, AttributeType, PropertiesCache } from './common';
 
 export interface Svf2PropertiesCache extends PropertiesCache {
 	dbid: Buffer,
@@ -80,20 +80,24 @@ export class Svf2Properties {
 		return (result);
 	}
 
-	private _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false): number {
+	private _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false, instanceOf: boolean = false): number {
 		let parent: number = null;
 
-		const eav: any = Svf2Properties.buildEAV(dbId, this.avsIdx, this.avsPack);
+		const eav: any = Svf2Properties._buildEAV(dbId, this.avsIdx, this.avsPack);
 		for (let index = 0; index < eav.length; index++) {
 			const elt: any = eav[index];
-			let value: any = Svf2Properties.getValue(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
+			let value: string | number = Svf2Properties._readPropertyAsString(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
 			const attr: any = this.attrs[elt.attributeIndex];
 			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
+			if (category === 'Item')
+				console.log(1);
 			let key: string = attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME];
+			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
+				continue;
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				this._read(value, result, keepHidden, keepInternals);
-				continue;
+				this._read(value as number, result, keepHidden, keepInternals, true);
+				//continue;
 			}
 			if (key === '__viewable_in__/viewable_in'
 				|| key === '__parent__/parent'
@@ -102,6 +106,7 @@ export class Svf2Properties {
 				|| key === '__document__/schema_name'
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
+				|| key === '__instanceof__/instanceof_objid'
 			) {
 				category = '__internal__';
 			}
@@ -116,7 +121,7 @@ export class Svf2Properties {
 			key = attr[AttributeFieldIndex.iDISPLAYNAME] || attr[AttributeFieldIndex.iNAME];
 			if (attr[AttributeFieldIndex.iUNIT] !== null)
 				value += ' ' + attr[AttributeFieldIndex.iUNIT];
-			try { value = value.trimEnd(); } catch (ex) { }
+			value = typeof value === 'string' ? value.trimEnd() : value;
 
 			//let isHidden: boolean = (Number.parseInt(attr[AttributeFieldIndex.iFLAGS]) & 1) !== 1;
 			// In theory should we should also mark as hidden if in parent, child, viewable or externalRef category
@@ -175,7 +180,7 @@ export class Svf2Properties {
 
 		//let objId: number = 1;
 		const results: { childs: number[], parents: number[] } = { childs: new Array(this.idMax), parents: new Array(this.idMax) };
-		for ( let objId = 1 ; objId <= this.idMax ; objId++ ) {
+		for (let objId = 1; objId <= this.idMax; objId++) {
 			let offset: number = this.avsIdx[objId];
 			let endOffset: number = this.avsIdx[objId + 1];
 
@@ -187,9 +192,9 @@ export class Svf2Properties {
 				// attribute ID is delta encoded from the previously seen attribute ID, add that back in
 				attributeIndex += valueIndex.value;
 
-				if ( attributeIndex === childAttrId ) {
+				if (attributeIndex === childAttrId) {
 					foundChildAttr = true;
-					if ( !results.childs.includes(objId) )
+					if (!results.childs.includes(objId))
 						results.childs.push(objId);
 				}
 				if (attributeIndex === parentAttrId) {
@@ -233,7 +238,7 @@ export class Svf2Properties {
 		};
 		if (!node.properties.__internal__.child)
 			return (result);
-		if (typeof node.properties.__internal__.child === 'number')
+		if (!Array.isArray(node.properties.__internal__.child))
 			node.properties.__internal__.child = [node.properties.__internal__.child];
 		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, true, keepHidden, keepInternals));
 
@@ -288,7 +293,7 @@ export class Svf2Properties {
 		return ({ value: value, offset: offset });
 	}
 
-	protected static buildEAV(objectId: number, avs32: Uint32Array, pack: Buffer): { attributeIndex: number, valueIndex: number }[] {
+	protected static _buildEAV(objectId: number, avs32: Uint32Array, pack: Buffer): { attributeIndex: number, valueIndex: number }[] {
 		let offset: number = avs32[objectId];
 		const endOffset: number = avs32[objectId + 1];
 
@@ -308,7 +313,7 @@ export class Svf2Properties {
 		return (result);
 	}
 
-	protected static getValue(attributeIndex: number, valueIndex: number, attrs: any, vals: any): any {
+	protected static _readProperty(attributeIndex: number, valueIndex: number, attrs: any, vals: any): any {
 		const attr: any = attrs[attributeIndex];
 		const attrType: number = attr[AttributeFieldIndex.iTYPE];
 		let value: boolean | number | string | number[] | string[] | Date = '';
@@ -332,6 +337,8 @@ export class Svf2Properties {
 				value = Number.parseFloat(vals[valueIndex]);
 				break;
 			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
+				// As of V2, DbKey attribute values are stored directly into the AV array
+				//if (attr[AttributeFieldIndex.iFLAGS] & AttributeFlags.afDirectStorage)
 				value = valueIndex;
 				//console.log(`AttributeType.DbKey => ${value}`);
 				break;
@@ -341,6 +348,46 @@ export class Svf2Properties {
 			case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
 				value = vals[valueIndex].split(' ');
 				value = (value as string[]).map((elt: string): number => Number.parseFloat(elt));
+				break;
+		}
+		return (value);
+	}
+
+	protected static _readPropertyAsString(attributeIndex: number, valueIndex: number, attrs: any, vals: any): string | number {
+		const attr: any = attrs[attributeIndex];
+		const attrType: number = attr[AttributeFieldIndex.iTYPE];
+		let value: string | number = '';
+		switch (attrType) {
+			case AttributeType.Unknown:
+			case AttributeType.String:
+			case AttributeType.LocalizableString:
+			case AttributeType.BLOB:
+			case AttributeType.GeoLocation: // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
+			default:
+				value = vals[valueIndex];
+				break;
+			case AttributeType.Boolean:
+				value = !(vals[valueIndex] === 0) ? 'Yes' : 'No';
+				break;
+			case AttributeType.Integer:
+				value = Number.parseInt(vals[valueIndex]).toString();
+				break;
+			case AttributeType.Double:
+			case AttributeType.Float:
+				value = Number.parseFloat(vals[valueIndex]).toFixed(3);
+				break;
+			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
+				// As of V2, DbKey attribute values are stored directly into the AV array
+				//if (attr[AttributeFieldIndex.iFLAGS] & AttributeFlags.afDirectStorage)
+				value = valueIndex;
+				//console.log(`AttributeType.DbKey => ${value}`);
+				break;
+			case AttributeType.DateTime: // ISO 8601 date
+				//value = new Date(vals[valueIndex]);
+				value = vals[valueIndex].toString();
+				break;
+			case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
+				value = vals[valueIndex];
 				break;
 		}
 		return (value);

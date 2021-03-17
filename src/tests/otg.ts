@@ -155,6 +155,8 @@ class OTG_Test {
 				value = Number.parseFloat(vals[valueIndex]);
 				break;
 			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
+				// As of V2, DbKey attribute values are stored directly into the AV array
+				//if (attr[AttributeFieldIndex.iFLAGS] & AttributeFlags.afDirectStorage)
 				value = valueIndex;
 				//console.log(`AttributeType.DbKey => ${value}`);
 				break;

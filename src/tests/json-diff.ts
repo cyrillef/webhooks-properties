@@ -20,14 +20,17 @@ export class JsonDiff {
 	private lhs: any = null;
 	private rhs: any = null;
 	private keys: string[] = []; // keys to order array of objects, per level.
+	private compares: any = null;
 	private diffs: Map<string, string> = null;
 
-	constructor(lhs: string | object, rhs: string | object, keys?: string[]) {
+	constructor(lhs: string | object, rhs: string | object, keys?: string[], compares?: any) {
 		try {
 			this.keys = keys || [''];
 			// Make copies
 			this.lhs = JSON.parse(typeof lhs === 'string' ? lhs : JSON.stringify(lhs as any));
 			this.rhs = JSON.parse(typeof rhs === 'string' ? rhs : JSON.stringify(rhs as any));
+			if (compares)
+				this.compares = compares;
 			this.compare();
 		} catch (ex) {
 		}
@@ -51,7 +54,7 @@ export class JsonDiff {
 			this.reorderObject(this.rhs, 0);
 
 		// Atomics and objects are easy to compare, Arrays are more complicated
-		this.compareObjects(this.lhs, this.rhs, '//');
+		this.compareObjects(this.lhs, this.rhs, '', '//');
 
 		return (this.areEquals);
 	}
@@ -96,14 +99,19 @@ export class JsonDiff {
 		return (obj);
 	}
 
-	protected compareObjects(lhs: any, rhs: any, path: string): boolean {
+	protected compareObjects(lhs: any, rhs: any, key: number | string, path: string): boolean {
 		const self = this;
 		if (lhs === undefined)
 			return (this.logDiff(path, 'missing on left'));
 		if (rhs === undefined)
 			return (this.logDiff(path, 'missing on right'));
-		if (lhs === rhs) // atomics
+		if (this.compares && this.compares[key]) {
+			const result: number = this.compares[key](lhs, rhs);
+			if (result === 0)
+				return (true);
+		} else if (lhs === rhs) { // atomics
 			return (true);
+		}
 		// they must have the exact same prototype chain, the closest we can do is test there constructor.
 		if (lhs.constructor !== rhs.constructor)
 			return (this.logDiff(path, 'not of the same type'));
@@ -115,7 +123,7 @@ export class JsonDiff {
 
 		// Compare left to right
 		const Left2Right: boolean = Object.keys(lhs).sort()
-			.map((key: string): boolean => self.compareObjects(lhs[key], rhs[key], `${path}${key}/`))
+			.map((key: string): boolean => self.compareObjects(lhs[key], rhs[key], key, `${path}${key}/`))
 			.filter((res: boolean) => res)
 			.length > 0;
 		// Compare right to left ( but no repeat copmaraisons, we only need to detect missing keys )
@@ -134,7 +142,7 @@ export class JsonDiff {
 
 		if (lhs.length > 0 && Array.isArray(lhs[0])) {
 			return (lhs
-				.map((elt: any, index: number): any => self.compareObjects(elt, rhs[index], `${path}${index}/`))
+				.map((elt: any, index: number): any => self.compareObjects(elt, rhs[index], index, `${path}${index}/`))
 				.filter((res: boolean) => res)
 				.length > 0
 			);
@@ -152,7 +160,7 @@ export class JsonDiff {
 
 				if (!findElt || findElt.length === 0)
 					return (self.logDiff(`${path}[${orderKey}=${elt[orderKey || index]}]`, 'missing on right'));
-				return (self.compareObjects(elt, findElt[0], `${path}[${orderKey || index}=${elt[orderKey || index]}]`));
+				return (self.compareObjects(elt, findElt[0], orderKey || index, `${path}[${orderKey || index}=${elt[orderKey || index]}]`));
 			});
 		}
 		if (rhs.length > 0 && typeof rhs[0] === 'object') {
@@ -174,6 +182,8 @@ export class JsonDiff {
 		// good enough for atomics
 		if (lhs.length !== rhs.length)
 			this.logDiff(path, 'warning: arrays do not have the same length');
+		if (lhs.length > 0 && typeof lhs[0] === 'object' /*&& rhs.length > 0 && typeof rhs[0] === 'object'*/)
+			return (true);
 		if (JSON.stringify(lhs) !== JSON.stringify(rhs))
 			return (this.logDiff(path, 'arrays content are different'));
 		return (true);
