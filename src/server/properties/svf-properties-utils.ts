@@ -40,6 +40,10 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		return (this.loadInCache(urn, region));
 	}
 
+	public getPath(urn: string): string {
+		return (_path.resolve(this.cachePath, urn, 'svf'));
+	}
+
 	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -47,6 +51,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				delete this.cache[urn];
 			if (deleteOnDisk)
 				await Utils.rimraf(this.getPath(urn));
+			await super.release(urn, deleteOnDisk); // should be last
 		} catch (ex) {
 		}
 	}
@@ -70,7 +75,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
 
-				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'idmap.json'), null)).toString('utf8'));
+				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'guids.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
 				return (this.cache[urn]);
@@ -116,7 +121,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const svfEntries: any = geometryEntries
 				//.map((entry: any): any => entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf'))
 				.map((entry: any): any => {
-					let items: any = entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf');
+					let items: any = entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf' || elt.mime === 'application/autodesk-svf2');
 					items = items.map((item: any): any => {
 						item.parent = entry.guid;
 						item.viewableID = entry.viewableID;
@@ -145,10 +150,10 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				.flat();
 			const srcEntries = [...svfEntries, /*...svf2Entries,*/ ...f2dEntries];
 
-			const dataGuids: any = {};
-			srcEntries.map((entry: any): any => dataGuids[entry.guid] = entry.viewableID);
-			this.cache[urn].guids = dataGuids;
-			Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'idmap.json'), Buffer.from(JSON.stringify(dataGuids)));
+			const guids: any = {};
+			srcEntries.map((entry: any): any => guids[entry.guid] = entry.viewableID);
+			this.cache[urn].guids = guids;
+			Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(guids)));
 
 			return (this.cache[urn]);
 		} catch (ex) {

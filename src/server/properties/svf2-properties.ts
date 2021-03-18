@@ -89,8 +89,6 @@ export class Svf2Properties {
 			let value: string | number = Svf2Properties._readPropertyAsString(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
 			const attr: any = this.attrs[elt.attributeIndex];
 			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
-			if (category === 'Item')
-				console.log(1);
 			let key: string = attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME];
 			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
 				continue;

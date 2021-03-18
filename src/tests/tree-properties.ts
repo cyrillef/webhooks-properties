@@ -19,12 +19,12 @@ import * as superagent from 'superagent';
 import JsonDiff from './json-diff';
 import * as _fs from 'fs';
 import * as _path from 'path';
-import * as util from 'util';
+import * as _util from 'util';
 
-const _fsExists = util.promisify(_fs.exists);
-const _fsUnlink = util.promisify(_fs.unlink);
-const _fsReadFile = util.promisify(_fs.readFile);
-const _fsWriteFile = util.promisify(_fs.writeFile);
+const _fsExists = _util.promisify(_fs.exists);
+const _fsUnlink = _util.promisify(_fs.unlink);
+const _fsReadFile = _util.promisify(_fs.readFile);
+const _fsWriteFile = _util.promisify(_fs.writeFile);
 
 interface TestParams {
 	model: string;
@@ -368,7 +368,7 @@ class TreePropertiesTestsController {
 				const buffer: Buffer = await _fsReadFile(_path.resolve(__dirname, ref));
 				diff = JSON.stringify(JSON.parse(buffer.toString('utf8')));
 			}
-		} catch (ex) {}
+		} catch (ex) { }
 		return (diff);
 	}
 

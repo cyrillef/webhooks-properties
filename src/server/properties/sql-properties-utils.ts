@@ -18,6 +18,7 @@
 import * as _fs from 'fs';
 import * as _path from 'path';
 import * as moment from 'moment';
+import * as mkdirp from 'mkdirp';
 import * as Forge from 'forge-apis';
 import AppSettings from '../server/app-settings';
 import Forge2Legged from '../server/forge-oauth-2legged';
@@ -41,7 +42,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 	}
 
 	public getPath(urn: string): string {
-		return (_path.resolve(this.cachePath, urn) + '.db');
+		return (_path.resolve(this.cachePath, urn, 'sql'));
 	}
 
 	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
@@ -49,12 +50,11 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			urn = Utils.makeSafeUrn(urn);
 			if (this.cache[urn]) {
 				await this.cache[urn].sequelize.Close();
-				if (deleteOnDisk) {
-					await Utils.fsUnlink(this.cache[urn].path2SqlDB);
-					await Utils.fsUnlink(this.cache[urn].path2SqlDB + '.json');
-				}
 				delete this.cache[urn];
 			}
+			if (deleteOnDisk)
+				await Utils.rimraf(this.getPath(urn));
+			await super.release(urn, deleteOnDisk);
 		} catch (ex) {
 		}
 	}
@@ -76,9 +76,9 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 					path2SqlDB: cachePath,
 					sequelize: new Sequelize({
 						dialect: 'sqlite',
-						storage: cachePath
+						storage: _path.resolve(cachePath, 'model.db')
 					}),
-					guids: JSON.parse((await Utils.fsReadFile(cachePath + '.json', null)).toString('utf8')),
+					guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
 				};
 				return (this.cache[urn]);
 			}
@@ -106,17 +106,18 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			const dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
 
 			const cachePath: string = this.getPath(urn);
-			await Utils.fsWriteFile(cachePath, dbBuffer.body);
+			await mkdirp(this.getPath(urn));
+			await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
 			const guids: any = {};
 			metadata.body.data.metadata.map((elt: any): void => guids[elt.guid] = elt.name);
-			Utils.fsWriteFile(cachePath + '.json', Buffer.from(JSON.stringify(guids)));
+			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 			this.cache[urn] = {
 				lastVisited: moment(),
 				path2SqlDB: cachePath,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
-					storage: cachePath
+					storage: _path.resolve(cachePath, 'model.db')
 				}),
 				guids: guids
 			};

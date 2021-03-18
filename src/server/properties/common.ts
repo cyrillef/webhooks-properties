@@ -15,9 +15,13 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
+import * as _fs from 'fs';
 import * as _path from 'path';
+import * as _util from 'util';
 import * as moment from 'moment';
-import * as Forge from 'forge-apis';
+import Utils from '../utilities/utils';
+
+const _fsReadDir = _util.promisify(_fs.readdir);
 
 export enum AttributeType {
 	// Numeric types
@@ -106,7 +110,17 @@ export abstract class PropertiesUtils {
 		}
 	}
 
-	public abstract /*async*/ release(urn: string, clearOnDisk: boolean /*= true*/): Promise<void>;
+	public async release(urn: string, clearOnDisk: boolean = true): Promise<void> {
+		try {
+			if ( !clearOnDisk )
+				return;
+			const cachePath: string = PropertiesUtils.prototype.getPath.call(this, urn);
+			const cacheDir: string[] = await _fsReadDir(cachePath);
+			const isEmpty: boolean = cacheDir.length === 0;
+			if ( isEmpty)
+				await Utils.rimraf(cachePath);
+		} catch (ex) {}
+	}
 
 	public abstract /*async*/ loadInCache(urn: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
 

@@ -15,16 +15,16 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 
-import * as util from 'util';
+import * as _util from 'util';
 import * as _fs from 'fs';
 import * as rimraf from 'rimraf';
 import * as zlib from 'zlib';
 
-const _fsExists = util.promisify(_fs.exists);
-const _fsUnlink = util.promisify(_fs.unlink);
-const _fsReadFile = util.promisify(_fs.readFile);
-const _fsWriteFile = util.promisify(_fs.writeFile);
-const _rimraf = util.promisify(rimraf);
+const _fsExists = _util.promisify(_fs.exists);
+const _fsUnlink = _util.promisify(_fs.unlink);
+const _fsReadFile = _util.promisify(_fs.readFile);
+const _fsWriteFile = _util.promisify(_fs.writeFile);
+const _rimraf = _util.promisify(rimraf);
 
 export class Utils {
 

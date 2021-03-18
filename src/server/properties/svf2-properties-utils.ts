@@ -42,7 +42,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 	}
 
 	public getPath(urn: string): string {
-		return (_path.resolve(this.cachePath, urn) + '-svf2');
+		return (_path.resolve(this.cachePath, urn, 'svf2'));
 	}
 
 	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
@@ -52,6 +52,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 				delete this.cache[urn];
 			if (deleteOnDisk)
 				await Utils.rimraf(this.getPath(urn));
+			await super.release(urn, deleteOnDisk);
 		} catch (ex) {
 		}
 	}
@@ -70,14 +71,14 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
 				this.cache[urn] = { lastVisited: moment() };
-				const tags: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'tags.json'), null)).toString('utf8'));
+				const tags: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'tags.json'), null)).toString('utf8'));
 
 				const dbFiles: string[] = Svf2Properties.dbNames;
-				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(self.getPath(urn), elt), null));
+				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(cachePath, elt), null));
 				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][tags[elt]] = results[index]);
 
-				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'idmap.json'), null)).toString('utf8'));
+				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8'));
 				this.cache[urn].guids = guids;
 
 				this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
@@ -131,22 +132,22 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			await mkdirp(this.getPath(urn));
 			jobs = assets.map((elt: any, index: number): Promise<any> => {
 				self.cache[urn][elt.tag] = results[index].body;
-				tags[elt.uri] = elt.tag; 
+				tags[elt.uri] = elt.tag;
 				return (Utils.fsWriteFile(_path.resolve(self.getPath(urn), elt.uri), results[index].text ? results[index].text : results[index].body));
 			});
-			jobs.push (Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'tags.json'), Buffer.from(JSON.stringify(tags))));
+			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
-			const dataGuids: any = {};
+			const guids: any = {};
 			let items: any[] = manifest.children.filter((elt: any): any => elt.role === 'viewable');
 			items.map((elt: any): void => {
 				const subitems: any[] = elt.children.filter((elt: any): any => elt.type === 'geometry');
 				subitems.map((subelt: any): void => {
 					const svf: any = subelt.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf')[0];
-					dataGuids[svf.guid] = subelt.viewableID;
+					guids[svf.guid] = subelt.viewableID;
 				});
 			});
-			this.cache[urn].guids = dataGuids;
-			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'idmap.json'), Buffer.from(JSON.stringify(dataGuids))));
+			this.cache[urn].guids = guids;
+			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(guids))));
 
 			await Promise.all(jobs);
 			// this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
