@@ -137,17 +137,8 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			});
 			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
-			const guids: any = {};
-			let items: any[] = manifest.children.filter((elt: any): any => elt.role === 'viewable');
-			items.map((elt: any): void => {
-				const subitems: any[] = elt.children.filter((elt: any): any => elt.type === 'geometry');
-				subitems.map((subelt: any): void => {
-					const svf: any = subelt.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf')[0];
-					guids[svf.guid] = subelt.viewableID;
-				});
-			});
-			this.cache[urn].guids = guids;
-			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(guids))));
+			this.cache[urn].guids = this.findViewables(manifest);
+			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(this.cache[urn].guids))));
 
 			await Promise.all(jobs);
 			// this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
@@ -159,6 +150,28 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
 		}
+	}
+
+	protected findViewables(manifest: any): any {
+		const guids: any = {};
+		let items: any[] = [];
+		const iterateChildren = (parent: any): void => {
+			if (!parent.children)
+				return;
+			const entries: any[] = parent.children.filter((elt: any): any => elt.role === '3d' || elt.role === '2d');
+			items = [...items, ...entries];
+			if ((entries && entries.length) || !parent.children)
+				return;
+			parent.children.map ((children: any): void => iterateChildren(children));
+		};
+		iterateChildren(manifest);
+
+		items.map((elt: any): void => {
+			const svf: any = elt.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf' || elt.role === '2d')[0];
+			guids[svf.guid] = elt.viewableID;
+		});
+
+		return (guids);
 	}
 
 }

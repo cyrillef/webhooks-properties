@@ -104,7 +104,8 @@ export class SqlProperties {
 		const query: string = `
 		select 
 			_objects_id.external_id, _objects_attr.flags,
-			_objects_attr.category, ifnull(_objects_attr.display_name, _objects_attr.name) as name,
+			_objects_attr.category,
+			coalesce(nullif(_objects_attr.display_name, ''), _objects_attr.name) as name,
 			_objects_attr.data_type, _objects_attr.data_type_context, _objects_val.value, _objects_attr.data_type_context
 		from _objects_eav
 		left join _objects_id on _objects_id.id = _objects_eav.entity_id
@@ -118,7 +119,7 @@ export class SqlProperties {
 			const elt: any = results[i];
 			result.externalId = elt.external_id;
 			let category: string = elt.category || '__internal__';
-			let key: string = `${elt.category}/${elt.name}`;
+			let key: string = `${elt.category}/${elt.name}`.toLowerCase();
 			// if ( key === '__parent__/parent' ) {
 			// 	parent =Number.parseInt (elt.value) ;
 			// 	result.parents.push (parent) ;
@@ -138,7 +139,10 @@ export class SqlProperties {
 				|| key === '__document__/schema_name'
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
+				
 				|| key === '__instanceof__/instanceof_objid'
+				|| /^__internalref__\/[_a-z]+$/.test(key)
+				|| /^__category__\/[_a-z]+$/.test(key)
 			) {
 				category = '__internal__';
 			}
@@ -265,17 +269,17 @@ export class SqlProperties {
 			_objects_eav.entity_id,
 			_objects_id.external_id,
 			_objects_attr.category,
-			ifnull(_objects_attr.display_name, _objects_attr.name) as name,
+			coalesce(nullif(_objects_attr.display_name, ''), _objects_attr.name) as name,
 			_objects_val.value
 		from _objects_eav
 		left join _objects_id on _objects_id.id = _objects_eav.entity_id
 		left join _objects_attr on _objects_attr.id = _objects_eav.attribute_id
 		left join _objects_val on _objects_val.id = _objects_eav.value_id
 		where
-			   (name = 'parent' and _objects_attr.category = '__parent__')
-		 	or (name = 'name' and _objects_attr.category = '__name__')
-			or (name = 'instanceof_objid' and _objects_attr.category = '__instanceof__')
-			or (name = 'viewable_in' and _objects_attr.category = '__viewable_in__')
+			   (_objects_attr.name = 'parent' and _objects_attr.category = '__parent__')
+		 	or (_objects_attr.name = 'name' and _objects_attr.category = '__name__')
+			or (_objects_attr.name = 'instanceof_objid' and _objects_attr.category = '__instanceof__')
+			or (_objects_attr.name = 'viewable_in' and _objects_attr.category = '__viewable_in__')
 		order by _objects_eav.entity_id, name desc, _objects_val.value;`;
 		//(name = 'child' and _objects_attr.category = '__child__')
 		let results: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
@@ -288,10 +292,11 @@ export class SqlProperties {
 				// We sorted entries as viewable_in -> parent (root node have no parent) -> instanceof_objid -> name // -> child (might have 0, 1 or more children)
 				const objId: number = (results[i] as any).entity_id;
 				//const external_id: number = (results[i] as any).external_id;
-				const nodeViewableIn: string = (results[i++] as any).value;
+				const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : viewable_in;
 				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : null;
 				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : null;
-				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : null;
+				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : '';
+				nodeName = nodeName.trim();
 				// const nodeChild: number[] = [];
 				// while (i < results.length && results[i] && (results[i] as any).name === 'child')
 				// 	nodeChild.push(Number.parseInt((results[i++] as any).value));
@@ -356,7 +361,8 @@ export class SqlProperties {
 		let query: string = `
 		select
 			_objects_id.external_id, _objects_attr.flags,
-			_objects_attr.category, ifnull(_objects_attr.display_name, _objects_attr.name) as name,
+			_objects_attr.category,
+			coalesce(nullif(_objects_attr.display_name, ''), _objects_attr.name) as name,
 			_objects_attr.data_type, _objects_attr.data_type_context, _objects_val.value, _objects_attr.data_type_context
 		from _objects_eav
 		left join _objects_id on _objects_id.id = _objects_eav.entity_id

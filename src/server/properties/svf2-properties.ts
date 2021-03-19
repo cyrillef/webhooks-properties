@@ -89,7 +89,7 @@ export class Svf2Properties {
 			let value: string | number = Svf2Properties._readPropertyAsString(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
 			const attr: any = this.attrs[elt.attributeIndex];
 			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
-			let key: string = attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME];
+			let key: string = (attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
 			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
 				continue;
 			if (key === '__instanceof__/instanceof_objid') {
@@ -104,7 +104,10 @@ export class Svf2Properties {
 				|| key === '__document__/schema_name'
 				|| key === '__document__/schema_version'
 				|| key === '__document__/is_doc_property'
+
 				|| key === '__instanceof__/instanceof_objid'
+				|| /^__internalref__\/[_a-z]+$/.test(key)
+				|| /^__category__\/[_a-z]+$/.test(key)
 			) {
 				category = '__internal__';
 			}
@@ -211,7 +214,7 @@ export class Svf2Properties {
 		return (roots);
 	}
 
-	public buildFullTree(nodeId: number, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildFullTree(nodeId: number, viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const node: any = this.read(nodeId, keepHidden, true);
 		let result: any = withProperties ? node : {
 			name: node.name,
@@ -222,7 +225,7 @@ export class Svf2Properties {
 			return (result);
 		if (typeof node.properties.__internal__.child === 'number')
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, withProperties, keepHidden, keepInternals));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, withProperties, keepHidden, keepInternals));
 		return (result);
 	}
 
@@ -238,32 +241,34 @@ export class Svf2Properties {
 			return (result);
 		if (!Array.isArray(node.properties.__internal__.child))
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, true, keepHidden, keepInternals));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, true, keepHidden, keepInternals));
 
-		const isIn = (node: any): boolean => {
-			if (node.objects)
-				node.objects = node.objects.filter((elt: any): boolean => isIn(elt));
-			if (node.objects && node.objects.length > 0) {
-				if (!withProperties) {
-					delete node.properties;
-					delete node.externalId;
-				}
-				return (true);
-			}
-			delete node.objects;
-			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in) {
-				if (!withProperties) {
-					delete node.properties;
-					delete node.externalId;
-				}
-				return (false);
-			}
-			const cmp: boolean = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
+		const cleanNode = (node: any): void => {
 			if (!withProperties) {
 				delete node.properties;
 				delete node.externalId;
 			}
-			return (cmp);
+		};
+		const isIn = (node: any): boolean => {
+			let _isin_: boolean = true; // by default, we are in
+			// if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in)
+			// 	return (true); 
+			if (viewable_in && node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in) {
+				//node.properties.__internal__.viewable_in !== viewable_in
+				if (!Array.isArray(node.properties.__internal__.viewable_in))
+					node.properties.__internal__.viewable_in = [node.properties.__internal__.viewable_in];
+				_isin_ = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
+				if (_isin_ === false)
+					return (cleanNode(node), false); // if a node is not in, all its childs aren't either
+			}
+
+			if (node.objects) {
+				node.objects = node.objects.filter((elt: any): boolean => isIn(elt));
+				if (node.objects.length === 0)
+					delete node.objects;
+			}
+
+			return (cleanNode(node), _isin_);
 		};
 
 		isIn(result);

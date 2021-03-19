@@ -705,9 +705,10 @@ class PropertiesController {
 
 		//await this.xxx_load('svf', fn2);
 		//const result: any = await this.xxx_getTree('svf', fn2);
+		//await this.xxx_getPropertiesRange('sql', fn1, [3145], false);
 
-
-
+		await this.xxx_delete('svf2', fn1);
+		await this.xxx_getTree('svf2', fn1);
 
 		//await this.xxx_delete('svf2', fn2);
 		//console.log(result);
