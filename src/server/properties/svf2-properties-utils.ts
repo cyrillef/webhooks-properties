@@ -94,6 +94,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		}
 	}
 
+	// Files are considered small enough to be downloaded at once - anyway the browser do it, so why not us?
 	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
 		const self = this;
 		try {

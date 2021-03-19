@@ -29,6 +29,8 @@ import Utils from '../utilities/utils';
 
 export class SqlPropertiesUtils extends PropertiesUtils {
 
+	protected static CHUNK_SIZE: number = 1024 * 1024 * 5; // 5Mb chunks
+
 	protected constructor(cachePath: string = AppSettings.cacheFolder, cacheDuration: number = null) {
 		super(cachePath, cacheDuration);
 	}
@@ -70,18 +72,18 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
-			if (cached) {
-				this.cache[urn] = {
-					lastVisited: moment(),
-					path2SqlDB: cachePath,
-					sequelize: new Sequelize({
-						dialect: 'sqlite',
-						storage: _path.resolve(cachePath, 'model.db')
-					}),
-					guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
-				};
-				return (this.cache[urn]);
-			}
+			// if (cached) {
+			// 	this.cache[urn] = {
+			// 		lastVisited: moment(),
+			// 		path2SqlDB: cachePath,
+			// 		sequelize: new Sequelize({
+			// 			dialect: 'sqlite',
+			// 			storage: _path.resolve(cachePath, 'model.db')
+			// 		}),
+			// 		guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
+			// 	};
+			// 	return (this.cache[urn]);
+			// }
 
 			return (await this.loadFromForge(urn, region));
 		} catch (ex) {
@@ -89,6 +91,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
+	// The database can be very big, so we may need to download it in chuncks!
 	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -109,7 +112,27 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 
 			// DB / Properties
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
-			const dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+			if (!dbEntry || dbEntry.length === 0) // Stop here
+				return (null);
+			// As the sqlite DB can be very large, check its size and download in chuncks (best practice anyway).
+			const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+			const dbSize: number = Number.parseInt(dbSizeResponse.headers['content-length']);
+			let dbBuffer: Forge.ApiResponse = null;
+			let nbChunk: number = Math.floor(dbSize / SqlPropertiesUtils.CHUNK_SIZE);
+			if (nbChunk=== 0) {
+				dbBuffer = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+			} else {
+				// Download in serie vs parallel
+				dbBuffer = dbSizeResponse;
+				dbBuffer.body = Buffer.allocUnsafe(dbSize);
+				for (let it = 0; it <= nbChunk; it++) {
+					const start: number = it * SqlPropertiesUtils.CHUNK_SIZE;
+					const end: number = Math.min((it + 1) * SqlPropertiesUtils.CHUNK_SIZE, dbSize) - 1;
+					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, { range: `bytes=${start}-${end}`}, oauth.internalClient, token);
+					chunck.body.copy(dbBuffer.body, start, 0);
+				}
+			}
+
 			await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
 			const guids: any = {};
