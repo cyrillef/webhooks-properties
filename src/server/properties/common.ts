@@ -20,6 +20,7 @@ import * as _path from 'path';
 import * as _util from 'util';
 import * as moment from 'moment';
 import Utils from '../utilities/utils';
+import Forge2Legged from '../server/forge-oauth-2legged';
 
 const _fsReadDir = _util.promisify(_fs.readdir);
 

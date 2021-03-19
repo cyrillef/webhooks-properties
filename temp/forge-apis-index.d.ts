@@ -414,7 +414,7 @@ export class DerivativesApi {
     getDerivativeManifest(
         urn: string,
         derivativeUrn: string,
-        opts: { range?: number },
+        opts: { range?: string, acceptEncoding?: string },
         oauth2Client: AuthClient,
         credentials: AuthToken,
     ): Promise<ApiResponse>;

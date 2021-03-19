@@ -72,18 +72,18 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
-			// if (cached) {
-			// 	this.cache[urn] = {
-			// 		lastVisited: moment(),
-			// 		path2SqlDB: cachePath,
-			// 		sequelize: new Sequelize({
-			// 			dialect: 'sqlite',
-			// 			storage: _path.resolve(cachePath, 'model.db')
-			// 		}),
-			// 		guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
-			// 	};
-			// 	return (this.cache[urn]);
-			// }
+			if (cached) {
+				this.cache[urn] = {
+					lastVisited: moment(),
+					path2SqlDB: cachePath,
+					sequelize: new Sequelize({
+						dialect: 'sqlite',
+						storage: _path.resolve(cachePath, 'model.db')
+					}),
+					guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
+				};
+				return (this.cache[urn]);
+			}
 
 			return (await this.loadFromForge(urn, region));
 		} catch (ex) {
@@ -92,6 +92,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 	}
 
 	// The database can be very big, so we may need to download it in chuncks!
+	// But no need to compress unlike for SVF / SVF2
 	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
