@@ -91,11 +91,18 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const cachePath: string = this.getPath(urn);
+			await mkdirp(cachePath);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
 			const md: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, region);
 			const manifest: Forge.ApiResponse = await md.getManifest(urn, null, oauth.internalClient, token);
+			const metadata: Forge.ApiResponse = await md.getMetadata(urn, null, oauth.internalClient, token);
+			if (process.env.NODE_ENV === 'development') {
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata, null, 4)));
+			}
 
 			const svfEntry: any = manifest.body.derivatives.filter((elt: any): any => elt.outputType === 'svf' || elt.outputType === 'svf2');
 
@@ -110,10 +117,9 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
 			this.cache[urn] = { lastVisited: moment() };
-			await mkdirp(this.getPath(urn));
 			dbFiles.map((elt: string, index: number): any => {
 				self.cache[urn][elt] = dbBuffers[index];
-				Utils.fsWriteFile(_path.resolve(self.getPath(urn), elt), dbBuffers[index]);
+				Utils.fsWriteFile(_path.resolve(cachePath, elt), dbBuffers[index]);
 			});
 
 			// svf / svf2 / f2d
@@ -153,7 +159,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const guids: any = {};
 			srcEntries.map((entry: any): any => guids[entry.guid] = entry.viewableID);
 			this.cache[urn].guids = guids;
-			Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(guids)));
+			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 
 			return (this.cache[urn]);
 		} catch (ex) {

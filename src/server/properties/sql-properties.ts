@@ -132,20 +132,8 @@ export class SqlProperties {
 				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals, true);
 				//continue;
 			}
-			if (key === '__viewable_in__/viewable_in'
-				|| key === '__parent__/parent'
-				|| key === '__child__/child'
-				|| key === '__node_flags__/node_flags'
-				|| key === '__document__/schema_name'
-				|| key === '__document__/schema_version'
-				|| key === '__document__/is_doc_property'
-				
-				|| key === '__instanceof__/instanceof_objid'
-				|| /^__internalref__\/[_a-z]+$/.test(key)
-				|| /^__category__\/[_a-z]+$/.test(key)
-			) {
+			if (/^__[_\w]+__\/[_a-z]+$/.test(key) )
 				category = '__internal__';
-			}
 			if (key === '__name__/name') {
 				if (result.name === '')
 					result.name = elt.value;
@@ -303,7 +291,7 @@ export class SqlProperties {
 
 				if (refObjId) {
 					if (nodes[refObjId]) {
-						nodeName = nodes[refObjId].name;
+						nodeName = nodeName || nodes[refObjId].name;
 					} else {
 						if (!refObjIds[refObjId])
 							refObjIds[refObjId] = [];
@@ -323,7 +311,7 @@ export class SqlProperties {
 					};
 				} else {
 					//nodes[objId].externalId = external_id;
-					nodes[objId].name = nodeName;
+					nodes[objId].name = nodes[objId].name || nodeName;
 					nodes[objId].objectid = objId;
 					//nodes[objId].viewable_in = nodeViewableIn;
 				}
@@ -332,7 +320,7 @@ export class SqlProperties {
 					if (!parent)
 						parent = nodes[nodeParent] = {
 							//externalId: null,
-							name: null,
+							name: '',
 							objectid: nodeParent,
 							//viewable_in: null,
 						};
@@ -340,6 +328,8 @@ export class SqlProperties {
 						parent.objects = [];
 					parent.objects.push(nodes[objId]);
 				}
+				else if (nodeParent) {
+					console.log (nodeViewableIn); }
 			} catch (ex) {
 				console.error(ex);
 				break;

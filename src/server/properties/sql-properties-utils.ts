@@ -92,21 +92,24 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const cachePath: string = this.getPath(urn);
+			await mkdirp(cachePath);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
 			const md: Forge.DerivativesApi = new Forge.DerivativesApi(undefined, region);
 			const manifest: Forge.ApiResponse = await md.getManifest(urn, null, oauth.internalClient, token);
 			const metadata: Forge.ApiResponse = await md.getMetadata(urn, null, oauth.internalClient, token);
+			if (process.env.NODE_ENV === 'development') {
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata, null, 4)));
+			}
 
 			const svfEntry: any = manifest.body.derivatives.filter((elt: any): any => elt.outputType === 'svf' || elt.outputType === 'svf2');
 
 			// DB / Properties
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
 			const dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
-
-			const cachePath: string = this.getPath(urn);
-			await mkdirp(this.getPath(urn));
 			await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
 			const guids: any = {};

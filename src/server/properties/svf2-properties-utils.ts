@@ -98,6 +98,8 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const cachePath: string = this.getPath(urn);
+			await mkdirp(cachePath);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
@@ -109,6 +111,9 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			const endpoint: string = 'https://cdn.derivative.autodesk.com/modeldata';
 			const manifestRequest = await superagent('GET', `${endpoint}/manifest/${urn}?domain=`)
 				.set({ 'Authorization': `Bearer ${token.access_token}` });
+			if (process.env.NODE_ENV === 'development') {
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifestRequest.body, null, 4)));
+			}
 
 			const manifest: any = manifestRequest.body.children.filter((elt: any): any => elt.role === 'viewable')[0];
 			const storagepoints: any = manifest.otg_manifest.paths;
@@ -129,16 +134,15 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			const results: any = await Promise.all(jobs);
 			const tags: any = {};
 			this.cache[urn] = { lastVisited: moment() };
-			await mkdirp(this.getPath(urn));
 			jobs = assets.map((elt: any, index: number): Promise<any> => {
 				self.cache[urn][elt.tag] = results[index].body;
 				tags[elt.uri] = elt.tag;
 				return (Utils.fsWriteFile(_path.resolve(self.getPath(urn), elt.uri), results[index].text ? results[index].text : results[index].body));
 			});
-			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'tags.json'), Buffer.from(JSON.stringify(tags))));
+			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
 			this.cache[urn].guids = this.findViewables(manifest);
-			jobs.push(Utils.fsWriteFile(_path.resolve(this.getPath(urn), 'guids.json'), Buffer.from(JSON.stringify(this.cache[urn].guids))));
+			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(this.cache[urn].guids))));
 
 			await Promise.all(jobs);
 			// this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));

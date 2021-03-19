@@ -97,20 +97,8 @@ export class Svf2Properties {
 				this._read(value as number, result, keepHidden, keepInternals, true);
 				//continue;
 			}
-			if (key === '__viewable_in__/viewable_in'
-				|| key === '__parent__/parent'
-				|| key === '__child__/child'
-				|| key === '__node_flags__/node_flags'
-				|| key === '__document__/schema_name'
-				|| key === '__document__/schema_version'
-				|| key === '__document__/is_doc_property'
-
-				|| key === '__instanceof__/instanceof_objid'
-				|| /^__internalref__\/[_a-z]+$/.test(key)
-				|| /^__category__\/[_a-z]+$/.test(key)
-			) {
+			if (/^__[_\w]+__\/[_a-z]+$/.test(key))
 				category = '__internal__';
-			}
 			if (key === '__name__/name') {
 				if (result.name === '')
 					result.name = value;
