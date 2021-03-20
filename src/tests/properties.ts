@@ -100,6 +100,7 @@ class PropertiesController {
 		console.log('  svf <model> - test SVF (both for SVF and SVF2)');
 		console.log('  sql <model> - test SQL (both for SVF and SVF2)');
 		console.log('  svf2 <model> - test SVF2');
+		console.log('  check2 <model> - checks outputs from SVF/SQL/SVF2');
 		console.log('  clean <model> [<model> ...] - delete all data files');
 		console.log('  all <model> [<model> ...] - run forge/svf/sql/svv2 commands for these models');
 		console.log(' ');
@@ -115,10 +116,10 @@ class PropertiesController {
 		const url: string = `/forge/${def.urn}/metadata/${guid}/properties`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-properties.forge`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} forge-properties created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} forge-properties`, PropertiesController.sortKey);
@@ -139,10 +140,10 @@ class PropertiesController {
 			result.data.collection.push(results[i].body.data.collection[0]);
 
 		const fn: string = `./data/${args}-properties-range.forge`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result, [PropertiesController.sortKey]);
 		if (!json) {
-			await this.saveJson(fn, result);
+			await PropertiesController.saveJson(fn, result);
 			PropertiesController.console(true, `${args} forge-properties-range created!`);
 		} else {
 			PropertiesController.compareObjects(result, json, `${args} forge-properties-range`, PropertiesController.sortKey);
@@ -155,10 +156,10 @@ class PropertiesController {
 		const url: string = `/forge/${def.urn}/metadata/${guid}`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-tree.forge`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} forge-tree created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} forge-tree`, PropertiesController.sortByObjectID);
@@ -172,10 +173,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/load`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-load.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} load created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} load`);
@@ -195,10 +196,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/externalids`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-externalids.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} externalids created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} externalids`);
@@ -211,10 +212,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/ids`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-ids.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} ids created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} ids`);
@@ -227,10 +228,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/ids?ids=${encodeURIComponent(extIds.join(','))}`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-ids-range.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} ids range created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} ids range`);
@@ -243,10 +244,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/properties`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-properties.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} properties created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} properties`, PropertiesController.sortKey);
@@ -260,10 +261,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata/properties?ids=${encodeURIComponent(dbids.join(','))}&keephiddens=${keepInternals.toString()}&keepinternals=${keepInternals.toString()}`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-properties${num}.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} properties${num} created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} properties${num}`, PropertiesController.sortKey);
@@ -276,10 +277,10 @@ class PropertiesController {
 		const url: string = `/${method}/${def.urn}/metadata`;
 		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
 		const fn: string = `./data/${args}-tree.${method}`;
-		let json: any = await this.loadJson(fn);
+		let json: any = await PropertiesController.loadJson(fn);
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
 		if (!json) {
-			await this.saveJson(fn, result.body);
+			await PropertiesController.saveJson(fn, result.body);
 			PropertiesController.console(true, `${args} ${method} tree created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} tree`, PropertiesController.sortByObjectID);
@@ -464,41 +465,41 @@ class PropertiesController {
 			const defaultGUID1: string = urns[fn1].guids[0];
 			const defaultGUID2: string = urns[fn2].guids[1];
 
-			const svfLoad = await this.loadJson(`data/${fn1}-load.svf`);
-			const sqlLoad = await this.loadJson(`data/${fn1}-load.sql`);
-			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
+			const svfLoad = await PropertiesController.loadJson(`data/${fn1}-load.svf`);
+			const sqlLoad = await PropertiesController.loadJson(`data/${fn1}-load.sql`);
+			const svf2Load = await PropertiesController.loadJson(`data/${fn2}-load.svf2`);
 			PropertiesController.console(
 				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId,
 				`${fn1} number of entries`
 			);
-			
-			const svfExtIds: any = await this.loadJson(`data/${fn1}-externalids.svf`);
-			const sqlExtIds: any = await this.loadJson(`data/${fn1}-externalids.sql`);
+
+			const svfExtIds: any = await PropertiesController.loadJson(`data/${fn1}-externalids.svf`);
+			const sqlExtIds: any = await PropertiesController.loadJson(`data/${fn1}-externalids.sql`);
 			PropertiesController.compareObjects(svfExtIds, sqlExtIds, `${fn1} svf-sql externalids`, null);
-			const svf2ExtIds: any = await this.loadJson(`data/${fn2}-externalids.svf2`);
+			const svf2ExtIds: any = await PropertiesController.loadJson(`data/${fn2}-externalids.svf2`);
 			//PropertiesController.compareObjects(svfExtIds, svf2ExtIds, `${fn1} svf-svf2 externalids`, null); // expected to fail
 			const svfList: string[] = Object.values(svfExtIds.data.collection).sort() as string[];
 			const svf2List: string[] = Object.values(svf2ExtIds.data.collection).sort() as string[];
 			PropertiesController.compareObjects(svfList, svf2List, `${fn1} svf-svf2 externalids`, null);
 
-			const svfIds: any = await this.loadJson(`data/${fn1}-ids.svf`);
-			const sqlIds: any = await this.loadJson(`data/${fn1}-ids.sql`);
+			const svfIds: any = await PropertiesController.loadJson(`data/${fn1}-ids.svf`);
+			const sqlIds: any = await PropertiesController.loadJson(`data/${fn1}-ids.sql`);
 			PropertiesController.compareObjects(svfIds, sqlIds, `${fn1} svf-sql ids`, null);
 			//const svf2Ids: any = await this.loadJson(`data/${fn2}-ids.svf2`);
 			//PropertiesController.compareObjects(svfIds, svf2Ids, `${fn1} svf-svf2 ids`, null); // expected to fail
 
-			const svfIdsRange: any = await this.loadJson(`data/${fn1}-ids-range.svf`);
-			const sqlIdsRange: any = await this.loadJson(`data/${fn1}-ids-range.sql`);
+			const svfIdsRange: any = await PropertiesController.loadJson(`data/${fn1}-ids-range.svf`);
+			const sqlIdsRange: any = await PropertiesController.loadJson(`data/${fn1}-ids-range.sql`);
 			PropertiesController.compareObjects(svfIdsRange, sqlIdsRange, `${fn1} svf-sql ids range`, null);
 			//const svf2IdsRange: any = await this.loadJson(`data/${fn2}-ids-range.svf2`);
 			//PropertiesController.compareObjects(svfIdsRange, svf2IdsRange, `${fn1} svf-svf2 ids range`, null); // expected to fail
 
-			const svfTree: any = await this.loadJson(`./data/${fn1}-tree.svf`);
-			const sqlTree: any = await this.loadJson(`./data/${fn1}-tree.sql`);
+			const svfTree: any = await PropertiesController.loadJson(`./data/${fn1}-tree.svf`);
+			const sqlTree: any = await PropertiesController.loadJson(`./data/${fn1}-tree.sql`);
 			PropertiesController.compareObjects(svfTree, sqlTree, `${fn1} svf-sql tree`, PropertiesController.sortByObjectID);
 			// const svf2Tree: any = await this.loadJson(`./data/${fn2}-tree.svf2`);
 			// PropertiesController.compareObjects(svfTree, svf2Tree, `${fn1} svf-svf2 tree`, PropertiesController.sortByObjectID); // expected to fail
-			let svf2TreeText: string = (await this.loadFile(`./data/${fn2}-tree.svf2`)).toString('utf8');
+			let svf2TreeText: string = (await PropertiesController.loadFile(`./data/${fn2}-tree.svf2`)).toString('utf8');
 			const regex: RegExp = new RegExp(`"${fn2}"`, 'g');
 			svf2TreeText = svf2TreeText.replace(regex, `"${fn1}"`);
 			const svf2Tree: any = JSON.parse(svf2TreeText);
@@ -526,16 +527,20 @@ class PropertiesController {
 			};
 			traverseSvfNodes(node);
 			JsonDiff.sortObjectProperties(svf2Tree, [PropertiesController.sortByObjectID]); // Sort again since we changed objectIDs
-			await this.saveJson(`./data/${fn1}-tree.svf.remapped`, svfTree);
-			await this.saveJson(`./data/${fn2}-tree.svf2.remapped`, svf2Tree);
-			PropertiesController.compareObjectsWithSVF2(svfTree, svf2Tree, `${fn1} svf-svf2 tree`, PropertiesController.sortByObjectID);
+			await PropertiesController.saveJson(`./data/${fn1}-tree.svf.remapped`, svfTree);
+			await PropertiesController.saveJson(`./data/${fn2}-tree.svf2.remapped`, svf2Tree);
+			PropertiesController.compareObjectsWithSVF2(
+				svfTree, svf2Tree, PropertiesController.sortByObjectID, `${fn1} svf-svf2 tree`,
+				null,
+				false
+			);
 
-			const svfProperties: any = await this.loadJson(`./data/${fn1}-properties.svf`);
-			const sqlProperties: any = await this.loadJson(`./data/${fn1}-properties.sql`);
+			const svfProperties: any = await PropertiesController.loadJson(`./data/${fn1}-properties.svf`);
+			const sqlProperties: any = await PropertiesController.loadJson(`./data/${fn1}-properties.sql`);
 			PropertiesController.compareObjects(svfProperties, sqlProperties, `${fn1} svf-sql properties`, PropertiesController.sortByObjectID);
 			//const svf2Properties: any = await this.loadJson(`./data/${fn2}-properties.svf2`);
 			//PropertiesController.compareObjects(svfProperties, svf2Properties, `${fn1} svf-svf2 properties`, PropertiesController.sortByObjectID); // expected to fail
-			let svf2PropertiesText: string = (await this.loadFile(`./data/${fn2}-properties.svf2`)).toString('utf8');
+			let svf2PropertiesText: string = (await PropertiesController.loadFile(`./data/${fn2}-properties.svf2`)).toString('utf8');
 			svf2PropertiesText = svf2PropertiesText.replace(regex, `"${fn1}"`);
 			const svf2Properties: any = JSON.parse(svf2PropertiesText);
 			svf2Properties.data.collection.map((elt: any): void => elt.objectid = idMapping[elt.objectid]);
@@ -556,9 +561,13 @@ class PropertiesController {
 			};
 			svfProperties.data.collection.map((elt: any): void => iterateSvfNodes(elt));
 			JsonDiff.sortObjectProperties(svf2Properties, [PropertiesController.sortKey]); // Sort again since we changed objectIDs
-			await this.saveJson(`./data/${fn1}-properties.svf.remapped`, svfProperties);
-			await this.saveJson(`./data/${fn2}-properties.svf2.remapped`, svf2Properties);
-			PropertiesController.compareObjectsWithSVF2(svfProperties, svf2Properties, `${fn1} svf-svf2 properties`, PropertiesController.sortByObjectID);
+			await PropertiesController.saveJson(`./data/${fn1}-properties.svf.remapped`, svfProperties);
+			await PropertiesController.saveJson(`./data/${fn2}-properties.svf2.remapped`, svf2Properties);
+			PropertiesController.compareObjectsWithSVF2(
+				svfProperties, svf2Properties, PropertiesController.sortByObjectID, `${fn1} svf-svf2 properties`,
+				null,
+				false
+			);
 
 			//await this.changeReferences(fn2, fn1, [`${fn2}-properties2.svf2`, `${fn2}-properties3.svf2`, `${fn2}-properties.svf2`]);
 		} catch (ex) {
@@ -573,39 +582,39 @@ class PropertiesController {
 			const fn2: string = args[0]; // Model translated with SVF2
 			const defaultGUID2: string = urns[fn2].guids[0];
 
-			const svfLoad = await this.loadJson(`data/${fn2}-load.svf`);
-			const sqlLoad = await this.loadJson(`data/${fn2}-load.sql`);
-			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
+			const svfLoad = await PropertiesController.loadJson(`data/${fn2}-load.svf`);
+			const sqlLoad = await PropertiesController.loadJson(`data/${fn2}-load.sql`);
+			const svf2Load = await PropertiesController.loadJson(`data/${fn2}-load.svf2`);
 			PropertiesController.console(
 				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId,
 				`${fn2} number of entries`
 			);
 
-			const svfExtIds: any = await this.loadJson(`data/${fn2}-externalids.svf`);
-			const sqlExtIds: any = await this.loadJson(`data/${fn2}-externalids.sql`);
+			const svfExtIds: any = await PropertiesController.loadJson(`data/${fn2}-externalids.svf`);
+			const sqlExtIds: any = await PropertiesController.loadJson(`data/${fn2}-externalids.sql`);
 			PropertiesController.compareObjects(svfExtIds, sqlExtIds, `${fn2} svf-sql externalids`, null);
-			const svf2ExtIds: any = await this.loadJson(`data/${fn2}-externalids.svf2`);
+			const svf2ExtIds: any = await PropertiesController.loadJson(`data/${fn2}-externalids.svf2`);
 			//PropertiesController.compareObjects(svfExtIds, svf2ExtIds, `${fn2} svf-svf2 externalids`, null); // expected to fail
 			const svfList: string[] = Object.values(svfExtIds.data.collection).sort() as string[];
 			const svf2List: string[] = Object.values(svf2ExtIds.data.collection).sort() as string[];
 			PropertiesController.compareObjects(svfList, svf2List, `${fn2} svf-svf2 externalids`, null);
 
-			const svfIds: any = await this.loadJson(`data/${fn2}-ids.svf`);
-			const sqlIds: any = await this.loadJson(`data/${fn2}-ids.sql`);
+			const svfIds: any = await PropertiesController.loadJson(`data/${fn2}-ids.svf`);
+			const sqlIds: any = await PropertiesController.loadJson(`data/${fn2}-ids.sql`);
 			PropertiesController.compareObjects(svfIds, sqlIds, `${fn2} svf-sql ids`, null);
 			//const svf2Ids: any = await this.loadJson(`data/${fn2}-ids.svf2`);
 			//PropertiesController.compareObjects(svfIds, svf2Ids, `${fn2} svf-svf2 ids`, null); // expected to fail
 
-			const svfIdsRange: any = await this.loadJson(`data/${fn2}-ids-range.svf`);
-			const sqlIdsRange: any = await this.loadJson(`data/${fn2}-ids-range.sql`);
+			const svfIdsRange: any = await PropertiesController.loadJson(`data/${fn2}-ids-range.svf`);
+			const sqlIdsRange: any = await PropertiesController.loadJson(`data/${fn2}-ids-range.sql`);
 			PropertiesController.compareObjects(svfIdsRange, sqlIdsRange, `${fn2} svf-sql ids range`, null);
 			//const svf2IdsRange: any = await this.loadJson(`data/${fn2}-ids-range.svf2`);
 			//PropertiesController.compareObjects(svfIdsRange, svf2IdsRange, `${fn2} svf-svf2 ids range`, null); // expected to fail
 
-			let svfTree: any = await this.loadJson(`./data/${fn2}-tree.svf`);
-			const sqlTree: any = await this.loadJson(`./data/${fn2}-tree.sql`);
+			let svfTree: any = await PropertiesController.loadJson(`./data/${fn2}-tree.svf`);
+			const sqlTree: any = await PropertiesController.loadJson(`./data/${fn2}-tree.sql`);
 			PropertiesController.compareObjects(svfTree, sqlTree, `${fn2} svf-sql tree`, PropertiesController.sortByObjectID);
-			const svf2Tree: any = await this.loadJson(`./data/${fn2}-tree.svf2`);
+			const svf2Tree: any = await PropertiesController.loadJson(`./data/${fn2}-tree.svf2`);
 			//PropertiesController.compareObjects(svfTree, svf2Tree, `${fn2} svf-svf2 tree`, PropertiesController.sortByObjectID); // expected to fail
 			const idMapping: any = await this.svf2_svfTosvf2_mapping(null, fn2, true); // { svf2ID: svfID }
 			let node: any = svf2Tree.data.objects[0];
@@ -631,14 +640,18 @@ class PropertiesController {
 			};
 			traverseSvfNodes(node);
 			JsonDiff.sortObjectProperties(svf2Tree, [PropertiesController.sortByObjectID]); // Sort again since we changed objectIDs
-			await this.saveJson(`./data/${fn2}-tree.svf.remapped`, svfTree);
-			await this.saveJson(`./data/${fn2}-tree.svf2.remapped`, svf2Tree);
-			PropertiesController.compareObjectsWithSVF2(svfTree, svf2Tree, `${fn2} svf-svf2 tree`, PropertiesController.sortByObjectID);
+			await PropertiesController.saveJson(`./data/${fn2}-tree.svf.remapped`, svfTree);
+			await PropertiesController.saveJson(`./data/${fn2}-tree.svf2.remapped`, svf2Tree);
+			PropertiesController.compareObjectsWithSVF2(
+				svfTree, svf2Tree, PropertiesController.sortByObjectID, `${fn2} svf-svf2 tree`,
+				`./data/${fn2}-tree-svf-svf2.diff`,
+				false
+			);
 
-			let svfProperties: any = await this.loadJson(`./data/${fn2}-properties.svf`);
-			const sqlProperties: any = await this.loadJson(`./data/${fn2}-properties.sql`);
+			let svfProperties: any = await PropertiesController.loadJson(`./data/${fn2}-properties.svf`);
+			const sqlProperties: any = await PropertiesController.loadJson(`./data/${fn2}-properties.sql`);
 			PropertiesController.compareObjects(svfProperties, sqlProperties, `${fn2} svf-sql properties`, PropertiesController.sortByObjectID);
-			const svf2Properties: any = await this.loadJson(`./data/${fn2}-properties.svf2`);
+			const svf2Properties: any = await PropertiesController.loadJson(`./data/${fn2}-properties.svf2`);
 			//PropertiesController.compareObjects(svfProperties, svf2Properties, `${fn2} svf-svf2 properties`, PropertiesController.sortByObjectID); // expected to fail
 			svf2Properties.data.collection.map((elt: any): void => elt.objectid = idMapping[elt.objectid]);
 			const iterateSvf2Nodes = (elt: any): void => {
@@ -670,25 +683,30 @@ class PropertiesController {
 			};
 			svfProperties.data.collection.map((elt: any): void => iterateSvfNodes(elt));
 			JsonDiff.sortObjectProperties(svf2Properties, [PropertiesController.sortKey]); // Sort again since we changed objectIDs
-			await this.saveJson(`./data/${fn2}-properties.svf.remapped`, svfProperties);
-			await this.saveJson(`./data/${fn2}-properties.svf2.remapped`, svf2Properties);
-			let different: JsonDiff = PropertiesController.compareObjectsWithSVF2(svfProperties, svf2Properties, `${fn2} svf-svf2 properties`, PropertiesController.sortByObjectID, false);
-			if (!different.areEquals)
-				await this.accepOrRejectChanges(different, `./data/${fn2}-properties-svf-sv2.diff`, `${fn2} svf-svf2 properties differences`, false);
+			await PropertiesController.saveJson(`./data/${fn2}-properties.svf.remapped`, svfProperties);
+			await PropertiesController.saveJson(`./data/${fn2}-properties.svf2.remapped`, svf2Properties);
+			let different: JsonDiff = await PropertiesController.compareObjectsWithSVF2(
+				svfProperties, svf2Properties, PropertiesController.sortByObjectID, `${fn2} svf-svf2 properties`,
+				`./data/${fn2}-properties-svf-svf2.diff`,
+				false
+			);
 
 			// Now compare with Forge
-			svfTree = await this.loadJson(`./data/${fn2}-tree.svf`);
-			const forgeTree: any = await this.loadJson(`./data/${fn2}-tree.forge`);
-			different = PropertiesController.compareObjectsWithSVF2(svfTree, forgeTree, `${fn2} svf-forge tree`, PropertiesController.sortByObjectID, false);
-			if (!different.areEquals)
-				await this.accepOrRejectChanges(different, `./data/${fn2}-tree-svf-forge.diff`, `${fn2} svf-forge tree differences`, false);
-
-
-			svfProperties = await this.loadJson(`./data/${fn2}-properties.svf`);
-			const forgeProperties: any = await this.loadJson(`./data/${fn2}-properties.forge`);
-			different = PropertiesController.compareObjectsWithSVF2(svfProperties, forgeProperties, `${fn2} svf-forge properties`, PropertiesController.sortByObjectID, false);
-			if (!different.areEquals)
-				await this.accepOrRejectChanges(different, `./data/${fn2}-properties-svf-forge.diff`, `${fn2} svf-forge properties differences`, false);
+			svfTree = await PropertiesController.loadJson(`./data/${fn2}-tree.svf`);
+			const forgeTree: any = await PropertiesController.loadJson(`./data/${fn2}-tree.forge`);
+			different = await PropertiesController.compareObjectsWithSVF2(
+				svfTree, forgeTree, PropertiesController.sortByObjectID, `${fn2} svf-forge tree`,
+				`./data/${fn2}-tree-svf-forge.diff`,
+				false
+			);
+			
+			svfProperties = await PropertiesController.loadJson(`./data/${fn2}-properties.svf`);
+			const forgeProperties: any = await PropertiesController.loadJson(`./data/${fn2}-properties.forge`);
+			different = await PropertiesController.compareObjectsWithSVF2(
+				svfProperties, forgeProperties, PropertiesController.sortByObjectID, `${fn2} svf-forge properties`,
+				`./data/${fn2}-properties-svf-forge.diff`,
+				false
+			);
 
 		} catch (ex) {
 			console.error(ex);
@@ -807,7 +825,7 @@ class PropertiesController {
 		return (result);
 	}
 
-	protected async loadFile(ref: any): Promise<Buffer> {
+	protected static async loadFile(ref: any): Promise<Buffer> {
 		try {
 			const buffer: Buffer = await _fsReadFile(PropertiesController.resolvePath(ref));
 			return (buffer);
@@ -815,13 +833,13 @@ class PropertiesController {
 		return (null);
 	}
 
-	protected async saveFile(ref: any, buffer: Buffer): Promise<void> {
+	protected static async saveFile(ref: any, buffer: Buffer): Promise<void> {
 		try {
 			await _fsWriteFile(PropertiesController.resolvePath(ref), buffer);
 		} catch (ex) { }
 	}
 
-	protected async loadJson(ref: any): Promise<any> {
+	protected static async loadJson(ref: any): Promise<any> {
 		try {
 			const buffer: Buffer = await _fsReadFile(PropertiesController.resolvePath(ref));
 			return (JSON.parse(buffer.toString('utf8')));
@@ -829,7 +847,7 @@ class PropertiesController {
 		return (null);
 	}
 
-	protected async saveJson(ref: any, obj: any): Promise<void> {
+	protected static async saveJson(ref: any, obj: any): Promise<void> {
 		try {
 			await _fsWriteFile(PropertiesController.resolvePath(ref), Buffer.from(JSON.stringify(obj, null, 4)));
 		} catch (ex) { }
@@ -854,7 +872,11 @@ class PropertiesController {
 		return (cmp.areEquals);
 	}
 
-	protected static compareObjectsWithSVF2(lhs: any, rhs: any, message: string = '', key?: string, bConsole: boolean = true): JsonDiff {
+	protected static async compareObjectsWithSVF2(
+		lhs: any, rhs: any, key: string = '', message: string = '',
+		diffFile: string = null,
+		bConsole: boolean = true
+	): Promise<JsonDiff> {
 		//JsonDiff.sortObjectProperties(lhs);
 		//JsonDiff.sortObjectProperties(rhs);
 		const compareNames = (lhs_name: string, rhs_name: string): number => {
@@ -881,17 +903,19 @@ class PropertiesController {
 		if (cmp.areEquals) {
 			PropertiesController.console(true, `${message}`);
 		} else {
+			const acceptedDiff: boolean = await PropertiesController.accepOrRejectChanges(cmp, diffFile);
+			const acceptedDiffMsg: string = `differences ${acceptedDiff ? 'accepted' : 'rejected'}`;
 			if (bConsole)
-				PropertiesController.console(false, `${message} ${cmp.toString(4)}\n`);
+				PropertiesController.console(false, `${message}  different -`, acceptedDiff, acceptedDiffMsg, undefined, `\n${cmp.toString(4)}\n`);
 			else
-				PropertiesController.console(false, `${message} different`);
+				PropertiesController.console(false, `${message} different -`, acceptedDiff, acceptedDiffMsg);
 		}
 		return (cmp);
 	}
 
 	protected async compareMethods(model: string, what: string, lformat: string, lhs: any, rformat: string, rhs: any, key?: string): Promise<boolean> {
 		const fn: string = `./data/${model}-${what}.${lformat}-${rformat}`;
-		let diff: any = await this.loadJson(fn);
+		let diff: any = await PropertiesController.loadJson(fn);
 
 		const cmp: JsonDiff = new JsonDiff(lhs, rhs, key ? [key] : undefined);
 		if (cmp.areEquals || (diff && JSON.stringify(diff) === cmp.toString())) {
@@ -899,7 +923,7 @@ class PropertiesController {
 		} else {
 			PropertiesController.console(true, `${model} ${what} (${lformat}-${rformat}) created!`);
 			PropertiesController.console(false, `${model} ${what} (${lformat}-${rformat})\n${cmp.toString(4)}\n`);
-			await this.saveFile(fn, Buffer.from(cmp.toString(4)));
+			await PropertiesController.saveFile(fn, Buffer.from(cmp.toString(4)));
 		}
 		return (cmp.areEquals);
 	}
@@ -907,34 +931,45 @@ class PropertiesController {
 	protected async changeReferences(from: string, to: string, files: string[]): Promise<void> {
 		let jobs: Promise<void>[] = files.map(async (file: string): Promise<void> => {
 			let fn: string = `./data/${file}`;
-			const content: Buffer = await this.loadFile(fn);
+			const content: Buffer = await PropertiesController.loadFile(fn);
 			let text: string = content.toString('utf8');
 			var re = new RegExp(from, 'g');
 			text = text.replace(re, to);
 			fn = `./data/${file}.ref`;
-			await this.saveFile(fn, Buffer.from(text));
+			await PropertiesController.saveFile(fn, Buffer.from(text));
 		});
 		await Promise.all(jobs);
 	}
 
-	protected async accepOrRejectChanges(different: JsonDiff, diffFilename: string, message: string = '', bConsole: boolean = true): Promise<boolean> {
-		let diff: any = await this.loadJson(diffFilename);
+	protected static async accepOrRejectChanges(different: JsonDiff, diffFilename: string): Promise<boolean> {
+		let diff: any = await PropertiesController.loadJson(diffFilename);
 		if (different.areEquals || (diff && JSON.stringify(diff) === different.toString())) {
-			PropertiesController.console(true, `${message} accepted`);
+			return (true);
 		} else {
-			PropertiesController.console(false, `${message} rejected!`);
-			if (bConsole)
-				PropertiesController.console(false, `${different.toString(4)}\n`);
-			await this.saveFile(diffFilename, Buffer.from(different.toString(4)));
+			await PropertiesController.saveFile(diffFilename, Buffer.from(different.toString(4)));
+			return (false);
 		}
-		return (different.areEquals);
 	}
 
-	protected static console(isOk: boolean, message: string = '') {
-		if (!isOk)
-			console.warn(chalk`{red ✗ ${message}}`);
-		else
-			console.info(chalk`{green ✓ ${message}}`);
+	// pairs of:   bool: true|false|undefined, string: ''
+	protected static console(...args: any[]) {
+		let st: string | string[] = [];
+		for (let i = 0; i < args.length; i += 2) {
+			let flag = '';
+			if (args[i] === true)
+				flag = 'green ✓';
+			else if (args[i] === false)
+				flag = 'red ✗';
+			else
+				flag = 'white ';
+			st.push(chalk`{${flag} ${args[i + 1]}}`);
+		}
+		st = st.join(' ');
+		console.log(st);
+		// if (!isOk)
+		// 	console.warn(chalk`{red ✗ ${message}}`);
+		// else
+		// 	console.info(chalk`{green ✓ ${message}}`);
 	}
 
 }
