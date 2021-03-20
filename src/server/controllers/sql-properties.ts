@@ -190,7 +190,7 @@ export class SqlPropertiesController implements Controller {
 					guid = Object.keys(sources.guids)[0];
 				if (!sources.guids.hasOwnProperty(guid))
 					guid = Object.keys(sources.guids)[0];
-				const viewable_in: string = sources.guids[guid];
+				const viewable_in: string[] = sources.guids[guid];
 
 				trees = [await propsDb.buildTree(viewable_in, true, keepHiddens, keepInternals)];
 				for (let i = 0; i < trees.length; i++) {
@@ -244,7 +244,7 @@ export class SqlPropertiesController implements Controller {
 			if (!sources.guids.hasOwnProperty(guid))
 				//return (response.status(404).end());
 				guid = Object.keys(sources.guids)[0];
-			const viewable_in: string = sources.guids[guid];
+			const viewable_in: string[] = sources.guids[guid];
 
 			// const rootIds: number[] = propsDb.findRootNodes();
 			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));

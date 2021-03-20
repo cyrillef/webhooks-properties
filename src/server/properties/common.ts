@@ -113,14 +113,14 @@ export abstract class PropertiesUtils {
 
 	public async release(urn: string, clearOnDisk: boolean = true): Promise<void> {
 		try {
-			if ( !clearOnDisk )
+			if (!clearOnDisk)
 				return;
 			const cachePath: string = PropertiesUtils.prototype.getPath.call(this, urn);
 			const cacheDir: string[] = await _fsReadDir(cachePath);
 			const isEmpty: boolean = cacheDir.length === 0;
-			if ( isEmpty)
+			if (isEmpty)
 				await Utils.rimraf(cachePath);
-		} catch (ex) {}
+		} catch (ex) { }
 	}
 
 	public abstract /*async*/ loadInCache(urn: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
@@ -140,6 +140,36 @@ export abstract class PropertiesUtils {
 			.map((key: string): any => delete node.properties[key]);
 		//delete elt.properties.Other;
 	}
+
+	public static findViewablesInManifest = (manifest: any): any => {
+		const guids: any = {};
+		let items: any[] = [];
+		const iterateChildren = (parent: any): void => {
+			const from: any = parent.children || parent.derivatives;
+			if (!from)
+				return;
+			const entries: any[] = from.filter((elt: any): any =>
+				(elt.role === '3d' || elt.role === '2d')
+				&& elt.viewableID
+			);
+			items = [...items, ...entries];
+			if (entries && entries.length)
+				return;
+			from.map((children: any): void => iterateChildren(children));
+		};
+		iterateChildren(manifest);
+
+		items.map((elt: any): void => {
+			const svf: any = elt.children.filter((elt: any): any =>
+				elt.mime === 'application/autodesk-svf'
+				|| elt.mime === 'application/autodesk-svf2'
+				|| elt.mime === 'application/autodesk-f2d'
+			)[0];
+			guids[svf.guid] = [elt.viewableID, elt.name];
+		});
+
+		return (guids);
+	};
 
 }
 

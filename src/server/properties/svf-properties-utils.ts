@@ -25,6 +25,7 @@ import Forge2Legged from '../server/forge-oauth-2legged';
 import { PropertiesUtils } from './common';
 import { SvfProperties, SvfPropertiesCache } from './svf-properties';
 import Utils from '../utilities/utils'
+import { getUnpackedSettings } from 'http2';
 
 export class SvfPropertiesUtils extends PropertiesUtils {
 
@@ -102,11 +103,13 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const manifest: Forge.ApiResponse = await md.getManifest(urn, null, oauth.internalClient, token);
 			const metadata: Forge.ApiResponse = await md.getMetadata(urn, null, oauth.internalClient, token);
 			if (process.env.NODE_ENV === 'development') {
-				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest, null, 4)));
-				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest.body, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata.body, null, 4)));
 			}
 
 			const svfEntry: any = manifest.body.derivatives.filter((elt: any): any => elt.outputType === 'svf' || elt.outputType === 'svf2');
+			if (!svfEntry || svfEntry.length === 0)
+				return (null);
 
 			// DB / Properties
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
@@ -118,50 +121,17 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			let results: Forge.ApiResponse[] = await Promise.all(jobs);
 			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
 
-			this.cache[urn] = { lastVisited: moment() };
+			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
+			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+
+			this.cache[urn] = {
+				lastVisited: moment(),
+				guids: guids,
+			};
 			dbFiles.map((elt: string, index: number): any => {
 				self.cache[urn][elt] = dbBuffers[index];
 				Utils.fsWriteFile(_path.resolve(cachePath, elt), dbBuffers[index]);
 			});
-
-			// svf / svf2 / f2d
-			const geometryEntries: any = svfEntry[0].children.filter((elt: any): any => elt.type === 'geometry');
-			const svfEntries: any = geometryEntries
-				//.map((entry: any): any => entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf'))
-				.map((entry: any): any => {
-					let items: any = entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf' || elt.mime === 'application/autodesk-svf2');
-					items = items.map((item: any): any => {
-						item.parent = entry.guid;
-						item.viewableID = entry.viewableID;
-						return (item);
-					});
-					return (items);
-				})
-				.filter((elt: any): any => elt.length > 0)
-				.flat();
-			// const svf2Entries: any = geometryEntries
-			// 	.map((entry: any): any => entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf2'))
-			// 	.filter((elt: any): any => elt.length > 0)
-			// 	.flat();
-			const f2dEntries: any = geometryEntries
-				//.map((entry: any): any => entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-f2d'))
-				.map((entry: any): any => {
-					let items: any = entry.children.filter((elt: any): any => elt.mime === 'application/autodesk-f2d');
-					items = items.map((item: any): any => {
-						item.parent = entry.guid;
-						item.viewableID = entry.viewableID;
-						return (item);
-					});
-					return (items);
-				})
-				.filter((elt: any): any => elt.length > 0)
-				.flat();
-			const srcEntries = [...svfEntries, /*...svf2Entries,*/ ...f2dEntries];
-
-			const guids: any = {};
-			srcEntries.map((entry: any): any => guids[entry.guid] = entry.viewableID); // { viewableID: entry.viewableID, name: entry.name }
-			this.cache[urn].guids = guids;
-			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 
 			return (this.cache[urn]);
 		} catch (ex) {

@@ -105,11 +105,13 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			const manifest: Forge.ApiResponse = await md.getManifest(urn, null, oauth.internalClient, token);
 			const metadata: Forge.ApiResponse = await md.getMetadata(urn, null, oauth.internalClient, token);
 			if (process.env.NODE_ENV === 'development') {
-				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest, null, 4)));
-				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifest.body, null, 4)));
+				await Utils.fsWriteFile(_path.resolve(cachePath, 'metadata.json'), Buffer.from(JSON.stringify(metadata.body, null, 4)));
 			}
 
 			const svfEntry: any = manifest.body.derivatives.filter((elt: any): any => elt.outputType === 'svf' || elt.outputType === 'svf2');
+			if (!svfEntry || svfEntry.length === 0)
+				return (null);
 
 			// DB / Properties
 			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
@@ -119,34 +121,38 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry[0].urn, null, oauth.internalClient, token);
 			const dbSize: number = Number.parseInt(dbSizeResponse.headers['content-length']);
 			let dbBuffer: Forge.ApiResponse = null;
+			const modelPath: string = _path.resolve(cachePath, 'model.db');
 			let nbChunk: number = Math.floor(dbSize / SqlPropertiesUtils.CHUNK_SIZE);
-			if (nbChunk=== 0) {
+			if (nbChunk === 0) {
 				dbBuffer = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+				await Utils.fsWriteFile(modelPath, dbBuffer.body);
 			} else {
 				// Download in serie vs parallel
-				dbBuffer = dbSizeResponse;
-				dbBuffer.body = Buffer.allocUnsafe(dbSize);
+				// dbBuffer = dbSizeResponse;
+				// dbBuffer.body = Buffer.allocUnsafe(dbSize);
+				if (await Utils.fsExists(modelPath))
+					await Utils.fsUnlink(modelPath);
 				for (let it = 0; it <= nbChunk; it++) {
 					const start: number = it * SqlPropertiesUtils.CHUNK_SIZE;
 					const end: number = Math.min((it + 1) * SqlPropertiesUtils.CHUNK_SIZE, dbSize) - 1;
-					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, { range: `bytes=${start}-${end}`}, oauth.internalClient, token);
-					chunck.body.copy(dbBuffer.body, start, 0);
+					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, { range: `bytes=${start}-${end}` }, oauth.internalClient, token);
+					//chunck.body.copy(dbBuffer.body, start, 0);
+					await Utils.fsWriteFile(modelPath, chunck.body, { flag: 'a' });
 				}
 			}
+			// await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
-			await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
-
-			const guids: any = {};
-			metadata.body.data.metadata.map((elt: any): void => guids[elt.guid] = elt.name); // { viewableID: null, name: elt.name }
+			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
 			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+
 			this.cache[urn] = {
 				lastVisited: moment(),
 				path2SqlDB: cachePath,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
-					storage: _path.resolve(cachePath, 'model.db')
+					storage: modelPath
 				}),
-				guids: guids
+				guids: guids,
 			};
 
 			return (this.cache[urn]);

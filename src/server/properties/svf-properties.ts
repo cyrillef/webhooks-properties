@@ -128,18 +128,11 @@ export class SvfProperties {
 			const attr: string = this.attrs[this.avs[i]];
 			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
 			let key: string = (attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
-			// if ( key === '__parent__/parent' ) {
-			// 	parent =Number.parseInt (this.vals [this.avs [i + 1]]) ;
-			// 	result.parents.push (parent) ;
-			// 	continue ;
-			// }
 			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
 				continue;
-			if (key === '__instanceof__/instanceof_objid') {
+			if (key === '__instanceof__/instanceof_objid')
 				// Allright, we need to read the definition
 				this._read(Number.parseInt(this.vals[this.avs[i + 1]]), result, keepHidden, keepInternals, true);
-				//continue;
-			}
 			if (/^__[_\w]+__\/[_a-z]+$/.test(key))
 				category = '__internal__';
 			//console.log (key) ;
@@ -163,10 +156,11 @@ export class SvfProperties {
 				if (Number.parseInt(attr[AttributeFieldIndex.iFLAGS]) & 1)
 					continue;
 
-			//result.properties [category] [key] =value ;
 			if (result.properties[category].hasOwnProperty(key)) {
 				if (category === '__internal__' && key === 'viewable_in'
-					&& (value === result.properties[category][key] || (Array.isArray(result.properties[category][key]) && result.properties[category][key].indexOf(value) !== -1)))
+					&& (value === result.properties[category][key] 
+						|| (Array.isArray(result.properties[category][key]) && result.properties[category][key].indexOf(value) !== -1))
+				)
 					continue;
 				if (!Array.isArray(result.properties[category][key]))
 					result.properties[category][key] = [result.properties[category][key]];
@@ -175,20 +169,6 @@ export class SvfProperties {
 				result.properties[category][key] = value;
 			}
 		}
-		// Sorting objects
-		// Object.keys(result.properties).sort().every((cat: string): boolean => {
-		// 	let r: any = {};
-		// 	Object.keys(result.properties[cat]).sort().every((elt: string): void => r[elt] = result.properties[cat][elt]);
-		// 	delete result.properties[cat];
-		// 	result.properties[cat] = r;
-		// 	return (true);
-		// });
-		// Object.keys(result).sort().every((prop: string): boolean => {
-		// 	const propArchive = result[prop];
-		// 	delete result[prop];
-		// 	result[prop] = propArchive;
-		// 	return (true);
-		// });
 		return (parent);
 	}
 
@@ -295,7 +275,7 @@ export class SvfProperties {
 		return (roots);
 	}
 
-	public buildFullTree(nodeId: number, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildFullTree(nodeId: number, viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const node: any = this.read(nodeId, keepHidden, true);
 		let result: any = withProperties ? node : {
 			name: node.name,
@@ -306,11 +286,11 @@ export class SvfProperties {
 			return (result);
 		if (typeof node.properties.__internal__.child === 'number')
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, withProperties, keepHidden, keepInternals));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, withProperties, keepHidden, keepInternals));
 		return (result);
 	}
 
-	public buildTree(viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildTree(viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const nodeIds: number[] = this.findRootNodes();
 		const node: any = this.read(nodeIds[0], keepHidden, true);
 		let result: any = withProperties ? node : {
@@ -322,7 +302,7 @@ export class SvfProperties {
 			return (result);
 		if (!Array.isArray(node.properties.__internal__.child))
 			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, true, keepHidden, keepInternals));
+		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, true, keepHidden, keepInternals));
 
 		const cleanNode = (node: any): void => {
 			if (!withProperties) {
@@ -332,13 +312,11 @@ export class SvfProperties {
 		};
 		const isIn = (node: any): boolean => {
 			let _isin_: boolean = true; // by default, we are in
-			// if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in)
-			// 	return (true); 
-			if (viewable_in && node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in) {
-				//node.properties.__internal__.viewable_in !== viewable_in
-				if (!Array.isArray(node.properties.__internal__.viewable_in))
-					node.properties.__internal__.viewable_in = [node.properties.__internal__.viewable_in];
-				_isin_ = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
+			let nodeViewableIn: any = node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in;
+			if (nodeViewableIn && !Array.isArray(nodeViewableIn))
+				nodeViewableIn = [nodeViewableIn];
+			if (viewable_in && nodeViewableIn) {
+				_isin_ = viewable_in.filter((x: string): boolean => nodeViewableIn.includes(x)).length > 0;
 				if (_isin_ === false)
 					return (cleanNode(node), false); // if a node is not in, all its childs aren't either
 			}

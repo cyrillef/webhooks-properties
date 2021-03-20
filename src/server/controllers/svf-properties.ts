@@ -186,7 +186,7 @@ export class SvfPropertiesController implements Controller {
 				if (!dbBuffers.guids.hasOwnProperty(guid))
 					//return (response.status(404).end());
 					guid = Object.keys(dbBuffers.guids)[0];
-				const viewable_in: string = dbBuffers.guids[guid];
+				const viewable_in: string[] = dbBuffers.guids[guid];
 
 				// const rootIds: number[] = propsDb.findRootNodes();
 				trees = [propsDb.buildTree(viewable_in, true, keepHiddens, keepInternals)];
@@ -242,7 +242,7 @@ export class SvfPropertiesController implements Controller {
 			if (!dbBuffers.guids.hasOwnProperty(guid))
 				//return (response.status(404).end());
 				guid = Object.keys(dbBuffers.guids)[0];
-			const viewable_in: string = dbBuffers.guids[guid];
+			const viewable_in: string[] = dbBuffers.guids[guid];
 
 			// const rootIds: number[] = propsDb.findRootNodes();
 			// const trees: any[] = rootIds.map((objId: number): any => propsDb.buildFullTree(objId));

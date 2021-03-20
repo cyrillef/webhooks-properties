@@ -142,7 +142,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			});
 			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
-			this.cache[urn].guids = this.findViewables(manifest);
+			this.cache[urn].guids = PropertiesUtils.findViewablesInManifest(manifest);
 			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(this.cache[urn].guids))));
 
 			await Promise.all(jobs);
@@ -155,28 +155,6 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
 		}
-	}
-
-	protected findViewables(manifest: any): any {
-		const guids: any = {};
-		let items: any[] = [];
-		const iterateChildren = (parent: any): void => {
-			if (!parent.children)
-				return;
-			const entries: any[] = parent.children.filter((elt: any): any => elt.role === '3d' || elt.role === '2d');
-			items = [...items, ...entries];
-			if ((entries && entries.length) || !parent.children)
-				return;
-			parent.children.map ((children: any): void => iterateChildren(children));
-		};
-		iterateChildren(manifest);
-
-		items.map((elt: any): void => {
-			const svf: any = elt.children.filter((elt: any): any => elt.mime === 'application/autodesk-svf' || elt.role === '2d')[0];
-			guids[svf.guid] = elt.viewableID;
-		});
-
-		return (guids);
 	}
 
 }

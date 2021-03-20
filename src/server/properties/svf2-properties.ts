@@ -202,7 +202,7 @@ export class Svf2Properties {
 		return (roots);
 	}
 
-	public buildFullTree(nodeId: number, viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildFullTree(nodeId: number, viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const node: any = this.read(nodeId, keepHidden, true);
 		let result: any = withProperties ? node : {
 			name: node.name,
@@ -217,7 +217,7 @@ export class Svf2Properties {
 		return (result);
 	}
 
-	public buildTree(viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
+	public buildTree(viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
 		const nodeIds: number[] = this.findRootNodes();
 		const node: any = this.read(nodeIds[0], keepHidden, true);
 		let result: any = withProperties ? node : {
@@ -239,13 +239,11 @@ export class Svf2Properties {
 		};
 		const isIn = (node: any): boolean => {
 			let _isin_: boolean = true; // by default, we are in
-			// if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.viewable_in)
-			// 	return (true); 
-			if (viewable_in && node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in) {
-				//node.properties.__internal__.viewable_in !== viewable_in
-				if (!Array.isArray(node.properties.__internal__.viewable_in))
-					node.properties.__internal__.viewable_in = [node.properties.__internal__.viewable_in];
-				_isin_ = node.properties.__internal__.viewable_in.indexOf(viewable_in) !== -1;
+			let nodeViewableIn: any = node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in;
+			if (nodeViewableIn && !Array.isArray(nodeViewableIn))
+				nodeViewableIn = [nodeViewableIn];
+			if (viewable_in && nodeViewableIn) {
+				_isin_ = viewable_in.filter((x: string): boolean => nodeViewableIn.includes(x)).length > 0;
 				if (_isin_ === false)
 					return (cleanNode(node), false); // if a node is not in, all its childs aren't either
 			}

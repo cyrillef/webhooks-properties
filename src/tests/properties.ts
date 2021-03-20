@@ -692,10 +692,13 @@ class PropertiesController {
 	}
 
 	public async test(args?: string[]): Promise<void> {
+		let result: any = null;
 		const fn1 = args[0];
 		const fn2 = args[1];
 		const def1: any = urns[args[0]];
 		const def2: any = urns[args[1]];
+
+		//await this.xxx_delete('svf2', fn2);
 
 		//await this.xxx_getPropertiesRange('svf', fn1, [2], false);
 		//await this.xxx_getPropertiesRange('svf', fn2, [2], false);
@@ -711,11 +714,77 @@ class PropertiesController {
 		// await this.xxx_getTree('svf2', fn1);
 		// const t: any = await this.xxx_getPropertiesRange('sql', fn1, [2828], true);
 		// console.log (JSON.stringify(t, null, 4));
-		await this.xxx_getTree('sql', fn1);
-		
+		//await this.xxx_getTree('sql', fn1);
 
-		//await this.xxx_delete('svf2', fn2);
-		//console.log(result);
+		const findViewables = (manifest: any): any => {
+			const guids: any = {};
+			let items: any[] = [];
+			const iterateChildren = (parent: any): void => {
+				const from: any = parent.children || parent.derivatives;
+				if (!from)
+					return;
+				const entries: any[] = from.filter((elt: any): any => (elt.role === '3d' || elt.role === '2d') && elt.viewableID);
+				items = [...items, ...entries];
+				if (entries && entries.length)
+					return;
+				from.map((children: any): void => iterateChildren(children));
+			};
+			iterateChildren(manifest);
+
+			items.map((elt: any): void => {
+				const svf: any = elt.children.filter((elt: any): any =>
+					elt.mime === 'application/autodesk-svf'
+					|| elt.mime === 'application/autodesk-svf2'
+					|| elt.mime === 'application/autodesk-f2d'
+				)[0];
+				guids[svf.guid] = [elt.viewableID, elt.name];
+			});
+
+			return (guids);
+		};
+
+		let test1: any = {
+			"ee578c34-41d4-83e7-fd72-1c18a453c3b9": [
+				"f916c358-f9a7-4a53-8525-49f6ae53aeaa-0004b8d1",
+				"{3D}"
+			],
+			"6fda4fe6-0ceb-4525-a86d-20be4000dab5": [
+				"23d56342-7998-43c0-83a0-4779097ec1f2-00054982",
+				"A101 - Machine Sensor Status"
+			],
+			"e67f2035-8010-3ff5-e399-b9c9217c2366": [
+				"425fa4b5-cf64-4260-8581-2345290e5c67-0005831f",
+				"A102 - Machine Shop Sensor 2"
+			]
+		};
+		let test2: any = {
+			"87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d": [
+				"Model.ifc",
+				"Model.ifc"
+			]
+		};
+		let test: any = {
+			"8fc795ac-7438-46c4-95e5-8b8fd74d33cb": [
+				"Model2.ifc",
+				"Model2.ifc"
+			]
+		};
+		let urn: string = urns[fn1].urn;
+		let manifest: any = null;
+		try {
+			const buffer: Buffer = await _fsReadFile(_path.resolve(__dirname, '../../cache', urn, 'svf2', 'manifest.json'));
+			manifest = JSON.parse(buffer.toString('utf8'));
+			result = findViewables(manifest);
+			if (JSON.stringify(test) === JSON.stringify(result))
+				console.log('ok');
+			else
+				console.error('failed');
+
+		} catch (ex) { }
+
+
+		console.log(result);
+		console.log(JSON.stringify(result, null, 4));
 	}
 
 	public async clean(args?: string[]): Promise<void> {

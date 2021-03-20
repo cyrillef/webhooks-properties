@@ -248,7 +248,7 @@ export class SqlProperties {
 		return (difference);
 	}
 
-	public async buildTree(viewable_in: string, withProperties: boolean, keepHidden: boolean, keepInternals: boolean): Promise<any> {
+	public async buildTree(viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): Promise<any> {
 		const nodeIds: number[] = await this.findRootNodes();
 
 		// Gets objId, external_id, category - name - viewable_in - child
@@ -280,7 +280,7 @@ export class SqlProperties {
 				// We sorted entries as viewable_in -> parent (root node have no parent) -> instanceof_objid -> name // -> child (might have 0, 1 or more children)
 				const objId: number = (results[i] as any).entity_id;
 				//const external_id: number = (results[i] as any).external_id;
-				const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : viewable_in;
+				const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : undefined; // was viewable_in
 				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : null;
 				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : null;
 				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : '';
@@ -315,7 +315,7 @@ export class SqlProperties {
 					nodes[objId].objectid = objId;
 					//nodes[objId].viewable_in = nodeViewableIn;
 				}
-				if (nodeParent && nodeViewableIn === viewable_in) {
+				if (nodeParent && viewable_in.includes(nodeViewableIn) ) {
 					let parent: any = nodes[nodeParent];
 					if (!parent)
 						parent = nodes[nodeParent] = {
