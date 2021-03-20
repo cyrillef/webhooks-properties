@@ -264,10 +264,10 @@ export class SqlProperties {
 		left join _objects_attr on _objects_attr.id = _objects_eav.attribute_id
 		left join _objects_val on _objects_val.id = _objects_eav.value_id
 		where
-			   (_objects_attr.name = 'parent' and _objects_attr.category = '__parent__')
-		 	or (_objects_attr.name = 'name' and _objects_attr.category = '__name__')
+			   (_objects_attr.name = 'viewable_in' and _objects_attr.category = '__viewable_in__')
+		 	or (_objects_attr.name = 'parent' and _objects_attr.category = '__parent__')
 			or (_objects_attr.name = 'instanceof_objid' and _objects_attr.category = '__instanceof__')
-			or (_objects_attr.name = 'viewable_in' and _objects_attr.category = '__viewable_in__')
+			or (_objects_attr.name = 'name' and _objects_attr.category = '__name__')
 		order by _objects_eav.entity_id, name desc, _objects_val.value;`;
 		//(name = 'child' and _objects_attr.category = '__child__')
 		let results: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });

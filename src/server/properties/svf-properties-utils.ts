@@ -159,7 +159,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const srcEntries = [...svfEntries, /*...svf2Entries,*/ ...f2dEntries];
 
 			const guids: any = {};
-			srcEntries.map((entry: any): any => guids[entry.guid] = entry.viewableID);
+			srcEntries.map((entry: any): any => guids[entry.guid] = entry.viewableID); // { viewableID: entry.viewableID, name: entry.name }
 			this.cache[urn].guids = guids;
 			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 

@@ -132,6 +132,7 @@ export abstract class PropertiesUtils {
 		// __child__
 		// __viewable_in__
 		// __externalref__
+		// ...
 		const regex = new RegExp('^__(\\w+)__$');
 		const keys = Object.keys(node.properties);
 		keys

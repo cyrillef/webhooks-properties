@@ -711,7 +711,7 @@ class PropertiesController {
 		// await this.xxx_getTree('svf2', fn1);
 		// const t: any = await this.xxx_getPropertiesRange('sql', fn1, [2828], true);
 		// console.log (JSON.stringify(t, null, 4));
-		await this.xxx_getTree('svf2', fn1);
+		await this.xxx_getTree('sql', fn1);
 		
 
 		//await this.xxx_delete('svf2', fn2);

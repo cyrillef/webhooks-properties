@@ -137,7 +137,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
 			const guids: any = {};
-			metadata.body.data.metadata.map((elt: any): void => guids[elt.guid] = elt.name);
+			metadata.body.data.metadata.map((elt: any): void => guids[elt.guid] = elt.name); // { viewableID: null, name: elt.name }
 			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 			this.cache[urn] = {
 				lastVisited: moment(),
