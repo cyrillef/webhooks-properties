@@ -19,10 +19,10 @@ import * as _fs from 'fs';
 import * as _path from 'path';
 import * as _util from 'util';
 import * as superagent from 'superagent';
-import * as chalk from 'chalk';
 import JsonDiff from './json-diff';
-import request = require('superagent');
-import { stringify } from 'querystring';
+//import request = require('superagent');
+//import { stringify } from 'querystring';
+import chalk from 'chalk';
 
 const _fsExists = _util.promisify(_fs.exists);
 const _fsUnlink = _util.promisify(_fs.unlink);
@@ -469,7 +469,7 @@ class PropertiesController {
 			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
 			PropertiesController.console(
 				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId,
-				`{fn1} number of entries`
+				`${fn1} number of entries`
 			);
 			
 			const svfExtIds: any = await this.loadJson(`data/${fn1}-externalids.svf`);
@@ -577,7 +577,7 @@ class PropertiesController {
 			const sqlLoad = await this.loadJson(`data/${fn2}-load.sql`);
 			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
 			PropertiesController.console(
-				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId
+				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId,
 				`${fn2} number of entries`
 			);
 
@@ -850,7 +850,6 @@ class PropertiesController {
 				PropertiesController.console(false, `${message}\n${cmp.toString(4)}\n`);
 			else
 				PropertiesController.console(false, `${message} different`);
-			console.log(' ');
 		}
 		return (cmp.areEquals);
 	}
@@ -880,7 +879,7 @@ class PropertiesController {
 			{ name: compareNames, Name: compareNames, NAME: compareNames }
 		);
 		if (cmp.areEquals) {
-			console.log(`${message} ok`);
+			PropertiesController.console(true, `${message}`);
 		} else {
 			if (bConsole)
 				PropertiesController.console(false, `${message} ${cmp.toString(4)}\n`);
@@ -901,7 +900,6 @@ class PropertiesController {
 			PropertiesController.console(true, `${model} ${what} (${lformat}-${rformat}) created!`);
 			PropertiesController.console(false, `${model} ${what} (${lformat}-${rformat})\n${cmp.toString(4)}\n`);
 			await this.saveFile(fn, Buffer.from(cmp.toString(4)));
-			console.log(' ');
 		}
 		return (cmp.areEquals);
 	}
