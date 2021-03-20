@@ -19,6 +19,7 @@ import * as _fs from 'fs';
 import * as _path from 'path';
 import * as _util from 'util';
 import * as superagent from 'superagent';
+import * as chalk from 'chalk';
 import JsonDiff from './json-diff';
 import request = require('superagent');
 import { stringify } from 'querystring';
@@ -73,6 +74,9 @@ const urns: any = {
 	},
 };
 
+// Unicode Character “✓” (U+2713)
+// Unicode Character “✗” (U+2717)
+
 class PropertiesController {
 
 	private static sortKey: string
@@ -115,7 +119,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} forge-properties created!`);
+			PropertiesController.console(true, `${args} forge-properties created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} forge-properties`, PropertiesController.sortKey);
 		}
@@ -139,7 +143,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result, [PropertiesController.sortKey]);
 		if (!json) {
 			await this.saveJson(fn, result);
-			console.info(`${args} forge-properties-range created!`);
+			PropertiesController.console(true, `${args} forge-properties-range created!`);
 		} else {
 			PropertiesController.compareObjects(result, json, `${args} forge-properties-range`, PropertiesController.sortKey);
 		}
@@ -155,7 +159,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} forge-tree created!`);
+			PropertiesController.console(true, `${args} forge-tree created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} forge-tree`, PropertiesController.sortByObjectID);
 		}
@@ -172,7 +176,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} load created!`);
+			PropertiesController.console(true, `${args} ${method} load created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} load`);
 		}
@@ -195,7 +199,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} externalids created!`);
+			PropertiesController.console(true, `${args} ${method} externalids created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} externalids`);
 		}
@@ -211,7 +215,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} ids created!`);
+			PropertiesController.console(true, `${args} ${method} ids created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} ids`);
 		}
@@ -227,7 +231,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} ids range created!`);
+			PropertiesController.console(true, `${args} ${method} ids range created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} ids range`);
 		}
@@ -243,7 +247,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} properties created!`);
+			PropertiesController.console(true, `${args} ${method} properties created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} properties`, PropertiesController.sortKey);
 		}
@@ -260,7 +264,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} properties${num} created!`);
+			PropertiesController.console(true, `${args} ${method} properties${num} created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} properties${num}`, PropertiesController.sortKey);
 		}
@@ -276,7 +280,7 @@ class PropertiesController {
 		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
 		if (!json) {
 			await this.saveJson(fn, result.body);
-			console.info(`${args} ${method} tree created!`);
+			PropertiesController.console(true, `${args} ${method} tree created!`);
 		} else {
 			PropertiesController.compareObjects(result.body, json, `${args} ${method} tree`, PropertiesController.sortByObjectID);
 		}
@@ -339,7 +343,7 @@ class PropertiesController {
 			const idsrange: any = await this.xxx_getIdsRange('svf', fn1, extidsrange);
 			let bs: boolean[] = Object.keys(idsrange).map((extId: string): boolean => ids[extId] && ids[extId] === idsrange[extId]);
 			let equal: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator && currentValue, true);
-			console.info(`${fn1} svf ObjID -> ExternalID -> ObjID conversion ${equal ? 'ok' : 'failed'}`);
+			PropertiesController.console(equal, `${fn1} svf ObjID -> ExternalID -> ObjID conversion`);
 			const range: number[] = Object.values(idsrange).sort() as number[]; // SVF IDs from sorted ExternalIDs
 
 			// Check Properties
@@ -381,7 +385,7 @@ class PropertiesController {
 			const idsrange: any = await this.xxx_getIdsRange('sql', fn1, extidsrange);
 			let bs: boolean[] = Object.keys(idsrange).map((extId: string): boolean => ids[extId] && ids[extId] === idsrange[extId]);
 			let equal: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator && currentValue, true);
-			console.info(`${fn1} sql ObjID -> ExternalID -> ObjID conversion ${equal ? 'ok' : 'failed'}`);
+			PropertiesController.console(equal, `${fn1} sql ObjID -> ExternalID -> ObjID conversion`);
 			const range: number[] = Object.values(idsrange).sort() as number[]; // SVF IDs from sorted ExternalIDs
 
 			// Check Properties
@@ -423,7 +427,7 @@ class PropertiesController {
 			const idsrange: any = await this.xxx_getIdsRange('svf2', fn2, extidsrange);
 			let bs: boolean[] = Object.keys(idsrange).map((extId: string): boolean => ids[extId] && ids[extId] === idsrange[extId]);
 			let equal: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator && currentValue, true);
-			console.info(`${fn2} svf2 ObjID -> ExternalID -> ObjID conversion ${equal ? 'ok' : 'failed'}`);
+			PropertiesController.console(equal, `${fn2} svf2 ObjID -> ExternalID -> ObjID conversion`);
 			const range: number[] = Object.values(idsrange).sort() as number[]; // SVF2 IDs from sorted ExternalIDs
 
 			// Check SVF2/SVF ID conversions (we assume range is SVF2 IDs)
@@ -431,7 +435,7 @@ class PropertiesController {
 			let svf_svf2_ids: any = await this.svf2_svfTosvf2_mapping(Object.values(svf2_svf_ids), fn2, false); // { svfID: svf2ID }
 			bs = range.map((svf2ID: number): boolean => svf2_svf_ids[svf2ID] && svf2ID === svf_svf2_ids[svf2_svf_ids[svf2ID]]);
 			equal = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator && currentValue, true);
-			console.info(`${fn2} svf2 svf2 -> svf -> svf2 ID conversion ${equal ? 'ok' : 'failed'}`);
+			PropertiesController.console(equal, `${fn2} svf2 svf2 -> svf -> svf2 ID conversion`);
 
 			// !!! careful, to be able to compare with SVF, we need to map IDs (which we just did above)
 
@@ -463,11 +467,11 @@ class PropertiesController {
 			const svfLoad = await this.loadJson(`data/${fn1}-load.svf`);
 			const sqlLoad = await this.loadJson(`data/${fn1}-load.sql`);
 			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
-			if (svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId)
-				console.info(`${fn1} number of entries ok`);
-			else
-				console.warn(`${fn1} number of entries failed`);
-
+			PropertiesController.console(
+				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId,
+				`{fn1} number of entries`
+			);
+			
 			const svfExtIds: any = await this.loadJson(`data/${fn1}-externalids.svf`);
 			const sqlExtIds: any = await this.loadJson(`data/${fn1}-externalids.sql`);
 			PropertiesController.compareObjects(svfExtIds, sqlExtIds, `${fn1} svf-sql externalids`, null);
@@ -572,10 +576,10 @@ class PropertiesController {
 			const svfLoad = await this.loadJson(`data/${fn2}-load.svf`);
 			const sqlLoad = await this.loadJson(`data/${fn2}-load.sql`);
 			const svf2Load = await this.loadJson(`data/${fn2}-load.svf2`);
-			if (svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId)
-				console.info(`${fn2} number of entries ok`);
-			else
-				console.warn(`${fn2} number of entries failed`);
+			PropertiesController.console(
+				svfLoad.data.maxId === sqlLoad.data.maxId && svfLoad.data.maxId === svf2Load.data.maxId
+				`${fn2} number of entries`
+			);
 
 			const svfExtIds: any = await this.loadJson(`data/${fn2}-externalids.svf`);
 			const sqlExtIds: any = await this.loadJson(`data/${fn2}-externalids.sql`);
@@ -716,72 +720,34 @@ class PropertiesController {
 		// console.log (JSON.stringify(t, null, 4));
 		//await this.xxx_getTree('sql', fn1);
 
-		const findViewables = (manifest: any): any => {
-			const guids: any = {};
-			let items: any[] = [];
-			const iterateChildren = (parent: any): void => {
-				const from: any = parent.children || parent.derivatives;
-				if (!from)
-					return;
-				const entries: any[] = from.filter((elt: any): any => (elt.role === '3d' || elt.role === '2d') && elt.viewableID);
-				items = [...items, ...entries];
-				if (entries && entries.length)
-					return;
-				from.map((children: any): void => iterateChildren(children));
-			};
-			iterateChildren(manifest);
+		console.log('\x1b[36m%s\x1b[0m', 'I am cyan');  //cyan
+		console.log('\x1b[31m%s\x1b[0m', 'stringToMakeYellow');  //yellow
 
-			items.map((elt: any): void => {
-				const svf: any = elt.children.filter((elt: any): any =>
-					elt.mime === 'application/autodesk-svf'
-					|| elt.mime === 'application/autodesk-svf2'
-					|| elt.mime === 'application/autodesk-f2d'
-				)[0];
-				guids[svf.guid] = [elt.viewableID, elt.name];
-			});
+		// Reset = "\x1b[0m"
+		// Bright = "\x1b[1m"
+		// Dim = "\x1b[2m"
+		// Underscore = "\x1b[4m"
+		// Blink = "\x1b[5m"
+		// Reverse = "\x1b[7m"
+		// Hidden = "\x1b[8m"
 
-			return (guids);
-		};
+		// FgBlack = "\x1b[30m"
+		// FgRed = "\x1b[31m"
+		// FgGreen = "\x1b[32m"
+		// FgYellow = "\x1b[33m"
+		// FgBlue = "\x1b[34m"
+		// FgMagenta = "\x1b[35m"
+		// FgCyan = "\x1b[36m"
+		// FgWhite = "\x1b[37m"
 
-		let test1: any = {
-			"ee578c34-41d4-83e7-fd72-1c18a453c3b9": [
-				"f916c358-f9a7-4a53-8525-49f6ae53aeaa-0004b8d1",
-				"{3D}"
-			],
-			"6fda4fe6-0ceb-4525-a86d-20be4000dab5": [
-				"23d56342-7998-43c0-83a0-4779097ec1f2-00054982",
-				"A101 - Machine Sensor Status"
-			],
-			"e67f2035-8010-3ff5-e399-b9c9217c2366": [
-				"425fa4b5-cf64-4260-8581-2345290e5c67-0005831f",
-				"A102 - Machine Shop Sensor 2"
-			]
-		};
-		let test2: any = {
-			"87a2f6e1-9a1f-434f-acfb-6bcaeace1c3d": [
-				"Model.ifc",
-				"Model.ifc"
-			]
-		};
-		let test: any = {
-			"8fc795ac-7438-46c4-95e5-8b8fd74d33cb": [
-				"Model2.ifc",
-				"Model2.ifc"
-			]
-		};
-		let urn: string = urns[fn1].urn;
-		let manifest: any = null;
-		try {
-			const buffer: Buffer = await _fsReadFile(_path.resolve(__dirname, '../../cache', urn, 'svf2', 'manifest.json'));
-			manifest = JSON.parse(buffer.toString('utf8'));
-			result = findViewables(manifest);
-			if (JSON.stringify(test) === JSON.stringify(result))
-				console.log('ok');
-			else
-				console.error('failed');
-
-		} catch (ex) { }
-
+		// BgBlack = "\x1b[40m"
+		// BgRed = "\x1b[41m"
+		// BgGreen = "\x1b[42m"
+		// BgYellow = "\x1b[43m"
+		// BgBlue = "\x1b[44m"
+		// BgMagenta = "\x1b[45m"
+		// BgCyan = "\x1b[46m"
+		// BgWhite = "\x1b[47m"
 
 		console.log(result);
 		console.log(JSON.stringify(result, null, 4));
@@ -878,12 +844,12 @@ class PropertiesController {
 		//JsonDiff.sortObjectProperties(rhs);
 		const cmp: JsonDiff = new JsonDiff(lhs, rhs, key ? [key] : undefined);
 		if (cmp.areEquals) {
-			console.log(`${message} ok`);
+			PropertiesController.console(true, `${message}`);
 		} else {
 			if (bConsole)
-				console.warn(`${message} `, cmp.toString(4));
+				PropertiesController.console(false, `${message}\n${cmp.toString(4)}\n`);
 			else
-				console.warn(`${message} different`);
+				PropertiesController.console(false, `${message} different`);
 			console.log(' ');
 		}
 		return (cmp.areEquals);
@@ -917,9 +883,9 @@ class PropertiesController {
 			console.log(`${message} ok`);
 		} else {
 			if (bConsole)
-				console.warn(`${message} `, cmp.toString(4), ' ');
+				PropertiesController.console(false, `${message} ${cmp.toString(4)}\n`);
 			else
-				console.warn(`${message} different`);
+				PropertiesController.console(false, `${message} different`);
 		}
 		return (cmp);
 	}
@@ -930,10 +896,10 @@ class PropertiesController {
 
 		const cmp: JsonDiff = new JsonDiff(lhs, rhs, key ? [key] : undefined);
 		if (cmp.areEquals || (diff && JSON.stringify(diff) === cmp.toString())) {
-			console.log(`${model} ${what} (${lformat}-${rformat}) ok`);
+			PropertiesController.console(true, `${model} ${what} (${lformat}-${rformat})`);
 		} else {
-			console.info(`${model} ${what} (${lformat}-${rformat}) created!`);
-			console.warn(`${model} ${what} (${lformat}-${rformat}) `, cmp.toString(4));
+			PropertiesController.console(true, `${model} ${what} (${lformat}-${rformat}) created!`);
+			PropertiesController.console(false, `${model} ${what} (${lformat}-${rformat})\n${cmp.toString(4)}\n`);
 			await this.saveFile(fn, Buffer.from(cmp.toString(4)));
 			console.log(' ');
 		}
@@ -956,14 +922,21 @@ class PropertiesController {
 	protected async accepOrRejectChanges(different: JsonDiff, diffFilename: string, message: string = '', bConsole: boolean = true): Promise<boolean> {
 		let diff: any = await this.loadJson(diffFilename);
 		if (different.areEquals || (diff && JSON.stringify(diff) === different.toString())) {
-			console.log(`${message} accepted`);
+			PropertiesController.console(true, `${message} accepted`);
 		} else {
-			console.warn(`${message} rejected!`);
+			PropertiesController.console(false, `${message} rejected!`);
 			if (bConsole)
-				console.warn(different.toString(4), ' ');
+				PropertiesController.console(false, `${different.toString(4)}\n`);
 			await this.saveFile(diffFilename, Buffer.from(different.toString(4)));
 		}
 		return (different.areEquals);
+	}
+
+	protected static console(isOk: boolean, message: string = '') {
+		if (!isOk)
+			console.warn(chalk`{red ✗ ${message}}`);
+		else
+			console.info(chalk`{green ✓ ${message}}`);
 	}
 
 }
