@@ -112,8 +112,8 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				return (null);
 
 			// DB / Properties
-			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
-			let derivativePath: string = dbEntry[0].urn.substring(0, dbEntry[0].urn.lastIndexOf('/') + 1);
+			const dbEntry: any = PropertiesUtils.findEntryInManifest(manifest.body, ['application/autodesk-db']);
+			let derivativePath: string = dbEntry.urn.substring(0, dbEntry.urn.lastIndexOf('/') + 1);
 
 			const dbFiles: string[] = SvfProperties.dbNames;
 			let paths: string[] = dbFiles.map((fn: string): string => `${derivativePath}${fn}.json.gz`);

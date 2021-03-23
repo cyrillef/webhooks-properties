@@ -72,7 +72,11 @@ export class SqlProperties {
 	public async load(path2SqlDB: string): Promise<void> {
 		this.sequelize = new Sequelize({
 			dialect: 'sqlite',
-			storage: path2SqlDB
+			storage: path2SqlDB,
+			define: {
+				charset: 'utf8',
+				collate: 'utf8_general_ci',
+			}
 		});
 	}
 
@@ -101,7 +105,7 @@ export class SqlProperties {
 
 	private async _read(dbId: number, result: any, keepHidden: boolean = false, keepInternals: boolean = false, instanceOf: boolean = false): Promise<number> {
 		let parent: number = null;
-		const query: string = `
+		let query: string = `
 		select 
 			_objects_id.external_id, _objects_attr.flags,
 			_objects_attr.category,
@@ -114,12 +118,18 @@ export class SqlProperties {
 		where _objects_eav.entity_id = ${dbId}
 		order by _objects_eav.entity_id, _objects_attr.category, _objects_attr.name;`;
 		const results: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
+		if (!results || results.length === 0) {
+			query = `select _objects_id.external_id from _objects_id where _objects_id.id = ${dbId};`;
+			const external_id: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
+			result.externalId = (external_id[0] as any).external_id || '';
+			return (parent);
+		}
 
 		for (let i = 0; i < results.length; i++) {
 			const elt: any = results[i];
 			result.externalId = elt.external_id;
-			let category: string = elt.category || '__internal__';
-			let key: string = `${elt.category}/${elt.name}`.toLowerCase();
+			let category: string = elt.category || 'xxROOTxx';
+			let key: string = `${category}/${elt.name}`.toLowerCase();
 			// if ( key === '__parent__/parent' ) {
 			// 	parent =Number.parseInt (elt.value) ;
 			// 	result.parents.push (parent) ;
@@ -132,7 +142,7 @@ export class SqlProperties {
 				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals, true);
 				//continue;
 			}
-			if (/^__[_\w]+__\/[_a-z]+$/.test(key) )
+			if (/^__[_\w]+__\/[_a-z]+$/.test(key))
 				category = '__internal__';
 			if (key === '__name__/name') {
 				if (result.name === '')
@@ -147,7 +157,7 @@ export class SqlProperties {
 			let value: string | number = this._readPropertyAsString(elt);
 			if (elt.data_type_context !== null)
 				value += ' ' + elt.data_type_context;
-			value = typeof value === 'string'? value.trimEnd() : value;
+			value = typeof value === 'string' ? value.trimEnd() : value;
 
 			// In theory should we should also mark as hidden if in parent, child, viewable or externalRef category
 			if (!(category === '__internal__' && keepInternals) && !(category !== '__internal__' && keepHidden))
@@ -165,6 +175,10 @@ export class SqlProperties {
 				result.properties[category][key] = value;
 			}
 		}
+		if ( result.properties.xxROOTxx) {
+			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
+			delete result.properties.xxROOTxx;
+		}
 		return (parent);
 	}
 
@@ -181,24 +195,24 @@ export class SqlProperties {
 				value = attr.value;
 				break;
 			case AttributeType.Boolean:
-				value = attr.value === 0 ? 'No' : 'Yes';
+				value = attr.value === 0 || attr.value === null ? 'No' : 'Yes';
 				break;
 			case AttributeType.Integer:
-				value = attr.value.toString();
+				value = (attr.value !== null && attr.value.toString()) || '0';
 				break;
 			case AttributeType.Double:
 			case AttributeType.Float:
 				const precision: number = Number.parseInt(attr[AttributeFieldIndex.iDISPLAYPRECISION]) || 3;
 				//value = attr.value.toFixed(precision);
-				value = attr.value.toFixed(3);
+				value = (attr.value !== null && attr.value.toFixed(3)) || '0.000';
 				break;
 			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
 				//if (attr.flags & AttributeFlags.afDirectStorage)
-				value = Number.parseInt(attr.value);
+				value = (attr.value !== null && Number.parseInt(attr.value)) || 0;
 				//console.log(`AttributeType.DbKey => ${value}`);
 				break;
 			case AttributeType.DateTime: // ISO 8601 date
-				value = attr.value.toString();
+				value = (attr.value !== null && attr.value.toString()) || '';
 				break;
 			case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
 				value = attr.value;
@@ -255,7 +269,6 @@ export class SqlProperties {
 		let query: string = `
 		select
 			_objects_eav.entity_id,
-			_objects_id.external_id,
 			_objects_attr.category,
 			coalesce(nullif(_objects_attr.display_name, ''), _objects_attr.name) as name,
 			_objects_val.value
@@ -269,72 +282,88 @@ export class SqlProperties {
 			or (_objects_attr.name = 'instanceof_objid' and _objects_attr.category = '__instanceof__')
 			or (_objects_attr.name = 'name' and _objects_attr.category = '__name__')
 		order by _objects_eav.entity_id, name desc, _objects_val.value;`;
-		//(name = 'child' and _objects_attr.category = '__child__')
-		let results: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
+		let results: object[] = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false, });
+
+		// Because of the parenting, and possible references, we need to provision nodes as we see IDs coming in.
 
 		const rootId: number = nodeIds[0];
-		const nodes: any = {};
+		let nodes: any = {};
 		const refObjIds: any = {};
+		const nodesWithViewableIn: any = {};
 		for (let i = 0; i < results.length;) {
 			try {
-				// We sorted entries as viewable_in -> parent (root node have no parent) -> instanceof_objid -> name // -> child (might have 0, 1 or more children)
+				// We sorted entries as viewable_in -> parent (root node have no parent) -> instanceof_objid -> name
 				const objId: number = (results[i] as any).entity_id;
-				//const external_id: number = (results[i] as any).external_id;
-				const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : undefined; // was viewable_in
-				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : null;
-				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : null;
+				// There might be more than 1 viewable_in
+				//const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : undefined; // was viewable_in
+				const nodeViewableIn: string[] = [];
+				while (results[i] && (results[i] as any).name === 'viewable_in')
+					nodeViewableIn.push((results[i++] as any).value);
+				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : undefined;
 				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : '';
 				nodeName = nodeName.trim();
-				// const nodeChild: number[] = [];
-				// while (i < results.length && results[i] && (results[i] as any).name === 'child')
-				// 	nodeChild.push(Number.parseInt((results[i++] as any).value));
+				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : undefined;
+				nodeName = nodeName || (nodes[refObjId] && nodes[refObjId].name) || '';
 
-				if (refObjId) {
-					if (nodes[refObjId]) {
-						nodeName = nodeName || nodes[refObjId].name;
-					} else {
-						if (!refObjIds[refObjId])
-							refObjIds[refObjId] = [];
-						refObjIds[refObjId].push(objId);
+				refObjIds[objId] && refObjIds[objId].map((eltId: number): string => nodes[eltId] && (nodes[eltId].name = nodes[eltId].name || nodeName));
+				refObjIds[objId] && delete refObjIds[objId];
+
+				const node: any = nodes[objId] || {
+					name: nodeName,
+					objectid: objId,
+					//viewable_in: [nodeViewableIn],
+					parent: nodeParent,
+					refObjIds: [],
+					objects: [],
+				};
+				nodes[objId] || (nodes[objId] = node);
+				nodeParent && (node.parent = nodeParent);
+				nodeName && (node.name = nodeName);
+
+				// nodeViewableIn && viewable_in.includes(nodeViewableIn) && (node.viewable_in = viewable_in[0]); // This is in case, we created that node via the parent route.
+				// nodeViewableIn && viewable_in.includes(nodeViewableIn) && (nodesWithViewableIn[objId] = node); // We need to store these nodes, as Revit sometimes only reference the end-leaf nodes
+				if (nodeViewableIn.length > 0) {
+					let bs: boolean[] = nodeViewableIn.map((vin: string): boolean => viewable_in.includes(vin));
+					let isin: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
+					if (isin) {
+						node.viewable_in = viewable_in[0];
+						nodesWithViewableIn[objId] = node;
 					}
 				}
-				if (refObjIds[objId]) {
-					refObjIds[objId].map((eltId: number): string => nodes[eltId].name = nodeName);
-					delete refObjIds[objId];
-				}
-				if (!nodes[objId]) {
-					nodes[objId] = {
-						//externalId: external_id,
-						name: nodeName,
-						objectid: objId,
-						//viewable_in: nodeViewableIn,
+
+				refObjId && node.refObjIds.push(refObjId);
+				(refObjId && !refObjIds[refObjId]) && (refObjIds[refObjId] = []); // We need to store these references, for later processing
+				refObjId && refObjIds[refObjId].push(objId);
+
+				// Parenting
+				if (nodeParent) {
+					const parent: any = nodes[nodeParent] || {
+						name: '',
+						objectid: nodeParent,
+						//viewable_in: [nodeViewableIn], // need to go recursively, so for now do not set it
+						parent: undefined,
+						refObjIds: [],
+						objects: [],
 					};
-				} else {
-					//nodes[objId].externalId = external_id;
-					nodes[objId].name = nodes[objId].name || nodeName;
-					nodes[objId].objectid = objId;
-					//nodes[objId].viewable_in = nodeViewableIn;
-				}
-				if (nodeParent && viewable_in.includes(nodeViewableIn) ) {
-					let parent: any = nodes[nodeParent];
-					if (!parent)
-						parent = nodes[nodeParent] = {
-							//externalId: null,
-							name: '',
-							objectid: nodeParent,
-							//viewable_in: null,
-						};
-					if (!parent.objects)
-						parent.objects = [];
+					nodes[nodeParent] || (nodes[nodeParent] = parent);
 					parent.objects.push(nodes[objId]);
 				}
-				else if (nodeParent) {
-					console.log (nodeViewableIn); }
 			} catch (ex) {
 				console.error(ex);
-				break;
+				//break;
 			}
 		}
+
+		const goRecursively: any = (node: any, value: string, propName: string = 'viewable_in') => {
+			if (!node)
+				return;
+			node[propName] = value;
+			if (!node.parent || !nodes[node.parent] || nodes[node.parent][propName] === value)
+				return;
+			goRecursively(nodes[node.parent], value, propName);
+		};
+		const toProceed: any[] = Object.values(nodesWithViewableIn);
+		toProceed.map((node: any): void => goRecursively(nodes[node.parent], node.viewable_in, 'viewable_in'));
 
 		if (withProperties) {
 			const keys: string[] = Object.keys(nodes);
@@ -344,6 +373,24 @@ export class SqlProperties {
 				const propNode: any = await this._read(node.objectid, node, keepHidden, keepInternals);
 			}
 		}
+
+		const cleanup: any = (node: any): boolean => {
+			delete node.parent;
+			delete node.refObjIds;
+			const result: boolean = node.viewable_in === viewable_in[0] || toProceed.length === 0;
+			delete node.viewable_in;
+			return (result);
+		};
+		const filtered: any[] = Object.values(nodes).filter((node: any): void => cleanup(node));
+		const filteredIds: number[] = filtered.map((elt: any): number => elt.objectid);
+
+		const removeRef: any = (node: any): void => {
+			node.objects = node.objects.filter((ref: any): boolean => filteredIds.includes(ref.objectid));
+			node.objects.map((ref: any): void => removeRef(ref));
+			node.objects.length === 0 && delete node.objects;
+		};
+		removeRef(nodes[rootId]);
+
 		return (nodes[rootId]);
 	}
 

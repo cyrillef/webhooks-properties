@@ -78,7 +78,11 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 					path2SqlDB: cachePath,
 					sequelize: new Sequelize({
 						dialect: 'sqlite',
-						storage: _path.resolve(cachePath, 'model.db')
+						storage: _path.resolve(cachePath, 'model.db'),
+						define: {
+							charset: 'utf8',
+							collate: 'utf8_general_ci',
+						}
 					}),
 					guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
 				};
@@ -114,17 +118,17 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				return (null);
 
 			// DB / Properties
-			const dbEntry: any = svfEntry[0].children.filter((elt: any): any => elt.mime === 'application/autodesk-db');
-			if (!dbEntry || dbEntry.length === 0) // Stop here
+			const dbEntry: any = PropertiesUtils.findEntryInManifest(manifest.body, ['application/autodesk-db']);
+			if (!dbEntry) // Stop here
 				return (null);
 			// As the sqlite DB can be very large, check its size and download in chuncks (best practice anyway).
-			const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+			const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry.urn, null, oauth.internalClient, token);
 			const dbSize: number = Number.parseInt(dbSizeResponse.headers['content-length']);
 			let dbBuffer: Forge.ApiResponse = null;
 			const modelPath: string = _path.resolve(cachePath, 'model.db');
 			let nbChunk: number = Math.floor(dbSize / SqlPropertiesUtils.CHUNK_SIZE);
 			if (nbChunk === 0) {
-				dbBuffer = await md.getDerivativeManifest(urn, dbEntry[0].urn, null, oauth.internalClient, token);
+				dbBuffer = await md.getDerivativeManifest(urn, dbEntry.urn, null, oauth.internalClient, token);
 				await Utils.fsWriteFile(modelPath, dbBuffer.body);
 			} else {
 				// Download in serie vs parallel
@@ -135,7 +139,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				for (let it = 0; it <= nbChunk; it++) {
 					const start: number = it * SqlPropertiesUtils.CHUNK_SIZE;
 					const end: number = Math.min((it + 1) * SqlPropertiesUtils.CHUNK_SIZE, dbSize) - 1;
-					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry[0].urn, { range: `bytes=${start}-${end}` }, oauth.internalClient, token);
+					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry.urn, { range: `bytes=${start}-${end}` }, oauth.internalClient, token);
 					//chunck.body.copy(dbBuffer.body, start, 0);
 					await Utils.fsWriteFile(modelPath, chunck.body, { flag: 'a' });
 				}
@@ -150,7 +154,11 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				path2SqlDB: cachePath,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
-					storage: modelPath
+					storage: modelPath,
+					define: {
+						charset: 'utf8',
+						collate: 'utf8_general_ci',
+					}
 				}),
 				guids: guids,
 			};

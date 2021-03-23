@@ -114,7 +114,8 @@ export class SvfPropertiesController implements Controller {
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids);
 
-			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			let dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: propsDb.length - 1 }, (_, i) => i + 1);
 
@@ -139,14 +140,15 @@ export class SvfPropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
 
-			const externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			const externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
 
 			// const propsDb: SvfProperties = new SvfProperties();
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids)
 
 			const ids: { [index: string]: number } = {};
-			if (externalIds.length)
+			if (externalIds && externalIds.length)
 				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
 			else
 				propsDb.slice(1).map((extId: string): any => ids[extId.trim()] = propsDb.indexOf(extId));
@@ -170,7 +172,8 @@ export class SvfPropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
 
-			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 

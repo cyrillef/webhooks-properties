@@ -126,8 +126,8 @@ export class SvfProperties {
 		const propStop: number = (this.offs.length <= dbId + 1) ? this.avs.length : 2 * this.offs[dbId + 1];
 		for (let i = propStart; i < propStop; i += 2) {
 			const attr: string = this.attrs[this.avs[i]];
-			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
-			let key: string = (attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
+			let category: string = attr[AttributeFieldIndex.iCATEGORY] || 'xxROOTxx';
+			let key: string = (category + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
 			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
 				continue;
 			if (key === '__instanceof__/instanceof_objid')
@@ -168,6 +168,10 @@ export class SvfProperties {
 			} else {
 				result.properties[category][key] = value;
 			}
+		}
+		if (result.properties.xxROOTxx) {
+			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
+			delete result.properties.xxROOTxx;
 		}
 		return (parent);
 	}
@@ -267,8 +271,8 @@ export class SvfProperties {
 			const node: any = this.read(dbId, true, true);
 			if (
 				node.name && node.name !== ''
-				&& !node.properties.__internal__.parent
-				&& node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/
+				&& (!node.properties.__internal__ || !node.properties.__internal__.parent)
+				&& (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
 			)
 				roots.push(node.objectid);
 		}

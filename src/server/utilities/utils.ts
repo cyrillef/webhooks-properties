@@ -62,11 +62,11 @@ export class Utils {
 
 	// uses ',' separated Ids
 	// ids are either a number, or a range with 2 numbers separated with a '-'
-	public static csv(st: string): number[] {
+	public static csvToNumber(st: string, sep: string): number[] {
 		if (!st)
 			return (undefined);
 		const dbIds: (number | number[])[] = st
-			.split(',')
+			.split(sep)
 			.map((elt: string): number | number[] => {
 				const r: RegExpMatchArray = elt.match(/^(\d+)-(\d+)$/);
 				if (r === null)
@@ -77,6 +77,40 @@ export class Utils {
 				return (t);
 			});
 		return ([].concat.apply([], dbIds));
+	}
+
+	public static csvToString(st: string, sep: string): string[] {
+		if (!st)
+			return (undefined);
+		const dbIds: string[] = st
+			.split(sep)
+			.filter((elt: string): boolean => elt !== '');
+		return ([].concat.apply([], dbIds));
+		// const entries: string[] = [];
+		// const stringChars: string[] = ['"', "'"];
+		// const escapeChars: string[] = ['\\'];
+		// const separators: string[] = [sep];
+
+		// let inString: boolean = false;
+		// //let foundEscapeChar: boolean = false;
+		// for (let i = 0; i < st.length; i++) {
+		// 	if (inString && escapeChars.includes(st[i])) { // eat and skip next
+		// 		i++;
+		// 		continue;
+		// 	}
+		// 	if (stringChars.includes(st[i])) {
+		// 		inString = !inString;
+		// 		continue;
+		// 	}
+		// 	if (inString)
+		// 		continue;
+		// 	if (separators.includes(st[i])) {
+		// 		entries.push(st.substring(0, i));
+		// 		st = st.substring(i + 1);
+		// 		i = 0;
+		// 	}
+		// }
+		// return (entries);
 	}
 
 	public static fsExists = _fsExists;

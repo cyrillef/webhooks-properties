@@ -88,8 +88,8 @@ export class Svf2Properties {
 			const elt: any = eav[index];
 			let value: string | number = Svf2Properties._readPropertyAsString(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
 			const attr: any = this.attrs[elt.attributeIndex];
-			let category: string = attr[AttributeFieldIndex.iCATEGORY] || '__internal__';
-			let key: string = (attr[AttributeFieldIndex.iCATEGORY] + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
+			let category: string = attr[AttributeFieldIndex.iCATEGORY] || 'xxROOTxx';
+			let key: string = (category + '/' + attr[AttributeFieldIndex.iNAME]).toLowerCase();
 			if (instanceOf && (key === '__parent__/parent' || key === '__child__/child' || key === '__viewable_in__/viewable_in'))
 				continue;
 			if (key === '__instanceof__/instanceof_objid') {
@@ -130,7 +130,10 @@ export class Svf2Properties {
 				result.properties[category][key] = value;
 			}
 		}
-
+		if (result.properties.xxROOTxx) {
+			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
+			delete result.properties.xxROOTxx;
+		}
 		return (parent);
 	}
 

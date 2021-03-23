@@ -171,6 +171,24 @@ export abstract class PropertiesUtils {
 		return (guids);
 	};
 
+	public static findEntryInManifest = (manifest: any, possibles: string[]): any => {
+		const guids: any = {};
+		let dbNode: any = null;
+		const iterateChildren = (parent: any): boolean => {
+			const from: any = parent.children || parent.derivatives;
+			if (!from)
+				return (false);
+			const entries: any[] = from.filter((elt: any): any => elt.mime && possibles.includes(elt.mime));
+			if (entries && entries.length)
+				return (dbNode = entries[0], true);
+			const bs: boolean[] = from.map((children: any): boolean => iterateChildren(children));
+			const found: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
+			return (found);
+		};
+		iterateChildren(manifest);
+		return (dbNode);
+	};
+
 }
 
 export default PropertiesUtils;

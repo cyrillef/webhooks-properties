@@ -113,7 +113,8 @@ export class Svf2PropertiesController implements Controller {
 			// const propsDb = new Svf2Properties(dbBuffers);
 			const propsDb: string[] = dbBuffers.ids;
 
-			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			let dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: propsDb.length - 1 }, (_, i) => i + 1);
 
@@ -138,13 +139,14 @@ export class Svf2PropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
 
-			const externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			const externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
 
 			// const propsDb = new Svf2Properties(dbBuffers);
 			const propsDb: string[] = dbBuffers.ids;
 
 			const ids: { [index: string]: number } = {};
-			if ( externalIds.length )
+			if ( externalIds && externalIds.length )
 				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
 			else
 				propsDb.slice(1).map((extId: string): any => ids[extId] = propsDb.indexOf(extId));
@@ -171,7 +173,8 @@ export class Svf2PropertiesController implements Controller {
 			// const propsDb: Svf2Properties = new Svf2Properties(dbBuffers);
 			const dbidIdx: Uint32Array = new Uint32Array(dbBuffers.dbid.buffer, dbBuffers.dbid.byteOffset, dbBuffers.dbid.byteLength / Uint32Array.BYTES_PER_ELEMENT);
 
-			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			let dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: dbidIdx.length - 1 }, (_, i) => i + 1);
 
@@ -200,7 +203,8 @@ export class Svf2PropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, region);
 
-			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 

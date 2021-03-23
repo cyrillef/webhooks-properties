@@ -174,7 +174,9 @@ Returns a list of externalID from requested dbID.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {number[], optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'. If missing returns all.
+* ids {number[], optional} - List of dbID. CSV formatted, using the separator character. Range separator is '-'. If missing returns all.
+
+* sep {string, optional} - Character separator. Default is ','.
 
 ### Example
 
@@ -222,7 +224,9 @@ Returns a list of dbId from requested externalID.
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - List of externalID. CSV formatted, using ',' separator.
+* ids {string[], optional} - List of externalID. CSV formatted, using the separator character. If missing returns all.
+
+* sep {string, optional} - Character separator. Default is ','.
 
 ### Example
 
@@ -259,7 +263,9 @@ Returns a list of SVF2 dbId from a lits of SVF dbId .
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string} - List of externalID. CSV formatted, using ',' separator.
+* ids {number[], optional} - List of externalID. CSV formatted, using the separator character. If missing returns all.
+
+* sep {string, optional} - Character separator. Default is ','.
 
 * reverse {boolean, optional} - Invert the mapping - if true would convert SVF2 dbId to SVF dbId. Detault to false.
 
@@ -436,7 +442,9 @@ Returns a list of properties for each object in an object tree for the default v
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
 
-* ids {string, optional} - List of dbID. CSV formatted, using ',' separator. Range separator is '-'.
+* ids {number[], optional} - List of dbID. CSV formatted, using the separator character. Range separator is '-'.
+
+* sep {string, optional} - Character separator. Default is ','.
 
 * keephiddens {boolean, optional} - Keeps hidden properties in the properties node, Default is false.
 

@@ -211,8 +211,8 @@ export class JsonDiff {
 	// Utils
 
 	public static sortObjectProperties(obj: any, keys?: string[]): any {
-		const jsonDiif: JsonDiff = new JsonDiff({}, {}, keys);
-		jsonDiif.reorderObject(obj, 0);
+		const jsonDiff: JsonDiff = new JsonDiff({}, {}, keys);
+		jsonDiff.reorderObject(obj, 0);
 		return (obj);
 	}
 

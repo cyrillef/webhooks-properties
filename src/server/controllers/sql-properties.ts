@@ -116,7 +116,8 @@ export class SqlPropertiesController implements Controller {
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
-			let dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			let dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			if (!dbIds || isNaN(dbIds[0]))
 				dbIds = Array.from({ length: await propsDb.idMax() }, (_, i) => i + 1);
 
@@ -145,9 +146,10 @@ export class SqlPropertiesController implements Controller {
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
 			const ids: { [index: string]: number } = {};
-			let externalIds: string[] = (request.query.ids as string || '').split(',').filter((elt: string): boolean => elt !== ''); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			let externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
 			let conditions: string = '1=1';
-			if ( externalIds.length ) {
+			if ( externalIds && externalIds.length ) {
 				externalIds = externalIds.map((extid: string): any => `external_id = '${extid}'`);
 				conditions = externalIds.join(' or ');
 			}
@@ -173,7 +175,8 @@ export class SqlPropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
 
-			const dbIds: number[] = Utils.csv(request.query.ids as string); // csv format
+			const sep: string = (request.query.sep as string) || ',';
+			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 
