@@ -20,6 +20,7 @@ import { PropertiesUtils, PropertiesCache, AttributeType, AttributeFlags, Attrib
 
 export interface SqlPropertiesCache extends PropertiesCache {
 	path2SqlDB: string,
+	sqlDBName: string,
 	sequelize: Sequelize,
 	guids: any,
 }
@@ -175,7 +176,7 @@ export class SqlProperties {
 				result.properties[category][key] = value;
 			}
 		}
-		if ( result.properties.xxROOTxx) {
+		if (result.properties.xxROOTxx) {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
 		}
@@ -259,11 +260,23 @@ export class SqlProperties {
 		results = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
 		const difference: number[] = results.map((elt: any): number => elt.nbp === 0 ? elt.entity_id : null).filter((elt: any): boolean => elt !== null);
 
-		return (difference);
+		let final: number[] = [];
+		if (difference.length > 1) {
+			// We may need to cleanup the list (ex: dwfx)
+			for (let i = 0; i < difference.length; i++) {
+				const node: any = await this.read(difference[i], false, false);
+				if (node.name !== '')
+					final.push(difference[i]);
+			}
+		} else {
+			final = difference;
+		}
+
+		return (final);
 	}
 
 	public async buildTree(viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): Promise<any> {
-		const nodeIds: number[] = await this.findRootNodes();
+		const rootIds: number[] = await this.findRootNodes();
 
 		// Gets objId, external_id, category - name - viewable_in - child
 		let query: string = `
@@ -286,7 +299,6 @@ export class SqlProperties {
 
 		// Because of the parenting, and possible references, we need to provision nodes as we see IDs coming in.
 
-		const rootId: number = nodeIds[0];
 		let nodes: any = {};
 		const refObjIds: any = {};
 		const nodesWithViewableIn: any = {};
@@ -389,7 +401,16 @@ export class SqlProperties {
 			node.objects.map((ref: any): void => removeRef(ref));
 			node.objects.length === 0 && delete node.objects;
 		};
-		removeRef(nodes[rootId]);
+		const rootId: number = (rootIds.length === 1 && rootIds[0]) || 0;
+		if (rootIds.length > 1) {
+			nodes[rootId] = {
+				name: '',
+				objectid: 0,
+				objects: rootIds.map((nodeId: number): any => nodes[nodeId]),
+			};
+			filteredIds.push(rootId);
+		}
+		nodes[rootId] && removeRef(nodes[rootId]);
 
 		return (nodes[rootId]);
 	}

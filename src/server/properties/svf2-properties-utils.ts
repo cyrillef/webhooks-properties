@@ -37,8 +37,8 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		return (new Svf2PropertiesUtils(cachePath));
 	}
 
-	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
-		return (this.loadInCache(urn, region));
+	public async get(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
+		return (this.loadInCache(urn, guid, region));
 	}
 
 	public getPath(urn: string): string {
@@ -57,7 +57,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
+	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -88,7 +88,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 				return (this.cache[urn]);
 			}
 
-			return (await this.loadFromForge(urn, region));
+			return (await this.loadFromForge(urn, guid, region));
 		} catch (ex) {
 			return (null);
 		}
@@ -96,7 +96,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 
 	// Files are considered small enough to be downloaded at once - anyway the browser do it, so why not us?
 	// SVF2 is always compressed :)
-	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
+	protected async loadFromForge(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -143,16 +143,42 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
 			this.cache[urn].guids = PropertiesUtils.findViewablesInManifest(manifest);
-			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(this.cache[urn].guids))));
+			jobs.push(this.saveGuids(urn, this.cache[urn].guids));
 
 			await Promise.all(jobs);
-			// this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
-			// this.cache[urn].vals = JSON.parse(this.cache[urn].vals.toString('utf8'));
-			// this.cache[urn].ids = JSON.parse(this.cache[urn].ids.toString('utf8'));
-
 			return (this.cache[urn]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+			return (null);
+		}
+	}
+
+	protected async saveDBs(urn: string, dbs: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'dbs.json'), Buffer.from(JSON.stringify(dbs)));
+	}
+
+	protected async loadDBs(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const dbs: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'dbs.json'), null)).toString('utf8'));
+			return (dbs);
+		} catch (ex) {
+			return (null);
+		}
+	}
+
+	protected async saveGuids(urn: string, guids: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+	}
+	
+	protected async loadGuids(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8'));
+			return (guids);
+		} catch (ex) {
 			return (null);
 		}
 	}

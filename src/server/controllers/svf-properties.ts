@@ -60,8 +60,9 @@ export class SvfPropertiesController implements Controller {
 	private async databasePropertiesLoad(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb = new SvfProperties();
 			await propsDb.load(dbBuffers);
@@ -107,8 +108,9 @@ export class SvfPropertiesController implements Controller {
 	private async databaseIds(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			// const propsDb: SvfProperties = new SvfProperties();
 			// await propsDb.load(dbBuffers);
@@ -137,8 +139,9 @@ export class SvfPropertiesController implements Controller {
 	private async databaseExternalIds(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const sep: string = (request.query.sep as string) || ',';
 			const externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
@@ -168,9 +171,9 @@ export class SvfPropertiesController implements Controller {
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const sep: string = (request.query.sep as string) || ',';
 			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
@@ -230,12 +233,12 @@ export class SvfPropertiesController implements Controller {
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const withProperties: boolean = (request.query.properties as string) === 'true'; // defaults to false
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb = new SvfProperties();
 			await propsDb.load(dbBuffers);
@@ -285,8 +288,9 @@ export class SvfPropertiesController implements Controller {
 	private async databasePropertiesSearch(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, region);
+			const dbBuffers: SvfPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const bruteforce: boolean = (request.query.bruteforce as string) === 'true';
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';

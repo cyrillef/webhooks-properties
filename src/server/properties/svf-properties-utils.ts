@@ -37,8 +37,8 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		return (new SvfPropertiesUtils(cachePath));
 	}
 
-	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
-		return (this.loadInCache(urn, region));
+	public async get(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
+		return (this.loadInCache(urn, guid, region));
 	}
 
 	public getPath(urn: string): string {
@@ -57,7 +57,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
+	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -76,13 +76,13 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				const results: Buffer[] = await Promise.all(jobs);
 				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
 
-				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(this.getPath(urn), 'guids.json'), null)).toString('utf8'));
+				const guids: any = await this.loadGuids(urn);
 				this.cache[urn].guids = guids;
 
 				return (this.cache[urn]);
 			}
 
-			return (await this.loadFromForge(urn, region));
+			return (await this.loadFromForge(urn, guid, region));
 		} catch (ex) {
 			return (null);
 		}
@@ -90,7 +90,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 
 	// Files are considered small enough to be downloaded at once - anyway the browser do it, so why not us?
 	// But make sure to get the compressed versions (.json.gz versions)
-	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
+	protected async loadFromForge(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -112,17 +112,24 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				return (null);
 
 			// DB / Properties
-			const dbEntry: any = PropertiesUtils.findEntryInManifest(manifest.body, ['application/autodesk-db']);
-			let derivativePath: string = dbEntry.urn.substring(0, dbEntry.urn.lastIndexOf('/') + 1);
-
+			const dbEntries: any[] = PropertiesUtils.findDBEntriesInManifest(manifest.body, ['application/autodesk-db']);
+			if (!dbEntries || dbEntries.length === 0) // Stop here
+				return (null);
+			// DWFX might have one DB for each viewable (not shared like others)
 			const dbFiles: string[] = SvfProperties.dbNames;
-			let paths: string[] = dbFiles.map((fn: string): string => `${derivativePath}${fn}.json.gz`);
-			let jobs: Promise<Forge.ApiResponse>[] = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
-			let results: Forge.ApiResponse[] = await Promise.all(jobs);
-			const dbBuffers: Buffer[] = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
+			let dbBuffers: Buffer[] = null;
+			for (let iDB = 0; iDB < dbEntries.length; iDB++) {
+				const dbEntry: any = dbEntries[iDB];
+				const derivativePath: string = dbEntry.urn.substring(0, dbEntry.urn.lastIndexOf('/') + 1);
+
+				const paths: string[] = dbFiles.map((fn: string): string => `${derivativePath}${fn}.json.gz`);
+				const jobs: Promise<Forge.ApiResponse>[] = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
+				const results: Forge.ApiResponse[] = await Promise.all(jobs);
+				dbBuffers = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
+			}
 
 			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
-			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+			await this.saveGuids(urn, guids);
 
 			this.cache[urn] = {
 				lastVisited: moment(),
@@ -136,6 +143,36 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			return (this.cache[urn]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+			return (null);
+		}
+	}
+
+	protected async saveDBs(urn: string, dbs: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'dbs.json'), Buffer.from(JSON.stringify(dbs)));
+	}
+
+	protected async loadDBs(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const dbs: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'dbs.json'), null)).toString('utf8'));
+			return (dbs);
+		} catch (ex) {
+			return (null);
+		}
+	}
+
+	protected async saveGuids(urn: string, guids: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+	}
+
+	protected async loadGuids(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8'));
+			return (guids);
+		} catch (ex) {
 			return (null);
 		}
 	}

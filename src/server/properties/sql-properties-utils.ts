@@ -39,8 +39,8 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		return (new SqlPropertiesUtils(cachePath));
 	}
 
-	public async get(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
-		return (this.loadInCache(urn, region));
+	public async get(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
+		return (this.loadInCache(urn, guid, region));
 	}
 
 	public getPath(urn: string): string {
@@ -61,35 +61,44 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
+	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return (await this.loadFromForge(urn, guid, region));
+			const guids: any = await this.loadDBs(urn);
+			guid = guid || this.defaultGUID(guids)
+			const filename: string = this.filename(urn, guid, dbs);
+			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
+			const key: string = `${urn}-${filename}`;
 
-			if (this.cache[urn]) {
-				this.cache[urn].lastVisited = moment();
-				return (this.cache[urn]);
+			if (this.cache[key]) {
+				this.cache[key].lastVisited = moment();
+				return (this.cache[key]);
 			}
 
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
-				this.cache[urn] = {
+				this.cache[key] = {
 					lastVisited: moment(),
-					path2SqlDB: cachePath,
+					path2SqlDB: resolvedFilename,
+					sqlDBName: filename,
 					sequelize: new Sequelize({
 						dialect: 'sqlite',
-						storage: _path.resolve(cachePath, 'model.db'),
+						storage: resolvedFilename,
 						define: {
 							charset: 'utf8',
 							collate: 'utf8_general_ci',
 						}
 					}),
-					guids: JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8')),
+					guids: guids,
 				};
-				return (this.cache[urn]);
+				return (this.cache[key]);
 			}
 
-			return (await this.loadFromForge(urn, region));
+			return (await this.loadFromForge(urn, guid, region));
 		} catch (ex) {
 			return (null);
 		}
@@ -97,7 +106,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 
 	// The database can be very big, so we may need to download it in chuncks!
 	// But no need to compress unlike for SVF / SVF2
-	protected async loadFromForge(urn: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
+	protected async loadFromForge(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 			const cachePath: string = this.getPath(urn);
@@ -118,43 +127,53 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				return (null);
 
 			// DB / Properties
-			const dbEntry: any = PropertiesUtils.findEntryInManifest(manifest.body, ['application/autodesk-db']);
-			if (!dbEntry) // Stop here
+			const dbEntries: any[] = PropertiesUtils.findDBEntriesInManifest(manifest.body, ['application/autodesk-db']);
+			if (!dbEntries || dbEntries.length === 0) // Stop here
 				return (null);
 			// As the sqlite DB can be very large, check its size and download in chuncks (best practice anyway).
-			const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry.urn, null, oauth.internalClient, token);
-			const dbSize: number = Number.parseInt(dbSizeResponse.headers['content-length']);
-			let dbBuffer: Forge.ApiResponse = null;
-			const modelPath: string = _path.resolve(cachePath, 'model.db');
-			let nbChunk: number = Math.floor(dbSize / SqlPropertiesUtils.CHUNK_SIZE);
-			if (nbChunk === 0) {
-				dbBuffer = await md.getDerivativeManifest(urn, dbEntry.urn, null, oauth.internalClient, token);
-				await Utils.fsWriteFile(modelPath, dbBuffer.body);
-			} else {
-				// Download in serie vs parallel
-				// dbBuffer = dbSizeResponse;
-				// dbBuffer.body = Buffer.allocUnsafe(dbSize);
-				if (await Utils.fsExists(modelPath))
-					await Utils.fsUnlink(modelPath);
-				for (let it = 0; it <= nbChunk; it++) {
-					const start: number = it * SqlPropertiesUtils.CHUNK_SIZE;
-					const end: number = Math.min((it + 1) * SqlPropertiesUtils.CHUNK_SIZE, dbSize) - 1;
-					const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry.urn, { range: `bytes=${start}-${end}` }, oauth.internalClient, token);
-					//chunck.body.copy(dbBuffer.body, start, 0);
-					await Utils.fsWriteFile(modelPath, chunck.body, { flag: 'a' });
+			// DWFX might have one DB for each viewable (not shared like others)
+			const modelPathes: string[] = [];
+			for (let iDB = 0; iDB < dbEntries.length; iDB++) {
+				const dbEntry: any = dbEntries[iDB];
+				const dbSizeResponse: Forge.ApiResponse = await md.getDerivativeManifestInfo(urn, dbEntry.urn, null, oauth.internalClient, token);
+				const dbSize: number = Number.parseInt(dbSizeResponse.headers['content-length']);
+				let dbBuffer: Forge.ApiResponse = null;
+				//modelPathes.push(_path.resolve(cachePath, `${dbEntry.guid}.db`));
+				modelPathes.push(_path.resolve(cachePath, `${dbEntries.length > 1 ? dbEntry.guid : 'properties'}.db`));
+				let nbChunk: number = Math.floor(dbSize / SqlPropertiesUtils.CHUNK_SIZE);
+				if (nbChunk === 0) {
+					dbBuffer = await md.getDerivativeManifest(urn, dbEntry.urn, null, oauth.internalClient, token);
+					await Utils.fsWriteFile(modelPathes[iDB], dbBuffer.body);
+				} else {
+					// Download in serie vs parallel
+					if (await Utils.fsExists(modelPathes[iDB]))
+						await Utils.fsUnlink(modelPathes[iDB]);
+					for (let it = 0; it <= nbChunk; it++) {
+						const start: number = it * SqlPropertiesUtils.CHUNK_SIZE;
+						const end: number = Math.min((it + 1) * SqlPropertiesUtils.CHUNK_SIZE, dbSize) - 1;
+						const chunck: Forge.ApiResponse = await md.getDerivativeManifest(urn, dbEntry.urn, { range: `bytes=${start}-${end}` }, oauth.internalClient, token);
+						await Utils.fsWriteFile(modelPathes[iDB], chunck.body, { flag: 'a' });
+					}
 				}
 			}
-			// await Utils.fsWriteFile(_path.resolve(cachePath, 'model.db'), dbBuffer.body);
 
 			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
-			Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+			guid = guid || this.defaultGUID(guids);
+			await this.saveGuids(urn, guids);
+			const dbs: any = {};
+			Object.keys(guids).map((guid: string): string => dbs[guid] = `${dbEntries.length > 1 ? guid : 'properties'}.db`);
+			await this.saveDBs(urn, dbs);
 
-			this.cache[urn] = {
+			const filename: string = this.filename(urn, guid, dbs);
+			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
+			const key: string = `${urn}-${filename}`;
+			this.cache[key] = {
 				lastVisited: moment(),
-				path2SqlDB: cachePath,
+				path2SqlDB: resolvedFilename,
+				sqlDBName: filename,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
-					storage: modelPath,
+					storage: resolvedFilename,
 					define: {
 						charset: 'utf8',
 						collate: 'utf8_general_ci',
@@ -163,11 +182,55 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				guids: guids,
 			};
 
-			return (this.cache[urn]);
+			return (this.cache[key]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
 		}
+	}
+
+	protected async saveDBs(urn: string, dbs: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'dbs.json'), Buffer.from(JSON.stringify(dbs)));
+	}
+
+	protected async loadDBs(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const dbs: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'dbs.json'), null)).toString('utf8'));
+			return (dbs);
+		} catch (ex) {
+			return (null);
+		}
+	}
+
+	protected async saveGuids(urn: string, guids: any): Promise<any> {
+		const cachePath: string = this.getPath(urn);
+		Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
+	}
+
+	protected async loadGuids(urn: string): Promise<any> {
+		try {
+			const cachePath: string = this.getPath(urn);
+			const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8'));
+			return (guids);
+		} catch (ex) {
+			return (null);
+		}
+	}
+
+	protected defaultGUID(guids: any): string {
+		return (Object.keys(guids)[0]);
+	}
+
+	protected filename(urn: string, guid: string, dbs: any): string {
+		return (dbs[guid]);
+	}
+
+	protected resolvedFilename(urn: string, guid: string, dbs: any): string {
+		const cachePath: string = this.getPath(urn);
+		const filename: string = this.filename(urn, guid, dbs);
+		return (_path.resolve(cachePath, filename));
 	}
 
 }

@@ -276,6 +276,16 @@ export class SvfProperties {
 			)
 				roots.push(node.objectid);
 		}
+		if ( roots.length === 0 ) {
+			// DWF(x) use dbID = 0
+			const node: any = this.read(0, true, true);
+			if (
+				node.name && node.name !== ''
+				&& (!node.properties.__internal__ || !node.properties.__internal__.parent)
+				&& (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
+			)
+				roots.push(node.objectid);
+		}
 		return (roots);
 	}
 
@@ -302,7 +312,7 @@ export class SvfProperties {
 			objectid: nodeIds[0],
 			//objects: [],
 		};
-		if (!node.properties.__internal__.child)
+		if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.child)
 			return (result);
 		if (!Array.isArray(node.properties.__internal__.child))
 			node.properties.__internal__.child = [node.properties.__internal__.child];

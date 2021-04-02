@@ -134,6 +134,21 @@ declare enum AggregateMode {
     Auto = 0,
     Aggregated = 1
 }
+interface ViewerExtensionsConfiguration {
+    id: string;
+    options: any;
+}
+interface ViewerExtensionsActivation {
+    bimwalk?: boolean;
+    explode?: boolean;
+    hyperlink?: boolean;
+    fusionOrbit?: boolean;
+    layerManager?: boolean;
+    measure?: boolean;
+    scalarisSimulation?: boolean;
+    section?: boolean;
+    viewcube?: boolean;
+}
 interface ViewerInitializerOptions {
     webGLHelpLink?: string;
     language?: string;
@@ -148,13 +163,7 @@ interface Viewer3DConstructorOptions {
 }
 interface ViewerConstructorOptions {
     disableBrowserContextMenu?: boolean;
-    disabledExtensions?: {
-        bimwalk?: boolean;
-        hyperlink?: boolean;
-        measure?: boolean;
-        scalarisSimulation?: boolean;
-        section?: boolean;
-    };
+    disabledExtensions?: ViewerExtensionsActivation;
     extensions?: string[];
     useConsolidation?: boolean;
     consolidationMemoryLimit?: number;
@@ -177,6 +186,7 @@ declare class LocalViewer {
     private configuration;
     private modelBrowserExcludeRoot;
     private extensions;
+    private disabledExtensions;
     private ui_definition;
     private ui_references;
     private viewerAggregateMode;
@@ -197,10 +207,9 @@ declare class LocalViewer {
      * @param endpoint {string?} (Optional) When using OTG|SVF2 with a local server, provide the endpoint to use to access the OTG|SVF2 CDN server
      */
     constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string);
-    configureExtensions(extensions: (string | {
-        id: string;
-        options: any;
-    })[]): void;
+    configureExtensions(extensions: (string | ViewerExtensionsConfiguration)[], disabledExtensions?: {
+        [index: string]: boolean;
+    }): void;
     private loadExtensions;
     private reconfigureExtensions;
     configureUI(ui: UIConfiguration): void;

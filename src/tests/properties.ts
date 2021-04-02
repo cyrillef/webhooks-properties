@@ -23,7 +23,7 @@ import JsonDiff from './json-diff';
 //import request = require('superagent');
 //import { stringify } from 'querystring';
 import chalk from 'chalk';
-import rimraf = require('rimraf');
+import * as rimraf from 'rimraf';
 import { dir } from 'console';
 
 const _fsExists = _util.promisify(_fs.exists);
@@ -136,6 +136,13 @@ const urns: any = {
 			'b6bff568-b730-ee0f-9049-7d57514ec76b'
 		],
 		type: 'svf',
+	},
+	'4017-Forge.rvt.zip': {
+		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6NDAxNy1mb3JnZS80MDE3LUZvcmdlLnJ2dC56aXA',
+		guids: [
+			'f4df1229-8738-2817-c082-60b701da5ef0',
+		],
+		type: 'svf2',
 	},
 };
 
@@ -389,6 +396,7 @@ class PropertiesController {
 					continue;
 				const fn: string = args[i]; // Model translated with SVF
 				const defaultGUID: string = urns[fn].guids[0];
+				console.log(`Using default GUID ${defaultGUID}`);
 
 				const forgeProps: any = await this.forge_getProperties(fn, defaultGUID);
 				const forgeTree: any = await this.forge_getTree(fn, defaultGUID);
@@ -415,6 +423,7 @@ class PropertiesController {
 			}
 			const defaultGUID: string = urns[fn1].guids[0];
 			console.log(`Downloading ${fn1} .json.gz files, please wait...`);
+			console.log(`Using default GUID ${defaultGUID}`);
 			await this.xxx_load('svf', fn1);
 
 			// Get all ExternalID and ObjectID and verify each lists
@@ -462,6 +471,7 @@ class PropertiesController {
 			}
 			const defaultGUID: string = urns[fn1].guids[0];
 			console.log(`Downloading ${fn1} sqlite DB, please wait...`);
+			console.log(`Using default GUID ${defaultGUID}`);
 			await this.xxx_load('sql', fn1);
 
 			// Get all ExternalID and ObjectID and verify each lists
@@ -482,7 +492,7 @@ class PropertiesController {
 			const range: number[] = Object.values(idsrange).sort() as number[]; // SVF IDs from sorted ExternalIDs
 
 			// Check Properties
-			const forgeProps: any = await this.forge_getProperties(fn1, defaultGUID);
+			//const forgeProps: any = await this.forge_getProperties(fn1, defaultGUID);
 			const sqlProps: any = await this.xxx_GetProperties('sql', fn1);
 			await this.xxx_getPropertiesRange('sql', fn1, range, false);
 			await this.xxx_getPropertiesRange('sql', fn1, range, true);
@@ -509,6 +519,7 @@ class PropertiesController {
 			}
 			const defaultGUID2: string = urns[fn2].guids[0];
 			console.log(`Downloading ${fn2} .json .idx .pack files, please wait...`);
+			console.log(`Using default GUID ${defaultGUID2}`);
 			await this.xxx_load('svf2', fn2);
 
 			// Get all ExternalID and ObjectID and verify each lists
@@ -1063,7 +1074,7 @@ class PropertiesController {
 	}
 
 	// pairs of:   bool: true|false|undefined, string: ''
-	protected static console(...args: any[]) {
+	protected static console(...args: any[]): void {
 		let st: string | string[] = [];
 		for (let i = 0; i < args.length; i += 2) {
 			let flag = '';

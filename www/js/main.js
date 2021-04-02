@@ -144,6 +144,7 @@ var LocalViewer = /** @class */ (function () {
         this.configuration = null;
         this.modelBrowserExcludeRoot = true;
         this.extensions = null;
+        this.disabledExtensions = null;
         this.ui_definition = null;
         this.ui_references = {};
         this.viewerAggregateMode = AggregateMode.Auto;
@@ -163,8 +164,9 @@ var LocalViewer = /** @class */ (function () {
             && atob(this.urn[0].urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1)
             this.region = 'EMEA';
     }
-    LocalViewer.prototype.configureExtensions = function (extensions) {
+    LocalViewer.prototype.configureExtensions = function (extensions, disabledExtensions) {
         this.extensions = extensions;
+        this.disabledExtensions = disabledExtensions || {};
     };
     LocalViewer.prototype.loadExtensions = function () {
         var self = this;
@@ -246,6 +248,7 @@ var LocalViewer = /** @class */ (function () {
                         darkmode = localStorage.getItem('darkSwitch') !== null &&
                             localStorage.getItem('darkSwitch') === 'dark';
                         this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
+                        this.configuration.disabledExtensions = this.disabledExtensions;
                         //(Autodesk.Viewing.Private as any).ENABLE_DEBUG =true;
                         //(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER =false;
                         this.configuration.modelBrowserExcludeRoot = this.modelBrowserExcludeRoot;

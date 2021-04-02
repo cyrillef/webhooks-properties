@@ -240,6 +240,25 @@ enum AggregateMode {
 	Aggregated = 1,
 }
 
+interface ViewerExtensionsConfiguration {
+	id: string;
+	options: any;
+}
+
+interface ViewerExtensionsActivation {
+	bimwalk?: boolean; // 'Autodesk.BimWalk'
+	explode?: boolean; // 'Autodesk.Explode'
+	hyperlink?: boolean; // 'Autodesk.Hyperlink'
+	fusionOrbit?: boolean; // 'Autodesk.Viewing.FusionOrbit'
+	layerManager?: boolean; // 'Autodesk.LayerManager'
+	measure?: boolean; // 'Autodesk.Measure'
+	scalarisSimulation?: boolean; // 'Autodesk.Viewing.ScalarisSimulation'
+	section?: boolean; // 'Autodesk.Section'
+	viewcube?: boolean; // 'Autodesk.ViewCubeUi'
+
+	//[key: string]: boolean;
+}
+
 interface ViewerInitializerOptions {
 	webGLHelpLink?: string;
 	language?: string;
@@ -258,13 +277,7 @@ interface Viewer3DConstructorOptions {
 
 interface ViewerConstructorOptions {
 	disableBrowserContextMenu?: boolean;
-	disabledExtensions?: {
-		bimwalk?: boolean;
-		hyperlink?: boolean;
-		measure?: boolean;
-		scalarisSimulation?: boolean;
-		section?: boolean;
-	};
+	disabledExtensions?: ViewerExtensionsActivation;
 	extensions?: string[];
 	useConsolidation?: boolean;
 	consolidationMemoryLimit?: number;
@@ -290,7 +303,8 @@ class LocalViewer {
 	private viewer: Autodesk.Viewing.GuiViewer3D = null;
 	private configuration: any = null;
 	private modelBrowserExcludeRoot: boolean = true;
-	private extensions: (string | { id: string, options: any })[] = null;
+	private extensions: (string | ViewerExtensionsConfiguration)[] = null;
+	private disabledExtensions: ViewerExtensionsActivation = null;
 	private ui_definition: UIConfiguration = null;
 	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control | Autodesk.Viewing.UI.ToolBar } = {};
 	private viewerAggregateMode: AggregateMode = AggregateMode.Auto;
@@ -330,8 +344,9 @@ class LocalViewer {
 			this.region = 'EMEA';
 	}
 
-	public configureExtensions(extensions: (string | { id: string, options: any })[]) {
+	public configureExtensions(extensions: (string | ViewerExtensionsConfiguration)[], disabledExtensions?: { [index: string]: boolean }) {
 		this.extensions = extensions;
+		this.disabledExtensions = disabledExtensions || {};
 	}
 
 	private loadExtensions() {
@@ -413,6 +428,7 @@ class LocalViewer {
 			localStorage.getItem('darkSwitch') !== null &&
 			localStorage.getItem('darkSwitch') === 'dark';
 		this.configuration.theme = darkmode ? 'dark-theme' : 'bim-theme';
+		this.configuration.disabledExtensions = this.disabledExtensions;
 
 		//(Autodesk.Viewing.Private as any).ENABLE_DEBUG =true;
 		//(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER =false;

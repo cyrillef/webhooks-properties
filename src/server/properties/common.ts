@@ -88,8 +88,8 @@ export abstract class PropertiesUtils {
 
 	public static singleton(cachePath: string /*= AppSettings.cacheFolder*/): PropertiesUtils { return (null); }
 
-	public abstract /*async*/ get(urn: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
-	// { return (this.loadInCache(urn, region)); }
+	public abstract /*async*/ get(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
+	// { return (this.loadInCache(urn, guid, region)); }
 
 	public getPath(urn: string): string {
 		return (_path.resolve(this.cachePath, urn));
@@ -123,9 +123,9 @@ export abstract class PropertiesUtils {
 		} catch (ex) { }
 	}
 
-	public abstract /*async*/ loadInCache(urn: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
+	public abstract /*async*/ loadInCache(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
 
-	protected abstract /*async*/ loadFromForge(urn: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
+	protected abstract /*async*/ loadFromForge(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
 
 	public static deleteInternals(node: any): void {
 		// __parent__
@@ -171,23 +171,57 @@ export abstract class PropertiesUtils {
 		return (guids);
 	};
 
-	public static findEntryInManifest = (manifest: any, possibles: string[]): any => {
+	public static findDBEntriesInManifest = (manifest: any, possibles: string[]): any[] => {
 		const guids: any = {};
-		let dbNode: any = null;
+		const dbNodes: any[] = [];
 		const iterateChildren = (parent: any): boolean => {
 			const from: any = parent.children || parent.derivatives;
 			if (!from)
 				return (false);
 			const entries: any[] = from.filter((elt: any): any => elt.mime && possibles.includes(elt.mime));
-			if (entries && entries.length)
-				return (dbNode = entries[0], true);
+			if (entries && entries.length) {
+				const viewableEntry: any = from.filter((elt: any): any =>
+					elt.mime === 'application/autodesk-svf'
+					|| elt.mime === 'application/autodesk-svf2'
+					|| elt.mime === 'application/autodesk-f2d'
+				)[0];
+				entries[0].guid = (viewableEntry && viewableEntry.guid) || entries[0].guid;
+				dbNodes.push(entries[0]);
+				return (true);
+			}
 			const bs: boolean[] = from.map((children: any): boolean => iterateChildren(children));
 			const found: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
 			return (found);
 		};
 		iterateChildren(manifest);
-		return (dbNode);
+		return (dbNodes);
 	};
+
+	public static findEntriesInManifest = (manifest: any, possibles: string[]): any[] => {
+		const guids: any = {};
+		const dbNodes: any[] = [];
+		const iterateChildren = (parent: any): boolean => {
+			const from: any = parent.children || parent.derivatives;
+			if (!from)
+				return (false);
+			const entries: any[] = from.filter((elt: any): any => elt.mime && possibles.includes(elt.mime));
+			if (entries && entries.length) {
+				dbNodes.push(entries[0]);
+				return (true);
+			}
+			const bs: boolean[] = from.map((children: any): boolean => iterateChildren(children));
+			const found: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
+			return (found);
+		};
+		iterateChildren(manifest);
+		return (dbNodes);
+	};
+
+	protected abstract /*async*/ saveDBs(urn: string, dbs: any): Promise<any>;
+	protected abstract /*async*/ loadDBs(urn: string): Promise<any>;
+
+	protected abstract /*async*/ saveGuids(urn: string, guids: any): Promise<any>;
+	protected abstract /*async*/ loadGuids(urn: string): Promise<any>;
 
 }
 

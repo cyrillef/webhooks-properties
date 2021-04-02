@@ -162,8 +162,8 @@
         "affectsGlobalScope": true
       },
       "../src/client/js/main.ts": {
-        "version": "d29c69abf68eb88bb476638d4a8ed6e294aefaeaefabc54dc52c7fbfd104e08b",
-        "signature": "098a4bad31f21f51f15b2544e1bbad4f1b074b6c49f650e1cd6eed5dcabcb903",
+        "version": "78e7202e00a40c2f2679f47fe1245451d908e33ef3040d41cd2f3892f578e7e4",
+        "signature": "07c454d458bd06072288b4b5cad120342635d8113da811178e908fa40f6a6591",
         "affectsGlobalScope": true
       },
       "../src/client/js/wolfgang-ext1.ts": {
@@ -472,8 +472,8 @@
         "affectsGlobalScope": false
       },
       "../node_modules/@types/forge-apis/index.d.ts": {
-        "version": "f7c3adb8071f98ea847900596a65b958b10a5f3d44d55d71a309bcf5270e346a",
-        "signature": "f7c3adb8071f98ea847900596a65b958b10a5f3d44d55d71a309bcf5270e346a",
+        "version": "2f024ca3dcc050f46beeb4c1a0d5553b6d01908e8692401b2908add7cc6335df",
+        "signature": "2f024ca3dcc050f46beeb4c1a0d5553b6d01908e8692401b2908add7cc6335df",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/three/three-core.d.ts": {

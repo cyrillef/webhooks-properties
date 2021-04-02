@@ -60,8 +60,9 @@ export class SqlPropertiesController implements Controller {
 	private async databasePropertiesLoad(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 			const idMax: number = await propsDb.idMax();
@@ -71,7 +72,8 @@ export class SqlPropertiesController implements Controller {
 			const results: object[][] = await propsDb.selectQueries(SqlProperties.dbNames.map((key: string): string => `select count(id) from ${key};`));
 
 			const sizes: any = {};
-			SqlProperties.dbNames.map((key: string, index): number => sizes[key] = Object.values(results[index][0])[0]);
+			if (results)
+				SqlProperties.dbNames.map((key: string, index): number => sizes[key] = Object.values(results[index][0])[0]);
 
 			response.json({
 				data: {
@@ -111,8 +113,9 @@ export class SqlPropertiesController implements Controller {
 	private async databaseIds(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
@@ -122,8 +125,8 @@ export class SqlPropertiesController implements Controller {
 				dbIds = Array.from({ length: await propsDb.idMax() }, (_, i) => i + 1);
 
 			const externalIds: { [index: number]: string } = {};
-			const results : any = await propsDb.selectQuery(`select id, external_id from _objects_id where id in (${dbIds.join(',')});`);
-			results.map ((elt: any): void => externalIds[elt.id] = elt.external_id);
+			const results: any = await propsDb.selectQuery(`select id, external_id from _objects_id where id in (${dbIds.join(',')});`);
+			results.map((elt: any): void => externalIds[elt.id] = elt.external_id);
 
 			response.json({
 				data: {
@@ -140,8 +143,9 @@ export class SqlPropertiesController implements Controller {
 	private async databaseExternalIds(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb: SqlProperties = new SqlProperties(sources.sequelize);
 
@@ -149,7 +153,7 @@ export class SqlPropertiesController implements Controller {
 			const sep: string = (request.query.sep as string) || ',';
 			let externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
 			let conditions: string = '1=1';
-			if ( externalIds && externalIds.length ) {
+			if (externalIds && externalIds.length) {
 				externalIds = externalIds.map((extid: string): any => `external_id = '${extid}'`);
 				conditions = externalIds.join(' or ');
 			}
@@ -171,9 +175,9 @@ export class SqlPropertiesController implements Controller {
 	private async databaseProperties(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const sep: string = (request.query.sep as string) || ',';
 			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
@@ -209,7 +213,7 @@ export class SqlPropertiesController implements Controller {
 			if (!keepInternals) {
 				const regex = new RegExp('^__(\\w+)__$');
 				trees.map((elt: any): any => {
-					const keys = Object.keys(elt.properties);
+					const keys = elt.properties && Object.keys(elt.properties) || [];
 					keys
 						.filter((key: string): boolean => regex.test(key))
 						.map((key: string): any => delete elt.properties[key]);
@@ -233,12 +237,12 @@ export class SqlPropertiesController implements Controller {
 	private async databaseObjectTree(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const withProperties: boolean = (request.query.properties as string) === 'true'; // defaults to false
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const propsDb = new SqlProperties(sources.sequelize);
 
@@ -284,8 +288,9 @@ export class SqlPropertiesController implements Controller {
 	private async databasePropertiesSearch(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
+			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
-			const sources: SqlPropertiesCache = await this.utils.get(urn, region);
+			const sources: SqlPropertiesCache = await this.utils.get(urn, guid, region);
 
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true';

@@ -73,6 +73,8 @@ Loads and returns information about the cached database.
 
 * urn {string} - The Base64 (URL Safe) encoded design URN.
 
+* guid {string, optional} - Unique model view ID. Call [GET :urn/metadata](https://forge.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-metadata-GET) to get the ID. guid can be safely ignored on this endpoint, unless your model does not use a common property DB.
+
 ### Query String Parameters
 
 * region {string, optional} - Model Derivative proxy Region. Possible values: US, EMEA. By default, it is set to US, and unless you are using a BIM360 EMEA Hub, it is recommended to leave it to US.
