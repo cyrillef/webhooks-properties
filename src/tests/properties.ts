@@ -126,7 +126,7 @@ const urns: any = {
 			'391da052-8c6f-af4e-5fe2-009fccc70c80',
 			'e91e3333-6510-abeb-714a-06dea8be33ff',
 		],
-		type: 'svf',
+		type: 'svf2',
 	},
 	'BadMonkeys.dwfx': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
@@ -852,7 +852,9 @@ class PropertiesController {
 
 		
 		//result = await this.forge_getPropertiesRange(fn1, guids1, [4]);
-		result = await this.xxx_GetProperties('sql', fn1);
+		//result = await this.xxx_GetProperties('sql', fn1);
+
+		await this.xxx_getPropertiesRange('sql', fn1, [1618], true);
 
 		console.log(result);
 		console.log(JSON.stringify(result, null, 4));

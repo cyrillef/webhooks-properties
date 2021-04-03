@@ -85,7 +85,7 @@ export class SqlProperties {
 		this.sequelize = sequelize;
 	}
 
-	public async read(dbId: number, keepHidden: boolean, keepInternals: boolean): Promise<any> {
+	public async read(dbId: number, keepHidden: boolean, keepInternals: boolean, instanceOf: boolean = false): Promise<any> {
 		const result: any = {
 			objectid: dbId,
 			name: '',
@@ -93,7 +93,7 @@ export class SqlProperties {
 			properties: {}
 		};
 
-		let parent: number = await this._read(dbId, result, keepHidden, keepInternals);
+		let parent: number = await this._read(dbId, result, keepHidden, keepInternals, instanceOf);
 		if (keepInternals === false)
 			//delete result.properties.__internal__;
 			PropertiesUtils.deleteInternals(result);
@@ -126,6 +126,7 @@ export class SqlProperties {
 			return (parent);
 		}
 
+		let nodeInstance: any = null;
 		for (let i = 0; i < results.length; i++) {
 			const elt: any = results[i];
 			result.externalId = elt.external_id;
@@ -140,8 +141,8 @@ export class SqlProperties {
 				continue;
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				await this._read(Number.parseInt(elt.value), result, keepHidden, keepInternals, true);
-				//continue;
+				nodeInstance = await this.read(Number.parseInt(elt.value), keepHidden, keepInternals, true);
+				continue;
 			}
 			if (/^__[_\w]+__\/[_a-z]+$/.test(key))
 				category = '__internal__';
@@ -176,6 +177,24 @@ export class SqlProperties {
 				result.properties[category][key] = value;
 			}
 		}
+		// Merge instanceOf where's needed
+		if (nodeInstance) {
+			result.name = result.name || nodeInstance.name;
+			//result.properties = result.properties || nodeInstance.properties;
+			Object.keys(nodeInstance.properties).map((lvl1: string): void => {
+				if (!result.properties.hasOwnProperty(lvl1)) {
+					result.properties[lvl1] = nodeInstance.properties[lvl1];
+					return;
+				}
+				if (typeof nodeInstance.properties[lvl1] !== 'object')
+					return;
+				Object.keys(nodeInstance.properties[lvl1]).map((lvl2: string): void => {
+					if (!result.properties[lvl1].hasOwnProperty(lvl2))
+						result.properties[lvl1][lvl2] = nodeInstance.properties[lvl1][lvl2];
+				});
+			});
+		}
+
 		if (result.properties.xxROOTxx) {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
@@ -271,7 +290,6 @@ export class SqlProperties {
 		} else {
 			final = difference;
 		}
-
 		return (final);
 	}
 

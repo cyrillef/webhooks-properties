@@ -209,7 +209,7 @@ export class SvfPropertiesController implements Controller {
 			if (!keepInternals) {
 				const regex = new RegExp('^__(\\w+)__$');
 				trees.map((elt: any): any => {
-					const keys = Object.keys(elt.properties);
+					const keys = elt.properties && Object.keys(elt.properties) || [];
 					keys
 						.filter((key: string): boolean => regex.test(key))
 						.map((key: string): any => delete elt.properties[key]);
