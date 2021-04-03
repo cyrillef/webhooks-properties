@@ -1,0 +1,18 @@
+{
+    "//data/objects/[objectid=0]objects/[objectid=1613]objects/[objectid=2413]objects/[objectid=2414]objects/[objectid=2458]objects/[objectid=2512]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1613]objects/[objectid=2413]objects/[objectid=2414]objects/[objectid=2458]objects/": "warning: arrays do not have the same length",
+    "//data/objects/[objectid=0]objects/[objectid=1672]name/": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1672]objects/": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/[objectid=1956]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/[objectid=1957]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/[objectid=1959]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/[objectid=1961]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/[objectid=1963]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1646]objects/": "warning: arrays do not have the same length",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1870]objects/[objectid=1892]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=1848]objects/[objectid=1849]objects/[objectid=1870]objects/": "warning: arrays do not have the same length",
+    "//data/objects/[objectid=0]objects/[objectid=3320]name/": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=3320]objects/": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=3374]objects/[objectid=3375]objects/[objectid=3381]objects/[objectid=3401]": "missing on right",
+    "//data/objects/[objectid=0]objects/[objectid=3374]objects/[objectid=3375]objects/[objectid=3381]objects/": "warning: arrays do not have the same length"
+}

@@ -202,7 +202,18 @@ export class Svf2Properties {
 
 		roots = results.childs.filter((x: number): boolean => !results.parents.includes(x));
 
-		return (roots);
+		let final: number[] = [];
+		if (roots.length > 1) {
+			// We may need to cleanup the list (ex: dwfx)
+			for (let i = 0; i < roots.length; i++) {
+				const node: any = this.read(roots[i], false, false);
+				if (node.name !== '')
+					final.push(roots[i]);
+			}
+		} else {
+			final = roots;
+		}
+		return (final);
 	}
 
 	public buildFullTree(nodeId: number, viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
@@ -221,18 +232,24 @@ export class Svf2Properties {
 	}
 
 	public buildTree(viewable_in: string[], withProperties: boolean, keepHidden: boolean, keepInternals: boolean): any {
-		const nodeIds: number[] = this.findRootNodes();
-		const node: any = this.read(nodeIds[0], keepHidden, true);
-		let result: any = withProperties ? node : {
-			name: node.name,
-			objectid: nodeIds[0],
-			//objects: [],
-		};
-		if (!node.properties.__internal__.child)
-			return (result);
-		if (!Array.isArray(node.properties.__internal__.child))
-			node.properties.__internal__.child = [node.properties.__internal__.child];
-		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, true, keepHidden, keepInternals));
+		const rootIds: number[] = this.findRootNodes();
+
+		let nodes: any = {};
+		for (let i = 0; i < rootIds.length; i++) {
+			const node: any = this.read(rootIds[i], keepHidden, true);
+			let result: any = withProperties ? node : {
+				name: node.name,
+				objectid: rootIds[i],
+				//objects: [],
+			};
+			if (!node.properties.__internal__.child)
+				return (result);
+			if (!Array.isArray(node.properties.__internal__.child))
+				node.properties.__internal__.child = [node.properties.__internal__.child];
+			result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, true, keepHidden, keepInternals));
+
+			nodes[rootIds[i]] = result;
+		}
 
 		const cleanNode = (node: any): void => {
 			if (!withProperties) {
@@ -259,10 +276,18 @@ export class Svf2Properties {
 
 			return (cleanNode(node), _isin_);
 		};
+		Object.values(nodes).map((result: any): boolean => isIn(result));
 
-		isIn(result);
+		const rootId: number = (rootIds.length === 1 && rootIds[0]) || 0;
+		if (rootIds.length > 1) {
+			nodes[rootId] = {
+				name: '',
+				objectid: 0,
+				objects: rootIds.map((nodeId: number): any => nodes[nodeId]),
+			};
+		}
 
-		return (result);
+		return (nodes[rootId]);
 	}
 
 	//-----
