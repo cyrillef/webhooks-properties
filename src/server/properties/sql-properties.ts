@@ -338,12 +338,12 @@ export class SqlProperties {
 				// There might be more than 1 viewable_in
 				//const nodeViewableIn: string = results[i] && (results[i] as any).name === 'viewable_in' ? (results[i++] as any).value : undefined; // was viewable_in
 				const nodeViewableIn: string[] = [];
-				while (results[i] && (results[i] as any).name === 'viewable_in')
+				while (results[i] && (results[i] as any).entity_id === objId && (results[i] as any).name === 'viewable_in')
 					nodeViewableIn.push((results[i++] as any).value);
-				const nodeParent: number = results[i] && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : undefined;
-				let nodeName: string = results[i] && (results[i] as any).name === 'name' ? (results[i++] as any).value : '';
+				const nodeParent: number = results[i] && (results[i] as any).entity_id === objId && (results[i] as any).name === 'parent' ? Number.parseInt((results[i++] as any).value) : undefined;
+				let nodeName: string = results[i] && (results[i] as any).entity_id === objId && (results[i] as any).name === 'name' ? (results[i++] as any).value : '';
 				nodeName = nodeName.trim();
-				const refObjId: number = results[i] && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : undefined;
+				const refObjId: number = results[i] && (results[i] as any).entity_id === objId && (results[i] as any).name === 'instanceof_objid' ? Number.parseInt((results[i++] as any).value) : undefined;
 				nodeName = nodeName || (nodes[refObjId] && nodes[refObjId].name) || '';
 
 				refObjIds[objId] && refObjIds[objId].map((eltId: number): string => nodes[eltId] && (nodes[eltId].name = nodes[eltId].name || nodeName));
