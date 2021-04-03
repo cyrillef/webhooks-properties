@@ -68,8 +68,8 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			if (dbs === null)
 				return (await this.loadFromForge(urn, guid, region));
 			const guids: any = await this.loadDBs(urn);
-			guid = guid || this.defaultGUID(guids)
-			const filename: string = this.filename(urn, guid, dbs);
+			guid = guid || this.defaultGUID(guids);
+			const filename: string = this.keyname(urn, guid, dbs);
 			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
 			const key: string = `${urn}-${filename}`;
 
@@ -164,13 +164,13 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			Object.keys(guids).map((guid: string): string => dbs[guid] = `${dbEntries.length > 1 ? guid : 'properties'}.db`);
 			await this.saveDBs(urn, dbs);
 
-			const filename: string = this.filename(urn, guid, dbs);
+			const keyname: string = this.keyname(urn, guid, dbs);
 			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
-			const key: string = `${urn}-${filename}`;
+			const key: string = `${urn}-${keyname}`;
 			this.cache[key] = {
 				lastVisited: moment(),
 				path2SqlDB: resolvedFilename,
-				sqlDBName: filename,
+				sqlDBName: keyname,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
 					storage: resolvedFilename,
@@ -223,13 +223,13 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		return (Object.keys(guids)[0]);
 	}
 
-	protected filename(urn: string, guid: string, dbs: any): string {
+	protected keyname(urn: string, guid: string, dbs: any): string {
 		return (dbs[guid]);
 	}
 
 	protected resolvedFilename(urn: string, guid: string, dbs: any): string {
 		const cachePath: string = this.getPath(urn);
-		const filename: string = this.filename(urn, guid, dbs);
+		const filename: string = this.keyname(urn, guid, dbs);
 		return (_path.resolve(cachePath, filename));
 	}
 

@@ -61,25 +61,34 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return (await this.loadFromForge(urn, guid, region));
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || this.defaultGUID(guids);
+			const keyname: string = this.keyname(urn, guid, dbs);
+			const key: string = `${urn}-${keyname}`;
 
-			if (this.cache[urn]) {
-				this.cache[urn].lastVisited = moment();
-				return (this.cache[urn]);
+			if (this.cache[key]) {
+				this.cache[key].lastVisited = moment();
+				return (this.cache[key]);
 			}
 
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
-				this.cache[urn] = { lastVisited: moment() };
+				this.cache[key] = { lastVisited: moment() };
+
 				const dbFiles: string[] = SvfProperties.dbNames;
-				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(self.getPath(urn), elt), null));
+				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string, index: number): Promise<Buffer> => 
+					Utils.fsReadFile(self.resolvedFilename(urn, guid, index, dbs), null)
+				);
 				const results: Buffer[] = await Promise.all(jobs);
-				dbFiles.map((elt: string, index: number): any => self.cache[urn][elt] = results[index]);
+				dbFiles.map((elt: string, index: number): any => self.cache[key][elt] = results[index]);
 
-				const guids: any = await this.loadGuids(urn);
-				this.cache[urn].guids = guids;
+				this.cache[key].guids = guids;
 
-				return (this.cache[urn]);
+				return (this.cache[key]);
 			}
 
 			return (await this.loadFromForge(urn, guid, region));
@@ -112,12 +121,24 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				return (null);
 
 			// DB / Properties
+			// This is an shortcut to the real process. In theory, we should get the SVF file, unzip and get the
+			// manifest.json file (i.e. .svf://manifest.json) and search for ./assets[ "type" = "Autodesk.CloudPlatform.Property*" ]
 			const dbEntries: any[] = PropertiesUtils.findDBEntriesInManifest(manifest.body, ['application/autodesk-db']);
 			if (!dbEntries || dbEntries.length === 0) // Stop here
 				return (null);
-			// DWFX might have one DB for each viewable (not shared like others)
+
 			const dbFiles: string[] = SvfProperties.dbNames;
-			let dbBuffers: Buffer[] = null;
+			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
+			guid = guid || this.defaultGUID(guids);
+			await this.saveGuids(urn, guids);
+			const dbs: any = {};
+			Object.keys(guids).map((guid: string): string[] => 
+				dbs[guid] = dbFiles.map((elt: string): string => dbEntries.length === 1 ? elt : self.buildJsonGzFilename(guid, elt))
+			);
+			await this.saveDBs(urn, dbs);
+
+			// DWFX might have one DB for each viewable (not shared like others)
+			let dbBuffers: { [index: string]: Buffer[] } = {};
 			for (let iDB = 0; iDB < dbEntries.length; iDB++) {
 				const dbEntry: any = dbEntries[iDB];
 				const derivativePath: string = dbEntry.urn.substring(0, dbEntry.urn.lastIndexOf('/') + 1);
@@ -125,22 +146,25 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 				const paths: string[] = dbFiles.map((fn: string): string => `${derivativePath}${fn}.json.gz`);
 				const jobs: Promise<Forge.ApiResponse>[] = paths.map((elt: string): Promise<Forge.ApiResponse> => md.getDerivativeManifest(urn, elt, null, oauth.internalClient, token));
 				const results: Forge.ApiResponse[] = await Promise.all(jobs);
-				dbBuffers = results.map((elt: Forge.ApiResponse): Buffer => elt.body);
+
+				if (dbEntries.length === 1 || guid === dbEntry.guid)
+					results.map((elt: Forge.ApiResponse, index: number): Buffer => dbBuffers[dbFiles[index]] = elt.body);
+
+				const writeJobs: Promise<void>[] = results.map((buff: Forge.ApiResponse, index: number): Promise<void> =>
+					Utils.fsWriteFile(self.resolvedFilename(urn, dbEntries.length === 1 ? guid : dbEntry.guid, index, dbs), buff.body)
+				);
+				await Promise.all(writeJobs);
 			}
 
-			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
-			await this.saveGuids(urn, guids);
-
-			this.cache[urn] = {
+			const keyname: string = this.keyname(urn, guid, dbs);
+			const key: string = `${urn}-${keyname}`;
+			this.cache[key] = {
 				lastVisited: moment(),
 				guids: guids,
+				...dbBuffers,
 			};
-			dbFiles.map((elt: string, index: number): any => {
-				self.cache[urn][elt] = dbBuffers[index];
-				Utils.fsWriteFile(_path.resolve(cachePath, elt), dbBuffers[index]);
-			});
 
-			return (this.cache[urn]);
+			return (this.cache[key]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
@@ -175,6 +199,24 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		} catch (ex) {
 			return (null);
 		}
+	}
+
+	protected defaultGUID(guids: any): string {
+		return (Object.keys(guids)[0]);
+	}
+
+	protected keyname(urn: string, guid: string, dbs: any): string {
+		return (dbs[guid][0]);
+	}
+
+	protected buildJsonGzFilename(guid: string, base: string): string {
+		return (`${guid}${base.substring(7)}`)
+	}
+
+	protected resolvedFilename(urn: string, guid: string, which: number, dbs: any): string {
+		const cachePath: string = this.getPath(urn);
+		const jsonGzFilename: string = `${dbs[guid][which]}.json.gz`;
+		return (_path.resolve(cachePath, jsonGzFilename));
 	}
 
 }
