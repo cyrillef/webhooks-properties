@@ -1,6 +1,4 @@
 {
-    "//data/collection/[objectid=0]externalId/": "missing on left",
-    "//data/collection/[objectid=0]properties/": "missing on left",
     "//data/collection/[objectid=1671]": "missing on right",
     "//data/collection/[objectid=1672]": "missing on right",
     "//data/collection/[objectid=1673]": "missing on right",
@@ -23,5 +21,6 @@
     "//data/collection/[objectid=3366]": "missing on right",
     "//data/collection/[objectid=3367]": "missing on right",
     "//data/collection/[objectid=3401]": "missing on right",
+    "//data/collection/[objectid=0]": "missing on left",
     "//data/collection/": "warning: arrays do not have the same length"
 }

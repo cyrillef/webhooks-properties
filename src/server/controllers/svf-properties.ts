@@ -217,7 +217,8 @@ export class SvfPropertiesController implements Controller {
 				});
 			}
 			trees.sort((a: any, b: any): number => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0));
-
+			trees = trees.filter((elt: any): boolean => elt.objectid != 0);
+			
 			response.json({
 				data: {
 					collection: trees,
