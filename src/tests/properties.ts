@@ -97,6 +97,15 @@ const urns: any = {
 		],
 		type: 'svf2',
 	},
+	'BadMonkeys.dwfx': {
+		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
+		guids: [
+			'c745e431-cc5c-df39-f6ae-c744b63d33cb',
+			'044a5d42-12cb-356a-7521-4b5f68c3b04d',
+			'b6bff568-b730-ee0f-9049-7d57514ec76b'
+		],
+		type: 'svf2',
+	},
 	'P9_MachineShop_Final.rvt': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0', // P9_MachineShop_Final.rvt
 		guids: [
@@ -127,15 +136,6 @@ const urns: any = {
 			'97e8b569-a295-8750-f788-2d5067608b9c',
 		],
 		type: 'svf',
-	},
-	'BadMonkeys.dwfx': {
-		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
-		guids: [
-			'c745e431-cc5c-df39-f6ae-c744b63d33cb',
-			'044a5d42-12cb-356a-7521-4b5f68c3b04d',
-			'b6bff568-b730-ee0f-9049-7d57514ec76b'
-		],
-		type: 'svf2',
 	},
 	'4017-Forge.rvt.zip': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6NDAxNy1mb3JnZS80MDE3LUZvcmdlLnJ2dC56aXA',

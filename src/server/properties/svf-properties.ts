@@ -267,7 +267,7 @@ export class SvfProperties {
 	public findRootNodes(): number[] {
 		const roots: number[] = [];
 		// Slow method
-		for (let dbId = 1; dbId < this.idMax; dbId++) {
+		for (let dbId = 1; dbId <= this.idMax; dbId++) {
 			const node: any = this.read(dbId, true, true);
 			if (
 				node.name && node.name !== ''
