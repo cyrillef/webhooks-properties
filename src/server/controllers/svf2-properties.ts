@@ -64,6 +64,8 @@ export class Svf2PropertiesController implements Controller {
 			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if ( !dbBuffers)
+				return (response.status(404).end());
 
 			const propsDb = new Svf2Properties(dbBuffers);
 
@@ -111,6 +113,8 @@ export class Svf2PropertiesController implements Controller {
 			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			// const propsDb = new Svf2Properties(dbBuffers);
 			const propsDb: string[] = dbBuffers.ids;
@@ -141,6 +145,8 @@ export class Svf2PropertiesController implements Controller {
 			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			const sep: string = (request.query.sep as string) || ',';
 			const externalIds: string[] = Utils.csvToString(request.query.ids as string, sep); // csv format
@@ -173,6 +179,8 @@ export class Svf2PropertiesController implements Controller {
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const reverse: boolean = (request.query.reverse as string) === 'true'; // defaults to false
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			// const propsDb: Svf2Properties = new Svf2Properties(dbBuffers);
 			const dbidIdx: Uint32Array = new Uint32Array(dbBuffers.dbid.buffer, dbBuffers.dbid.byteOffset, dbBuffers.dbid.byteLength / Uint32Array.BYTES_PER_ELEMENT);
@@ -206,6 +214,8 @@ export class Svf2PropertiesController implements Controller {
 			let guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			const sep: string = (request.query.sep as string) || ',';
 			const dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
@@ -271,6 +281,8 @@ export class Svf2PropertiesController implements Controller {
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true'; // defaults to false
 			const keepInternals: boolean = (request.query.keepinternals as string) === 'true'; // defaults to false
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			const propsDb = new Svf2Properties(dbBuffers);
 
@@ -322,6 +334,8 @@ export class Svf2PropertiesController implements Controller {
 			const guid: string = request.params.guid || null;
 			const region: string = request.query.region as string || Forge.DerivativesApi.RegionEnum.US;
 			const dbBuffers: Svf2PropertiesCache = await this.utils.get(urn, guid, region);
+			if (!dbBuffers)
+				return (response.status(404).end());
 
 			//const bruteforce: boolean = (request.query.bruteforce as string) === 'true';
 			const keepHiddens: boolean = (request.query.keephiddens as string) === 'true';

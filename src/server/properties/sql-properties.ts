@@ -272,12 +272,23 @@ export class SqlProperties {
 
 		// Second method (faster)
 		query = `
-		select _objects_eav.entity_id, count(_objects_eav.entity_id) as nb, sum(case when _objects_eav.attribute_id = 3 then 1 else 0 end) as nbp
+		select 
+			_objects_eav.entity_id, 
+			count(_objects_eav.entity_id) as nb, 
+			sum(case when _objects_eav.attribute_id = 3 then 1 else 0 end) as nbp
 		from _objects_eav
 		where _objects_eav.attribute_id = ${childAttr} or _objects_eav.attribute_id = ${parentAttr}
 		group by _objects_eav.entity_id;`;
 		results = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
-		const difference: number[] = results.map((elt: any): number => elt.nbp === 0 ? elt.entity_id : null).filter((elt: any): boolean => elt !== null);
+		let difference: number[] = results.map((elt: any): number => elt.nbp === 0 ? elt.entity_id : null).filter((elt: any): boolean => elt !== null);
+		if (difference.length === 0) {
+			// Come-on, they are all roots
+			query = `
+			select _objects_id.id
+			from _objects_id;`;
+			results = await this.sequelize.query(query, { type: QueryTypes.SELECT, logging: false });
+			difference = results.map((elt: any): number => elt.id);
+		}
 
 		let final: number[] = [];
 		if (difference.length > 1) {
@@ -415,16 +426,19 @@ export class SqlProperties {
 		const filteredIds: number[] = filtered.map((elt: any): number => elt.objectid);
 
 		const removeRef: any = (node: any): void => {
-			node.objects = node.objects.filter((ref: any): boolean => filteredIds.includes(ref.objectid));
+			node.objects = node.objects.filter((ref: any): boolean => 
+				filteredIds.includes(ref.objectid)
+			);
 			node.objects.map((ref: any): void => removeRef(ref));
 			node.objects.length === 0 && delete node.objects;
 		};
+
 		const rootId: number = (rootIds.length === 1 && rootIds[0]) || 0;
 		if (rootIds.length > 1) {
 			nodes[rootId] = {
 				name: '',
 				objectid: 0,
-				objects: rootIds.map((nodeId: number): any => nodes[nodeId]),
+				objects: rootIds.map((nodeId: number): any => nodes[nodeId]).filter((node: any): boolean => node !== undefined),
 			};
 			filteredIds.push(rootId);
 		}

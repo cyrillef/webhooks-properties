@@ -71,6 +71,32 @@ const urns: any = {
 		],
 		type: 'svf2',
 	},
+	'1403_V1.dwfx': { // 1403_V1_2018-03-14_04-32-00pm.dwfx
+		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvMTQwM19WMV8yMDE4LTAzLTE0XzA0LTMyLTAwcG0uZHdmeA',
+		guids: [
+			'a6128518-dcf0-967b-31a1-3439a375daeb',
+            '488e0550-6e79-38b3-9f56-ae8fd21416bb',
+			'beaab4e2-9abc-8ca2-4e65-23df60e4b6a7',
+			'439a5dce-43e2-17bb-d5e3-60c33bc0cc0d',
+			'd98802b2-1887-798c-e78b-0d11488ea602',
+			'2c2386ea-0f02-5ad5-49cf-8c19d8b0768b',
+			'737da12d-3f75-cf3a-a650-8c18557f1a11',
+			'b30334d5-b1c0-ca27-6038-bcbbd5540ed3',
+			'7203514b-58e3-5776-fcb7-6ee34f330c52',
+			'be4f7d3f-bf72-7169-2c73-274a594fb40a',
+			'0d2c7d59-0ac9-a47b-849f-6b30ee49574f',
+			'a81433d1-e3e7-97f8-17f2-e85c1bbc1f66',
+			'e7d88667-9f10-b63a-a6d6-9a8d5492b134',
+			'626a6596-a298-a883-1feb-b072ffdf4575',
+			'38f44bb4-6337-fb87-a6ec-caa62e1d97ff',
+			'80f0723f-92ff-317d-7802-e99c3fddd4e8',
+			'a14bcaf0-056a-9f06-03c3-ed30317acc53',
+			'624c1fe4-dee7-49b0-fdee-ea2c9b5ff660',
+			'391da052-8c6f-af4e-5fe2-009fccc70c80',
+			'e91e3333-6510-abeb-714a-06dea8be33ff',
+		],
+		type: 'svf2',
+	},
 	'P9_MachineShop_Final.rvt': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0', // P9_MachineShop_Final.rvt
 		guids: [
@@ -102,32 +128,6 @@ const urns: any = {
 		],
 		type: 'svf',
 	},
-	'1403_V1.dwfx': { // 1403_V1_2018-03-14_04-32-00pm.dwfx
-		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvMTQwM19WMV8yMDE4LTAzLTE0XzA0LTMyLTAwcG0uZHdmeA',
-		guids: [
-			'a6128518-dcf0-967b-31a1-3439a375daeb',
-            '488e0550-6e79-38b3-9f56-ae8fd21416bb',
-			'beaab4e2-9abc-8ca2-4e65-23df60e4b6a7',
-			'439a5dce-43e2-17bb-d5e3-60c33bc0cc0d',
-			'd98802b2-1887-798c-e78b-0d11488ea602',
-			'2c2386ea-0f02-5ad5-49cf-8c19d8b0768b',
-			'737da12d-3f75-cf3a-a650-8c18557f1a11',
-			'b30334d5-b1c0-ca27-6038-bcbbd5540ed3',
-			'7203514b-58e3-5776-fcb7-6ee34f330c52',
-			'be4f7d3f-bf72-7169-2c73-274a594fb40a',
-			'0d2c7d59-0ac9-a47b-849f-6b30ee49574f',
-			'a81433d1-e3e7-97f8-17f2-e85c1bbc1f66',
-			'e7d88667-9f10-b63a-a6d6-9a8d5492b134',
-			'626a6596-a298-a883-1feb-b072ffdf4575',
-			'38f44bb4-6337-fb87-a6ec-caa62e1d97ff',
-			'80f0723f-92ff-317d-7802-e99c3fddd4e8',
-			'a14bcaf0-056a-9f06-03c3-ed30317acc53',
-			'624c1fe4-dee7-49b0-fdee-ea2c9b5ff660',
-			'391da052-8c6f-af4e-5fe2-009fccc70c80',
-			'e91e3333-6510-abeb-714a-06dea8be33ff',
-		],
-		type: 'svf2',
-	},
 	'BadMonkeys.dwfx': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
 		guids: [
@@ -135,7 +135,7 @@ const urns: any = {
 			'044a5d42-12cb-356a-7521-4b5f68c3b04d',
 			'b6bff568-b730-ee0f-9049-7d57514ec76b'
 		],
-		type: 'svf',
+		type: 'svf2',
 	},
 	'4017-Forge.rvt.zip': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6NDAxNy1mb3JnZS80MDE3LUZvcmdlLnJ2dC56aXA',
@@ -250,20 +250,24 @@ class PropertiesController {
 	}
 
 	public async xxx_load(method: string, args: string): Promise<any> {
-		//const _urns: any[] = Object.keys(urns).filter ((elt: string): boolean => )
-		const def: any = urns[args];
-		const url: string = `/${method}/${def.urn}/metadata/load`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${args}-load.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${args} ${method} load created!`);
-		} else {
-			PropertiesController.compareObjects(result.body, json, `${args} ${method} load`);
+		try {
+			//const _urns: any[] = Object.keys(urns).filter ((elt: string): boolean => )
+			const def: any = urns[args];
+			const url: string = `/${method}/${def.urn}/metadata/load`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${args}-load.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${args} ${method} load created!`);
+			} else {
+				PropertiesController.compareObjects(result.body, json, `${args} ${method} load`);
+			}
+			return (result.body);
+		} catch (ex) {
+			return (null);
 		}
-		return (result.body);
 	}
 
 	public async xxx_delete(method: string, args: string): Promise<void> {
@@ -520,7 +524,8 @@ class PropertiesController {
 			const defaultGUID2: string = urns[fn2].guids[0];
 			console.log(`Downloading ${fn2} .json .idx .pack files, please wait...`);
 			console.log(`Using default GUID ${defaultGUID2}`);
-			await this.xxx_load('svf2', fn2);
+			if ( await this.xxx_load('svf2', fn2) === null )
+				return (console.warn (' ==>> Not Found!'));
 
 			// Get all ExternalID and ObjectID and verify each lists
 			const extids: any = await this.xxx_getExternalIds('svf2', fn2); // { svf2ID: externalID }

@@ -101,7 +101,6 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 			const cachePath: string = this.getPath(urn);
-			await mkdirp(cachePath);
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
 			const token: Forge.AuthToken = oauth.internalToken as Forge.AuthToken;
@@ -113,10 +112,15 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			const endpoint: string = 'https://cdn.derivative.autodesk.com/modeldata';
 			const manifestRequest = await superagent('GET', `${endpoint}/manifest/${urn}?domain=`)
 				.set({ 'Authorization': `Bearer ${token.access_token}` });
+
+			const manifest: any = manifestRequest.body.children.filter((elt: any): any => elt.role === 'viewable')[0];
+			if (!manifest.otg_manifest)
+				return (null);
+
+			await mkdirp(cachePath);
 			if (process.env.NODE_ENV === 'development')
 				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifestRequest.body, null, 4)));
 
-			const manifest: any = manifestRequest.body.children.filter((elt: any): any => elt.role === 'viewable')[0];
 			const storagepoints: any = manifest.otg_manifest.paths;
 			const pdb_manifest: any = manifest.otg_manifest.pdb_manifest;
 			const assets: any = pdb_manifest.assets;
@@ -172,7 +176,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		const cachePath: string = this.getPath(urn);
 		Utils.fsWriteFile(_path.resolve(cachePath, 'guids.json'), Buffer.from(JSON.stringify(guids)));
 	}
-	
+
 	protected async loadGuids(urn: string): Promise<any> {
 		try {
 			const cachePath: string = this.getPath(urn);

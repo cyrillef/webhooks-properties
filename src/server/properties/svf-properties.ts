@@ -272,7 +272,7 @@ export class SvfProperties {
 			if (
 				node.name && node.name !== ''
 				&& (!node.properties.__internal__ || !node.properties.__internal__.parent)
-				&& (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
+				//&& (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
 			)
 				roots.push(node.objectid);
 		}
@@ -317,13 +317,13 @@ export class SvfProperties {
 				objectid: rootIds[i],
 				//objects: [],
 			};
+			nodes[rootIds[i]] = result;
+			
 			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.child)
-				return (result);
+				continue;
 			if (!Array.isArray(node.properties.__internal__.child))
 				node.properties.__internal__.child = [node.properties.__internal__.child];
 			result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, true, keepHidden, keepInternals));
-
-			nodes[rootIds[i]] = result;
 		}
 
 		const cleanNode = (node: any): void => {
