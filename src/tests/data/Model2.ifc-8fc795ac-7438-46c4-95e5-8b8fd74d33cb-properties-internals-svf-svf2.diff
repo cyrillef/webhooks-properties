@@ -1,0 +1,13 @@
+{
+    "//data/collection/[objectid=2]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=3]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=3]properties/Materials and Finishes/Material/": "arrays content are different",
+    "//data/collection/[objectid=4]properties/Materials and Finishes/Material/": "arrays content are different",
+    "//data/collection/[objectid=5]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=6]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=7]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=14]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=68]properties/IFCMATERIALLAYER/LAYERTHICKNESS/": "arrays content are different",
+    "//data/collection/[objectid=68]properties/Item/GUID/": "missing on right",
+    "//data/collection/[objectid=609]properties/Item/GUID/": "missing on right"
+}

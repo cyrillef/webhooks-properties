@@ -1,9 +1,0 @@
-{
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=196]": "missing on right",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/[objectid=207]": "missing on right",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6]objects/": "warning: arrays do not have the same length",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1971]objects/[objectid=2031]": "missing on right",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=1971]objects/": "warning: arrays do not have the same length",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6831]objects/[objectid=7342]": "missing on right",
-    "//data/objects/[objectid=1]objects/[objectid=2]objects/[objectid=3]objects/[objectid=5]objects/[objectid=6831]objects/": "warning: arrays do not have the same length"
-}

@@ -76,7 +76,7 @@ export class ForgePropertiesController implements Controller {
 	private async modelDerivativesProperties(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || (request.query.guid as string) || '';
 			const region: string = request.query.region as string || 'US';
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});
@@ -108,7 +108,7 @@ export class ForgePropertiesController implements Controller {
 	private async modelDerivativesObjectTree(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			let guid: string = request.params.guid || '';
+			let guid: string = request.params.guid || (request.query.guid as string) || '';
 			const region: string = request.query.region as string || 'US';
 
 			const oauth: Forge2Legged = Forge2Legged.Instance('main', {});

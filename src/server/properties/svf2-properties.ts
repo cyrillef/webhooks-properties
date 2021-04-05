@@ -101,7 +101,7 @@ export class Svf2Properties {
 				category = '__internal__';
 			if (key === '__name__/name') {
 				if (result.name === '')
-					result.name = value;
+					result.name = (value as string).trim();
 				continue;
 			}
 			if (!result.properties.hasOwnProperty(category))
@@ -134,6 +134,8 @@ export class Svf2Properties {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
 		}
+		if (result.properties.__internal__ && typeof result.properties.__internal__.child === 'number')
+			result.properties.__internal__.child = [result.properties.__internal__.child];
 		return (parent);
 	}
 
@@ -225,8 +227,8 @@ export class Svf2Properties {
 		};
 		if (!node.properties.__internal__.child)
 			return (result);
-		if (typeof node.properties.__internal__.child === 'number')
-			node.properties.__internal__.child = [node.properties.__internal__.child];
+		// if (typeof node.properties.__internal__.child === 'number')
+		// 	node.properties.__internal__.child = [node.properties.__internal__.child];
 		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, withProperties, keepHidden, keepInternals));
 		return (result);
 	}

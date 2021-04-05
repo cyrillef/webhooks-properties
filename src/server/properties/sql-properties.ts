@@ -199,6 +199,8 @@ export class SqlProperties {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
 		}
+		if (result.properties.__internal__ && typeof result.properties.__internal__.child === 'number')
+			result.properties.__internal__.child = [result.properties.__internal__.child];
 		return (parent);
 	}
 

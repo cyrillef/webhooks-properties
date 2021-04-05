@@ -73,8 +73,13 @@ export interface PropertiesCache {
 
 export abstract class PropertiesUtils {
 
+	public static readonly SVFMime = 'application/autodesk-svf';
+	public static readonly SVF2Mime = 'application/autodesk-svf2';
+	public static readonly F2DMime = 'application/autodesk-f2d';
+	public static readonly BubbleMimes = [PropertiesUtils.SVFMime, PropertiesUtils.SVF2Mime, PropertiesUtils.F2DMime];
+
 	protected cachePath: string = null;
-	protected cacheDuration: moment.Duration = moment.duration(20, 'minutes');
+	protected cacheDuration: moment.Duration = moment.duration(5, 'minutes');
 	protected cacheCleanupJob: NodeJS.Timeout = null;
 
 	protected cache: PropertiesCache = {} as PropertiesCache;
@@ -141,38 +146,43 @@ export abstract class PropertiesUtils {
 		//delete elt.properties.Other;
 	}
 
-	public static findViewablesInManifest = (manifest: any): any => {
-		const guids: any = {};
+	public static findInManifest = (manifest: any, key: string, matches: string[]): any[] => {
+		return (PropertiesUtils._findInManifest(
+			manifest,
+			(entry: any): boolean => (entry.hasOwnProperty(key) && matches.includes(entry[key]))
+		));
+	}
+
+	public static _findInManifest = (manifest: any, testCallBack: (entry: any) => boolean): any[] => {
 		let items: any[] = [];
 		const iterateChildren = (parent: any): void => {
 			const from: any = parent.children || parent.derivatives;
 			if (!from)
 				return;
-			const entries: any[] = from.filter((elt: any): any =>
-				(elt.role === '3d' || elt.role === '2d')
-				&& elt.viewableID
-			);
+			const entries: any[] = from.filter((elt: any): any => testCallBack(elt));
 			items = [...items, ...entries];
-			if (entries && entries.length)
+			if (entries && entries.length) // we can stop here (no more in children)
 				return;
 			from.map((children: any): void => iterateChildren(children));
 		};
 		iterateChildren(manifest);
+		return (items);
+	}
 
+	public static findViewablesInManifest = (manifest: any): any => {
+		const guids: any = {};
+		const items: any[] = PropertiesUtils._findInManifest(
+			manifest,
+			(entry: any): boolean => (entry.role && ['2d', '3d'].includes(entry.role) && entry.viewableID)
+		)
 		items.map((elt: any): void => {
-			const svf: any = elt.children.filter((elt: any): any =>
-				elt.mime === 'application/autodesk-svf'
-				|| elt.mime === 'application/autodesk-svf2'
-				|| elt.mime === 'application/autodesk-f2d'
-			)[0];
+			const svf: any = elt.children.filter((elt: any): any => PropertiesUtils.BubbleMimes.includes(elt.mime))[0];
 			guids[svf.guid] = [elt.viewableID, elt.name];
 		});
-
 		return (guids);
-	};
+	}
 
 	public static findDBEntriesInManifest = (manifest: any, possibles: string[]): any[] => {
-		const guids: any = {};
 		const dbNodes: any[] = [];
 		const iterateChildren = (parent: any): boolean => {
 			const from: any = parent.children || parent.derivatives;
@@ -180,11 +190,7 @@ export abstract class PropertiesUtils {
 				return (false);
 			const entries: any[] = from.filter((elt: any): any => elt.mime && possibles.includes(elt.mime));
 			if (entries && entries.length) {
-				const viewableEntry: any = from.filter((elt: any): any =>
-					elt.mime === 'application/autodesk-svf'
-					|| elt.mime === 'application/autodesk-svf2'
-					|| elt.mime === 'application/autodesk-f2d'
-				)[0];
+				const viewableEntry: any = from.filter((elt: any): any => PropertiesUtils.BubbleMimes.includes(elt.mime))[0];
 				entries[0].guid = (viewableEntry && viewableEntry.guid) || entries[0].guid;
 				dbNodes.push(entries[0]);
 				return (true);
@@ -195,10 +201,9 @@ export abstract class PropertiesUtils {
 		};
 		iterateChildren(manifest);
 		return (dbNodes);
-	};
+	}
 
 	public static findEntriesInManifest = (manifest: any, possibles: string[]): any[] => {
-		const guids: any = {};
 		const dbNodes: any[] = [];
 		const iterateChildren = (parent: any): boolean => {
 			const from: any = parent.children || parent.derivatives;
@@ -215,7 +220,7 @@ export abstract class PropertiesUtils {
 		};
 		iterateChildren(manifest);
 		return (dbNodes);
-	};
+	}
 
 	protected abstract /*async*/ saveDBs(urn: string, dbs: any): Promise<any>;
 	protected abstract /*async*/ loadDBs(urn: string): Promise<any>;

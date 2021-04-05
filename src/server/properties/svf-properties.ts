@@ -138,7 +138,7 @@ export class SvfProperties {
 			//console.log (key) ;
 			if (key === '__name__/name') {
 				if (result.name === '')
-					result.name = this.vals[this.avs[i + 1]];
+					result.name = this.vals[this.avs[i + 1]].trim();
 				continue;
 			}
 			if (!result.properties.hasOwnProperty(category))
@@ -173,6 +173,8 @@ export class SvfProperties {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
 		}
+		if (result.properties.__internal__ && typeof result.properties.__internal__.child === 'number')
+			result.properties.__internal__.child = [result.properties.__internal__.child];
 		return (parent);
 	}
 
@@ -266,6 +268,7 @@ export class SvfProperties {
 
 	public findRootNodes(): number[] {
 		const roots: number[] = [];
+		const otherRoots: number[] = [];
 		// Slow method
 		for (let dbId = 1; dbId <= this.idMax; dbId++) {
 			const node: any = this.read(dbId, true, true);
@@ -273,20 +276,27 @@ export class SvfProperties {
 				node.name && node.name !== ''
 				&& (!node.properties.__internal__ || !node.properties.__internal__.parent)
 				//&& (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
-			)
-				roots.push(node.objectid);
+			) {
+				if (node.properties.__internal__ && node.properties.__internal__.child /*&& node.properties.__internal__.child.length*/)
+					roots.push(node.objectid);
+				else
+					otherRoots.push(node.objectid);
+			}
 		}
 
 		let final: number[] = [];
-		if (roots.length > 1) {
-			// We may need to cleanup the list (ex: dwfx)
-			for (let i = 0; i < roots.length; i++) {
-				const node: any = this.read(roots[i], false, false);
-				if (node.name !== '')
-					final.push(roots[i]);
-			}
-		} else {
+		//if (roots.length > 1) {
+			// // We may need to cleanup the list (ex: dwfx)
+			// for (let i = 0; i < roots.length; i++) {
+			// 	const node: any = this.read(roots[i], false, false);
+			// 	if (node.name !== '')
+			// 		final.push(roots[i]);
+			// }
+		//} else if (roots.length === 1) {
+		if (roots.length >= 1) {
 			final = roots;
+		} else {
+			final = otherRoots;
 		}
 		return (final);
 	}
@@ -300,8 +310,8 @@ export class SvfProperties {
 		};
 		if (!node.properties.__internal__.child)
 			return (result);
-		if (typeof node.properties.__internal__.child === 'number')
-			node.properties.__internal__.child = [node.properties.__internal__.child];
+		// if (typeof node.properties.__internal__.child === 'number')
+		// 	node.properties.__internal__.child = [node.properties.__internal__.child];
 		result.objects = node.properties.__internal__.child.map((id: number): any => this.buildFullTree(id, viewable_in, withProperties, keepHidden, keepInternals));
 		return (result);
 	}
@@ -318,7 +328,7 @@ export class SvfProperties {
 				//objects: [],
 			};
 			nodes[rootIds[i]] = result;
-			
+
 			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.child)
 				continue;
 			if (!Array.isArray(node.properties.__internal__.child))
