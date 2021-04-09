@@ -1,0 +1,15 @@
+{
+    "//data/collection/[objectid=15]": "missing on right",
+    "//data/collection/[objectid=26]": "missing on right",
+    "//data/collection/[objectid=28]": "missing on right",
+    "//data/collection/[objectid=29]": "missing on right",
+    "//data/collection/[objectid=590]": "missing on right",
+    "//data/collection/[objectid=3184]": "missing on right",
+    "//data/collection/[objectid=3185]": "missing on right",
+    "//data/collection/[objectid=3187]": "missing on right",
+    "//data/collection/[objectid=3188]": "missing on right",
+    "//data/collection/[objectid=3193]properties/Graphics/View Scale/": "not equal",
+    "//data/collection/[objectid=3203]": "missing on right",
+    "//data/collection/[objectid=3204]": "missing on right",
+    "//data/collection/": "warning: arrays do not have the same length"
+}

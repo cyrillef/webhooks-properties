@@ -88,7 +88,8 @@ export class Svf2PropertiesController implements Controller {
 	private async databasePropertiesRelease(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			this.utils.release(urn, false); // no need to await
+			const guid: string = request.params.guid || (request.query.guid as string) || null;
+			this.utils.release(urn, guid, false); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -99,7 +100,8 @@ export class Svf2PropertiesController implements Controller {
 	private async databasePropertiesDelete(request: Request, response: Response): Promise<void> {
 		try {
 			const urn: string = Utils.makeSafeUrn(request.params.urn || '');
-			this.utils.release(urn, true); // no need to await
+			const guid: string = request.params.guid || (request.query.guid as string) || null;
+			this.utils.release(urn, guid, true); // no need to await
 			response.status(202).json({ status: 'success' });
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
@@ -118,7 +120,7 @@ export class Svf2PropertiesController implements Controller {
 
 			// const propsDb = new Svf2Properties(dbBuffers);
 			const propsDb: string[] = dbBuffers.ids;
-
+			
 			const sep: string = (request.query.sep as string) || ',';
 			let dbIds: number[] = Utils.csvToNumber(request.query.ids as string, sep); // csv format
 			if (!dbIds || isNaN(dbIds[0]))

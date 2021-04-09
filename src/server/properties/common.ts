@@ -88,7 +88,7 @@ export abstract class PropertiesUtils {
 		this.cachePath = _path.resolve(__dirname, '../..', cachePath);
 		if (cacheDuration)
 			this.cacheDuration = moment.duration(cacheDuration);
-		this.cacheCleanupJob = setInterval(this.releaseAll.bind(this), this.cacheDuration.asMilliseconds());
+		this.cacheCleanupJob = setInterval(this.releaseAll.bind(this), this.cacheDuration.asMilliseconds() / 2);
 	}
 
 	public static singleton(cachePath: string /*= AppSettings.cacheFolder*/): PropertiesUtils { return (null); }
@@ -103,23 +103,37 @@ export abstract class PropertiesUtils {
 	public async dispose(): Promise<void> {
 		clearInterval(this.cacheCleanupJob);
 		this.cacheCleanupJob = null;
-		await this.releaseAll();
+		await this.releaseAll(false);
 	}
 
-	private async releaseAll(): Promise<void> {
+	private async releaseAll(clearOnDisk: boolean = false): Promise<void> {
 		try {
 			const self = this;
 			const jobs: Promise<void>[] = [];
-			Object.keys(this.cache).map((urn: string): any => jobs.push(self.release(urn, false)));
+
+			Object.keys(this.cache).map((key: string): any => {
+				const [urn, dbname]: string[] = key.split('|');
+				const dbs: any = self.cache[key].dbs;
+				let guid: string = null;
+				for (let i = 0; i < Object.keys(dbs).length; i++) {
+					guid = Object.keys(dbs)[i];
+					const name: string = PropertiesUtils.dbname(urn, guid, dbs);
+					if (name === dbname)
+						break;
+					guid = null;
+				}
+				jobs.push(self.release(key, guid, clearOnDisk))
+			});
 			await Promise.all(jobs)
 		} catch (ex) {
 		}
 	}
 
-	public async release(urn: string, clearOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, guid: string, clearOnDisk: boolean = true): Promise<void> {
 		try {
-			if (!clearOnDisk)
+			if (!clearOnDisk) // We released the cache in the derived class
 				return;
+			// This is dangerous, but we only can delete all.
 			const cachePath: string = PropertiesUtils.prototype.getPath.call(this, urn);
 			const cacheDir: string[] = await _fsReadDir(cachePath);
 			const isEmpty: boolean = cacheDir.length === 0;
@@ -227,6 +241,26 @@ export abstract class PropertiesUtils {
 
 	protected abstract /*async*/ saveGuids(urn: string, guids: any): Promise<any>;
 	protected abstract /*async*/ loadGuids(urn: string): Promise<any>;
+
+	public static makeDBName(urn: string, dbname: string): string {
+		return (`${urn}|${dbname}`);
+	}
+
+	public static exploseKeys(key: string): string[] {
+		return (key.split('|'));
+	}
+
+	protected static defaultGUID(guids: any): string {
+		return (Object.keys(guids)[0]);
+	}
+
+	protected static dbname(urn: string, guid: string, dbs: any, which: number = 0): string {
+		if (!dbs.hasOwnProperty(guid) || dbs[guid].length <= which)
+			return ('');
+		return (dbs[guid][which]);
+	}
+
+	protected abstract resolvedFilename(urn: string, guid: string, dbs: any, which: number /*= 0*/): string;
 
 }
 

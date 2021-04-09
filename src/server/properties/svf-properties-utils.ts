@@ -45,14 +45,21 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		return (_path.resolve(this.cachePath, urn, 'svf'));
 	}
 
-	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, guid: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
-			if (this.cache[urn])
-				delete this.cache[urn];
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return;
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
+			if (this.cache[key])
+				delete this.cache[key];
 			if (deleteOnDisk)
 				await Utils.rimraf(this.getPath(urn));
-			await super.release(urn, deleteOnDisk); // should be last
+			await super.release(urn, guid, deleteOnDisk); // should be last
 		} catch (ex) {
 		}
 	}
@@ -65,9 +72,9 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			if (dbs === null)
 				return (await this.loadFromForge(urn, guid, region));
 			const guids: any = await this.loadGuids(urn);
-			guid = guid || this.defaultGUID(guids);
-			const keyname: string = this.keyname(urn, guid, dbs);
-			const key: string = `${urn}-${keyname}`;
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
 
 			if (this.cache[key]) {
 				this.cache[key].lastVisited = moment();
@@ -77,16 +84,20 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
-				this.cache[key] = { lastVisited: moment() };
-
+				let dbBuffers: { [index: string]: Buffer } = {};
 				const dbFiles: string[] = SvfProperties.dbNames;
 				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string, index: number): Promise<Buffer> => 
-					Utils.fsReadFile(self.resolvedFilename(urn, guid, index, dbs), null)
+					Utils.fsReadFile(self.resolvedFilename(urn, guid, dbs, index), null)
 				);
 				const results: Buffer[] = await Promise.all(jobs);
-				dbFiles.map((elt: string, index: number): any => self.cache[key][elt] = results[index]);
+				dbFiles.map((elt: string, index: number): Buffer => dbBuffers[elt] = results[index]);
 
-				this.cache[key].guids = guids;
+				this.cache[key] = {
+					lastVisited: moment(),
+					guids: guids,
+					dbs: dbs,
+					...dbBuffers,
+				};
 
 				return (this.cache[key]);
 			}
@@ -129,7 +140,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 
 			const dbFiles: string[] = SvfProperties.dbNames;
 			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
-			guid = guid || this.defaultGUID(guids);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
 			await this.saveGuids(urn, guids);
 			const dbs: any = {};
 			Object.keys(guids).map((guid: string): string[] => 
@@ -138,7 +149,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 			await this.saveDBs(urn, dbs);
 
 			// DWFX might have one DB for each viewable (not shared like others)
-			let dbBuffers: { [index: string]: Buffer[] } = {};
+			let dbBuffers: { [index: string]: Buffer } = {};
 			for (let iDB = 0; iDB < dbEntries.length; iDB++) {
 				const dbEntry: any = dbEntries[iDB];
 				const derivativePath: string = dbEntry.urn.substring(0, dbEntry.urn.lastIndexOf('/') + 1);
@@ -151,16 +162,17 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 					results.map((elt: Forge.ApiResponse, index: number): Buffer => dbBuffers[dbFiles[index]] = elt.body);
 
 				const writeJobs: Promise<void>[] = results.map((buff: Forge.ApiResponse, index: number): Promise<void> =>
-					Utils.fsWriteFile(self.resolvedFilename(urn, dbEntries.length === 1 ? guid : dbEntry.guid, index, dbs), buff.body)
+					Utils.fsWriteFile(self.resolvedFilename(urn, dbEntries.length === 1 ? guid : dbEntry.guid, dbs, index), buff.body)
 				);
 				await Promise.all(writeJobs);
 			}
 
-			const keyname: string = this.keyname(urn, guid, dbs);
-			const key: string = `${urn}-${keyname}`;
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
 			this.cache[key] = {
 				lastVisited: moment(),
 				guids: guids,
+				dbs: dbs,
 				...dbBuffers,
 			};
 
@@ -201,21 +213,14 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	protected defaultGUID(guids: any): string {
-		return (Object.keys(guids)[0]);
-	}
-
-	protected keyname(urn: string, guid: string, dbs: any): string {
-		return (dbs[guid][0]);
-	}
-
 	protected buildJsonGzFilename(guid: string, base: string): string {
 		return (`${guid}${base.substring(7)}`)
 	}
 
-	protected resolvedFilename(urn: string, guid: string, which: number, dbs: any): string {
+	protected resolvedFilename(urn: string, guid: string, dbs: any, which: number = 0): string {
 		const cachePath: string = this.getPath(urn);
-		const jsonGzFilename: string = `${dbs[guid][which]}.json.gz`;
+		const dbname: string = PropertiesUtils.dbname(urn, guid, dbs, which);
+		const jsonGzFilename: string = `${dbname}.json.gz`;
 		return (_path.resolve(cachePath, jsonGzFilename));
 	}
 

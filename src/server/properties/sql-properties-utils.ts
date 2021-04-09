@@ -47,16 +47,23 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		return (_path.resolve(this.cachePath, urn, 'sql'));
 	}
 
-	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, guid: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
-			if (this.cache[urn]) {
-				await this.cache[urn].sequelize.Close();
-				delete this.cache[urn];
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return;
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
+			if (this.cache[key]) {
+				await this.cache[key].sequelize.Close();
+				delete this.cache[key];
 			}
 			if (deleteOnDisk)
 				await Utils.rimraf(this.getPath(urn));
-			await super.release(urn, deleteOnDisk);
+			await super.release(urn, guid, deleteOnDisk);
 		} catch (ex) {
 		}
 	}
@@ -67,11 +74,11 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			const dbs: any = await this.loadDBs(urn);
 			if (dbs === null)
 				return (await this.loadFromForge(urn, guid, region));
-			const guids: any = await this.loadDBs(urn);
-			guid = guid || this.defaultGUID(guids);
-			const filename: string = this.keyname(urn, guid, dbs);
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
 			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
-			const key: string = `${urn}-${filename}`;
+			const key: string = PropertiesUtils.makeDBName (urn, dbname);
 
 			if (this.cache[key]) {
 				this.cache[key].lastVisited = moment();
@@ -84,7 +91,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				this.cache[key] = {
 					lastVisited: moment(),
 					path2SqlDB: resolvedFilename,
-					sqlDBName: filename,
+					sqlDBName: dbname,
 					sequelize: new Sequelize({
 						dialect: 'sqlite',
 						storage: resolvedFilename,
@@ -94,6 +101,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 						}
 					}),
 					guids: guids,
+					dbs: dbs,
 				};
 				return (this.cache[key]);
 			}
@@ -158,19 +166,19 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 			}
 
 			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
-			guid = guid || this.defaultGUID(guids);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
 			await this.saveGuids(urn, guids);
 			const dbs: any = {};
-			Object.keys(guids).map((guid: string): string => dbs[guid] = `${dbEntries.length > 1 ? guid : 'properties'}.db`);
+			Object.keys(guids).map((guid: string): string[] => dbs[guid] = [`${dbEntries.length > 1 ? guid : 'properties'}.db`]);
 			await this.saveDBs(urn, dbs);
 
-			const keyname: string = this.keyname(urn, guid, dbs);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
 			const resolvedFilename: string = this.resolvedFilename(urn, guid, dbs);
-			const key: string = `${urn}-${keyname}`;
+			const key: string = PropertiesUtils.makeDBName (urn, dbname);
 			this.cache[key] = {
 				lastVisited: moment(),
 				path2SqlDB: resolvedFilename,
-				sqlDBName: keyname,
+				sqlDBName: dbname,
 				sequelize: new Sequelize({
 					dialect: 'sqlite',
 					storage: resolvedFilename,
@@ -180,6 +188,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 					}
 				}),
 				guids: guids,
+				dbs: dbs,
 			};
 
 			return (this.cache[key]);
@@ -219,17 +228,9 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	protected defaultGUID(guids: any): string {
-		return (Object.keys(guids)[0]);
-	}
-
-	protected keyname(urn: string, guid: string, dbs: any): string {
-		return (dbs[guid]);
-	}
-
-	protected resolvedFilename(urn: string, guid: string, dbs: any): string {
+	protected resolvedFilename(urn: string, guid: string, dbs: any, which: number = 0): string {
 		const cachePath: string = this.getPath(urn);
-		const filename: string = this.keyname(urn, guid, dbs);
+		const filename: string = PropertiesUtils.dbname(urn, guid, dbs, which);
 		return (_path.resolve(cachePath, filename));
 	}
 

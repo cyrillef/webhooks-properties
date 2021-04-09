@@ -1,0 +1,8 @@
+{
+    "//data/objects/[objectid=1]objects/[objectid=15]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=1953]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=1958]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=3184]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=3203]": "missing on right",
+    "//data/objects/[objectid=1]objects/": "warning: arrays do not have the same length"
+}

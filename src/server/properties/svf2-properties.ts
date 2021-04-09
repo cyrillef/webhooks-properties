@@ -64,7 +64,7 @@ export class Svf2Properties {
 		this.ids = dbs.ids;
 	}
 
-	public read(dbId: number, keepHidden: boolean, keepInternals: boolean): any {
+	public read(dbId: number, keepHidden: boolean, keepInternals: boolean, instanceOf: boolean = false): any {
 		const result: any = {
 			objectid: dbId,
 			name: '',
@@ -72,7 +72,7 @@ export class Svf2Properties {
 			properties: {}
 		};
 
-		let parent: number = this._read(dbId, result, keepHidden, keepInternals);
+		let parent: number = this._read(dbId, result, keepHidden, keepInternals, instanceOf);
 		if (keepInternals === false)
 			//delete result.properties.__internal__;
 			PropertiesUtils.deleteInternals(result);
@@ -84,6 +84,7 @@ export class Svf2Properties {
 		let parent: number = null;
 
 		const eav: any = Svf2Properties._buildEAV(dbId, this.avsIdx, this.avsPack);
+		let nodeInstance: any = null;
 		for (let index = 0; index < eav.length; index++) {
 			const elt: any = eav[index];
 			let value: string | number = Svf2Properties._readPropertyAsString(elt.attributeIndex, elt.valueIndex, this.attrs, this.vals);
@@ -94,8 +95,9 @@ export class Svf2Properties {
 				continue;
 			if (key === '__instanceof__/instanceof_objid') {
 				// Allright, we need to read the definition
-				this._read(value as number, result, keepHidden, keepInternals, true);
-				//continue;
+				//this._read(value as number, result, keepHidden, keepInternals, true);
+				nodeInstance = this.read(value as number, keepHidden, keepInternals, true);
+				continue;
 			}
 			if (/^__[_\w]+__\/[_a-z]+$/.test(key))
 				category = '__internal__';
@@ -104,8 +106,6 @@ export class Svf2Properties {
 					result.name = (value as string).trim();
 				continue;
 			}
-			if (!result.properties.hasOwnProperty(category))
-				result.properties[category] = {};
 
 			key = attr[AttributeFieldIndex.iDISPLAYNAME] || attr[AttributeFieldIndex.iNAME];
 			if (attr[AttributeFieldIndex.iUNIT] !== null)
@@ -117,6 +117,9 @@ export class Svf2Properties {
 			if (!(category === '__internal__' && keepInternals) && !(category !== '__internal__' && keepHidden))
 				if (Number.parseInt(attr[AttributeFieldIndex.iFLAGS]) & 1)
 					continue;
+
+			if (!result.properties.hasOwnProperty(category))
+				result.properties[category] = {};
 
 			//result.properties [category] [key] =value ;
 			if (result.properties[category].hasOwnProperty(key)) {
@@ -130,6 +133,24 @@ export class Svf2Properties {
 				result.properties[category][key] = value;
 			}
 		}
+		// Merge instanceOf where's needed
+		if (nodeInstance) {
+			result.name = result.name || nodeInstance.name;
+			//result.properties = result.properties || nodeInstance.properties;
+			Object.keys(nodeInstance.properties).map((lvl1: string): void => {
+				if (!result.properties.hasOwnProperty(lvl1)) {
+					result.properties[lvl1] = nodeInstance.properties[lvl1];
+					return;
+				}
+				if (typeof nodeInstance.properties[lvl1] !== 'object')
+					return;
+				Object.keys(nodeInstance.properties[lvl1]).map((lvl2: string): void => {
+					if (!result.properties[lvl1].hasOwnProperty(lvl2))
+						result.properties[lvl1][lvl2] = nodeInstance.properties[lvl1][lvl2];
+				});
+			});
+		}
+		
 		if (result.properties.xxROOTxx) {
 			Object.keys(result.properties.xxROOTxx).map((key: string): void => result.properties[key] = result.properties.xxROOTxx[key]);
 			delete result.properties.xxROOTxx;
@@ -172,7 +193,6 @@ export class Svf2Properties {
 				parentAttrId = i;
 		}
 
-		//let objId: number = 1;
 		const results: { childs: number[], parents: number[] } = { childs: new Array(this.idMax), parents: new Array(this.idMax) };
 		for (let objId = 1; objId <= this.idMax; objId++) {
 			let offset: number = this.avsIdx[objId];
@@ -204,16 +224,15 @@ export class Svf2Properties {
 
 		roots = results.childs.filter((x: number): boolean => !results.parents.includes(x));
 
-		let final: number[] = [];
+		let final: number[] = roots;
 		if (roots.length > 1) {
+			final = [];
 			// We may need to cleanup the list (ex: dwfx)
 			for (let i = 0; i < roots.length; i++) {
 				const node: any = this.read(roots[i], false, false);
 				if (node.name !== '')
 					final.push(roots[i]);
 			}
-		} else {
-			final = roots;
 		}
 		return (final);
 	}
@@ -253,25 +272,59 @@ export class Svf2Properties {
 			nodes[rootIds[i]] = result;
 		}
 
+		const nodesWithViewableIn: any = {};
+		const collectNodes = (node: any): void => {
+			if (!node)
+				return;
+			if (!nodes[node.objectid])
+				nodes[node.objectid] = node;
+			if (node.properties && node.properties.__internal__
+				&& node.properties.__internal__.viewable_in
+				&& (
+					(typeof node.properties.__internal__.viewable_in === 'string' && viewable_in.includes(node.properties.__internal__.viewable_in))
+					|| (Array.isArray(node.properties.__internal__.viewable_in) && viewable_in.filter((x: string): boolean => node.properties.__internal__.viewable_in.includes(x)).length > 0)
+				)
+			) {
+				nodesWithViewableIn[node.objectid] = node;
+				node.viewable_in = viewable_in[0];
+			}
+			if (node.objects && node.objects.length > 0)
+				node.objects.map(collectNodes);
+		};
+		Object.values(nodes).map(collectNodes);
+
+		const goRecursively: any = (node: any, value: string, propName: string = 'viewable_in') => {
+			if (!node)
+				return;
+			node[propName] = value;
+			if (!node.properties || !node.properties.__internal__ || !node.properties.__internal__.parent || !nodes[node.properties.__internal__.parent])
+				return;
+			const parent: any = nodes[node.properties.__internal__.parent];
+			if (parent.properties && parent.properties.__internal__ && parent.properties.__internal__[propName] === value)
+				return;
+			goRecursively(parent, value, propName);
+		};
+		const toProceed: any[] = Object.values(nodesWithViewableIn);
+		toProceed.map((node: any): void => goRecursively(nodes[node.properties && node.properties.__internal__ && node.properties.__internal__.parent], node.viewable_in, 'viewable_in'));
+
 		const cleanNode = (node: any): void => {
 			if (!withProperties) {
 				delete node.properties;
 				delete node.externalId;
 			}
+			delete node.viewable_in;
 		};
 		const isIn = (node: any): boolean => {
-			let _isin_: boolean = true; // by default, we are in
-			let nodeViewableIn: any = node.properties && node.properties.__internal__ && node.properties.__internal__.viewable_in;
-			if (nodeViewableIn && !Array.isArray(nodeViewableIn))
-				nodeViewableIn = [nodeViewableIn];
+			let _isin_: boolean = toProceed.length === 0; // by default, we are in
+			let nodeViewableIn: any = node.viewable_in; // we forced it is one single string;
 			if (viewable_in && nodeViewableIn) {
-				_isin_ = viewable_in.filter((x: string): boolean => nodeViewableIn.includes(x)).length > 0;
+				_isin_ = viewable_in.includes(nodeViewableIn);
 				if (_isin_ === false)
 					return (cleanNode(node), false); // if a node is not in, all its childs aren't either
 			}
 
-			if (node.objects) {
-				node.objects = node.objects.filter((elt: any): boolean => isIn(elt));
+			if (_isin_ && node.objects) {
+				node.objects = node.objects.filter(isIn);
 				if (node.objects.length === 0)
 					delete node.objects;
 			}

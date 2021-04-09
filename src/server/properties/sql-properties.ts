@@ -151,8 +151,6 @@ export class SqlProperties {
 					result.name = elt.value;
 				continue;
 			}
-			if (!result.properties.hasOwnProperty(category))
-				result.properties[category] = {};
 
 			key = elt.name;
 			//let value: string = elt.value;
@@ -165,6 +163,9 @@ export class SqlProperties {
 			if (!(category === '__internal__' && keepInternals) && !(category !== '__internal__' && keepHidden))
 				if (elt.flags & 1)
 					continue;
+
+			if (!result.properties.hasOwnProperty(category))
+				result.properties[category] = {};
 
 			if (result.properties[category].hasOwnProperty(key)) {
 				if (category === '__internal__' && key === 'viewable_in'
@@ -292,16 +293,15 @@ export class SqlProperties {
 			difference = results.map((elt: any): number => elt.id);
 		}
 
-		let final: number[] = [];
+		let final: number[] = difference;
 		if (difference.length > 1) {
+			final = [];
 			// We may need to cleanup the list (ex: dwfx)
 			for (let i = 0; i < difference.length; i++) {
 				const node: any = await this.read(difference[i], false, false);
 				if (node.name !== '')
 					final.push(difference[i]);
 			}
-		} else {
-			final = difference;
 		}
 		return (final);
 	}
@@ -355,7 +355,7 @@ export class SqlProperties {
 					name: nodeName,
 					objectid: objId,
 					//viewable_in: [nodeViewableIn],
-					parent: nodeParent,
+					//parent: nodeParent,
 					refObjIds: [],
 					objects: [],
 				};
@@ -417,20 +417,19 @@ export class SqlProperties {
 			}
 		}
 
-		const cleanup: any = (node: any): boolean => {
+		const cleanup = (node: any): boolean => {
 			delete node.parent;
 			delete node.refObjIds;
+			//const result: boolean = viewable_in.includes(node.viewable_in) || toProceed.length === 0; // we forced viewable_in[0]
 			const result: boolean = node.viewable_in === viewable_in[0] || toProceed.length === 0;
 			delete node.viewable_in;
 			return (result);
 		};
-		const filtered: any[] = Object.values(nodes).filter((node: any): void => cleanup(node));
+		const filtered: any[] = Object.values(nodes).filter(cleanup);
 		const filteredIds: number[] = filtered.map((elt: any): number => elt.objectid);
 
 		const removeRef: any = (node: any): void => {
-			node.objects = node.objects.filter((ref: any): boolean => 
-				filteredIds.includes(ref.objectid)
-			);
+			node.objects = node.objects.filter((ref: any): boolean => filteredIds.includes(ref.objectid));
 			node.objects.map((ref: any): void => removeRef(ref));
 			node.objects.length === 0 && delete node.objects;
 		};

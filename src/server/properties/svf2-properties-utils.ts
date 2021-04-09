@@ -45,14 +45,21 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		return (_path.resolve(this.cachePath, urn, 'svf2'));
 	}
 
-	public async release(urn: string, deleteOnDisk: boolean = true): Promise<void> {
+	public async release(urn: string, guid: string, deleteOnDisk: boolean = true): Promise<void> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
-			if (this.cache[urn])
-				delete this.cache[urn];
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return;
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
+			if (this.cache[key])
+				delete this.cache[key];
 			if (deleteOnDisk)
 				await Utils.rimraf(this.getPath(urn));
-			await super.release(urn, deleteOnDisk);
+			await super.release(urn, guid, deleteOnDisk);
 		} catch (ex) {
 		}
 	}
@@ -61,31 +68,41 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
+			const dbs: any = await this.loadDBs(urn);
+			if (dbs === null)
+				return (await this.loadFromForge(urn, guid, region));
+			const guids: any = await this.loadGuids(urn);
+			guid = guid || PropertiesUtils.defaultGUID(guids);
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
 
-			if (this.cache[urn]) {
-				this.cache[urn].lastVisited = moment();
-				return (this.cache[urn]);
+			if (this.cache[key]) {
+				this.cache[key].lastVisited = moment();
+				return (this.cache[key]);
 			}
 
 			const cachePath: string = this.getPath(urn);
 			const cached: boolean = await Utils.fsExists(cachePath);
 			if (cached) {
-				this.cache[urn] = { lastVisited: moment() };
 				const tags: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'tags.json'), null)).toString('utf8'));
 
 				const dbFiles: string[] = Svf2Properties.dbNames;
 				const jobs: Promise<Buffer>[] = dbFiles.map((elt: string): Promise<Buffer> => Utils.fsReadFile(_path.resolve(cachePath, elt), null));
 				const results: Buffer[] = await Promise.all(jobs);
-				dbFiles.map((elt: string, index: number): any => self.cache[urn][tags[elt]] = results[index]);
+				let dbBuffers: { [index: string]: Buffer } = {};
+				dbFiles.map((elt: string, index: number): any => dbBuffers[tags[elt]] = results[index]);
+				dbBuffers.attrs = JSON.parse(dbBuffers.attrs.toString('utf8'));
+				dbBuffers.values = JSON.parse(dbBuffers.values.toString('utf8'));
+				dbBuffers.ids = JSON.parse(dbBuffers.ids.toString('utf8'));
 
-				const guids: any = JSON.parse((await Utils.fsReadFile(_path.resolve(cachePath, 'guids.json'), null)).toString('utf8'));
-				this.cache[urn].guids = guids;
+				this.cache[key] = {
+					lastVisited: moment(),
+					guids: guids,
+					dbs: dbs,
+					...dbBuffers,
+				};
 
-				this.cache[urn].attrs = JSON.parse(this.cache[urn].attrs.toString('utf8'));
-				this.cache[urn].values = JSON.parse(this.cache[urn].values.toString('utf8'));
-				this.cache[urn].ids = JSON.parse(this.cache[urn].ids.toString('utf8'));
-
-				return (this.cache[urn]);
+				return (this.cache[key]);
 			}
 
 			return (await this.loadFromForge(urn, guid, region));
@@ -116,12 +133,22 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			const manifest: any = manifestRequest.body.children.filter((elt: any): any => elt.role === 'viewable')[0];
 			if (!manifest.otg_manifest)
 				return (null);
+			const storagepoints: any = manifest.otg_manifest.paths;
 
 			await mkdirp(cachePath);
-			if (process.env.NODE_ENV === 'development')
+			if (process.env.NODE_ENV === 'development') {
 				await Utils.fsWriteFile(_path.resolve(cachePath, 'manifest.json'), Buffer.from(JSON.stringify(manifestRequest.body, null, 4)));
+				// Save otg_model.json files too
+				const views: any = manifest.otg_manifest.views;
+				const views_guids: string[] = Object.keys(views);
+				for (let i = 0; i < views_guids.length; i++) {
+					const path: string = encodeURIComponent(`${storagepoints.version_root}${views[views_guids[i]].urn}`);
+					const modelRequest = await superagent('GET', `${endpoint}/file/${path}?acmsession=${urn}&domain=`)
+						.set({ 'Authorization': `Bearer ${token.access_token}` });
+					await Utils.fsWriteFile(_path.resolve(cachePath, `${views_guids[i]}_otg_model.json`), Buffer.from(JSON.stringify(modelRequest.body, null, 4)));
+				}
+			}
 
-			const storagepoints: any = manifest.otg_manifest.paths;
 			const pdb_manifest: any = manifest.otg_manifest.pdb_manifest;
 			const assets: any = pdb_manifest.assets;
 			let jobs: Promise<any>[] = assets.map((elt: any): Promise<any> => {
@@ -138,19 +165,34 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 
 			const results: any = await Promise.all(jobs);
 			const tags: any = {};
-			this.cache[urn] = { lastVisited: moment() };
+			let dbBuffers: { [index: string]: Buffer } = {};
 			jobs = assets.map((elt: any, index: number): Promise<any> => {
-				self.cache[urn][elt.tag] = results[index].body;
+				dbBuffers[elt.tag] = results[index].body;
 				tags[elt.uri] = elt.tag;
 				return (Utils.fsWriteFile(_path.resolve(self.getPath(urn), elt.uri), results[index].text ? results[index].text : results[index].body));
 			});
 			jobs.push(Utils.fsWriteFile(_path.resolve(cachePath, 'tags.json'), Buffer.from(JSON.stringify(tags))));
 
-			this.cache[urn].guids = PropertiesUtils.findViewablesInManifest(manifest);
-			jobs.push(this.saveGuids(urn, this.cache[urn].guids));
+			const guids: any = PropertiesUtils.findViewablesInManifest(manifest);
+			jobs.push(this.saveGuids(urn, guids));
 
+			// We can assume that OTG is always a shared DB
+			const dbs: any = {};
+			for (let i = 0; i < Object.keys(guids).length; i++)
+				dbs[Object.keys(guids)[i]] = [Object.keys(guids)[i]];
+			jobs.push(this.saveDBs(urn, dbs));
 			await Promise.all(jobs);
-			return (this.cache[urn]);
+
+			const dbname: string = PropertiesUtils.dbname(urn, guid, dbs);
+			const key: string = PropertiesUtils.makeDBName(urn, dbname);
+			this.cache[key] = {
+				lastVisited: moment(),
+				guids: guids,
+				dbs: dbs,
+				...dbBuffers,
+			};
+
+			return (this.cache[key]);
 		} catch (ex) {
 			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 			return (null);
@@ -185,6 +227,13 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		} catch (ex) {
 			return (null);
 		}
+	}
+
+	//todo
+	protected resolvedFilename(urn: string, guid: string, dbs: any, which: number = 0): string {
+		const cachePath: string = this.getPath(urn);
+		const dbname: string = PropertiesUtils.dbname(urn, guid, dbs, which);
+		return (_path.resolve(cachePath, dbname));
 	}
 
 }

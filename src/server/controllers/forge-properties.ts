@@ -68,7 +68,7 @@ export class ForgePropertiesController implements Controller {
 			};
 		} catch (ex) {
 			// If any non 20x status code is returned, we endup here
-			console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
+			//console.error(ex.message || ex.statusMessage || `${ex.statusBody.code}: ${JSON.stringify(ex.statusBody.detail)}`);
 		}
 		return (null);
 	}

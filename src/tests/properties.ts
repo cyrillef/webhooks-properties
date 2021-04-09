@@ -35,7 +35,7 @@ const _rimraf = _util.promisify(rimraf);
 
 // oZZ0CN7qXTGAiqSbmEhLlmYcKXt0YVoU
 const urns: any = {
-	'Model.ifc': {
+	'Model.ifc': { // svf only (3d)
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTW9kZWwuaWZj', // Model.ifc
 		guids: {
 			'3d': [
@@ -44,7 +44,7 @@ const urns: any = {
 		},
 		type: 'svf',
 	},
-	'Model2.ifc': {
+	'Model2.ifc': { // svf2 (3d)
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTW9kZWwyLmlmYw', // Model2.ifc
 		guids: {
 			'3d': [
@@ -53,19 +53,19 @@ const urns: any = {
 		},
 		type: 'svf2',
 	},
-	'Master - Plant3D.dwg': { // 3d and 2d
+	'Master - Plant3D.dwg': { // svf2 (3d and 2d)
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvTWFzdGVyJTIwLSUyMFBsYW50M0QuZHdn', // Master - Plant3D.dwg
 		guids: {
 			'3d': [
 				'e30bd031-d13a-a976-9153-78100829986a', // 3d
 			],
 			'2d': [
-				'b7bb12b1-f832-5005-ca30-a0e6b00f9da5', // 2d
+				'62036a98-bd5b-ac36-061f-4a442416cb93', // 2d
 			],
 		},
-		type: 'svf',
+		type: 'svf2',
 	},
-	'ASSM.f3d': { // ASSM.996d7bd3-c6d8-43d9-9926-6cdfaed1870c.f3d
+	'ASSM.f3d': { // svf2 (3d) ASSM.996d7bd3-c6d8-43d9-9926-6cdfaed1870c.f3d
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQVNTTS45OTZkN2JkMy1jNmQ4LTQzZDktOTkyNi02Y2RmYWVkMTg3MGMuZjNk',
 		guids: {
 			'3d': [
@@ -74,52 +74,11 @@ const urns: any = {
 		},
 		type: 'svf2',
 	},
-	'ACM-LRT-N-Master-Autodesk.nwd': {
+	'ACM-LRT-N-Master-Autodesk.nwd': { // svf2 (3d)
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQUNNLUxSVC1OLU1hc3Rlci1BdXRvZGVzay5ud2Q', // ACM-LRT-N-Master-Autodesk.nwd
 		guids: {
 			'3d': [
 				'662ce6e5-aed0-44f6-99cb-94c7f0f0e97e',
-			],
-		},
-		type: 'svf2',
-	},
-	'1403_V1.dwfx': { // 1403_V1_2018-03-14_04-32-00pm.dwfx (multi DB)
-		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvMTQwM19WMV8yMDE4LTAzLTE0XzA0LTMyLTAwcG0uZHdmeA',
-		guids: {
-			'3d': [
-				'a6128518-dcf0-967b-31a1-3439a375daeb',
-				'488e0550-6e79-38b3-9f56-ae8fd21416bb',
-			],
-			'2d': [
-				'beaab4e2-9abc-8ca2-4e65-23df60e4b6a7',
-				'439a5dce-43e2-17bb-d5e3-60c33bc0cc0d',
-				'd98802b2-1887-798c-e78b-0d11488ea602',
-				'2c2386ea-0f02-5ad5-49cf-8c19d8b0768b',
-				'737da12d-3f75-cf3a-a650-8c18557f1a11',
-				'b30334d5-b1c0-ca27-6038-bcbbd5540ed3',
-				'7203514b-58e3-5776-fcb7-6ee34f330c52',
-				'be4f7d3f-bf72-7169-2c73-274a594fb40a',
-				'0d2c7d59-0ac9-a47b-849f-6b30ee49574f',
-				'a81433d1-e3e7-97f8-17f2-e85c1bbc1f66',
-				'e7d88667-9f10-b63a-a6d6-9a8d5492b134',
-				'626a6596-a298-a883-1feb-b072ffdf4575',
-				'38f44bb4-6337-fb87-a6ec-caa62e1d97ff',
-				'80f0723f-92ff-317d-7802-e99c3fddd4e8',
-				'a14bcaf0-056a-9f06-03c3-ed30317acc53',
-				'624c1fe4-dee7-49b0-fdee-ea2c9b5ff660',
-				'391da052-8c6f-af4e-5fe2-009fccc70c80',
-				'e91e3333-6510-abeb-714a-06dea8be33ff',
-			],
-		},
-		type: 'svf2',
-	},
-	'BadMonkeys.dwfx': {
-		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
-		guids: {
-			'2d': [
-				'c745e431-cc5c-df39-f6ae-c744b63d33cb',
-				'044a5d42-12cb-356a-7521-4b5f68c3b04d',
-				'b6bff568-b730-ee0f-9049-7d57514ec76b'
 			],
 		},
 		type: 'svf2',
@@ -176,6 +135,50 @@ const urns: any = {
 		},
 		type: 'svf2',
 	},
+
+
+	// '1403_V1.dwfx': { // svf2 (3d and 2d) 1403_V1_2018-03-14_04-32-00pm.dwfx (multi DB) but testing as svf for now (svf2 bug)
+	// 	urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvMTQwM19WMV8yMDE4LTAzLTE0XzA0LTMyLTAwcG0uZHdmeA',
+	// 	guids: {
+	// 		'3d': [
+	// 			'a6128518-dcf0-967b-31a1-3439a375daeb',
+	// 			'488e0550-6e79-38b3-9f56-ae8fd21416bb',
+	// 		],
+	// 		'2d': [
+	// 			'beaab4e2-9abc-8ca2-4e65-23df60e4b6a7',
+	// 			'439a5dce-43e2-17bb-d5e3-60c33bc0cc0d',
+	// 			'd98802b2-1887-798c-e78b-0d11488ea602',
+	// 			'2c2386ea-0f02-5ad5-49cf-8c19d8b0768b',
+	// 			'737da12d-3f75-cf3a-a650-8c18557f1a11',
+	// 			'b30334d5-b1c0-ca27-6038-bcbbd5540ed3',
+	// 			'7203514b-58e3-5776-fcb7-6ee34f330c52',
+	// 			'be4f7d3f-bf72-7169-2c73-274a594fb40a',
+	// 			'0d2c7d59-0ac9-a47b-849f-6b30ee49574f',
+	// 			'a81433d1-e3e7-97f8-17f2-e85c1bbc1f66',
+	// 			'e7d88667-9f10-b63a-a6d6-9a8d5492b134',
+	// 			'626a6596-a298-a883-1feb-b072ffdf4575',
+	// 			'38f44bb4-6337-fb87-a6ec-caa62e1d97ff',
+	// 			'80f0723f-92ff-317d-7802-e99c3fddd4e8',
+	// 			'a14bcaf0-056a-9f06-03c3-ed30317acc53',
+	// 			'624c1fe4-dee7-49b0-fdee-ea2c9b5ff660',
+	// 			'391da052-8c6f-af4e-5fe2-009fccc70c80',
+	// 			'e91e3333-6510-abeb-714a-06dea8be33ff',
+	// 		],
+	// 	},
+	// 	type: 'svf',
+	// },
+	// 'BadMonkeys.dwfx': { // svf2 (2d)
+	// 	urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQmFkTW9ua2V5cy5kd2Z4',
+	// 	guids: {
+	// 		'2d': [
+	// 			'c745e431-cc5c-df39-f6ae-c744b63d33cb',
+	// 			'044a5d42-12cb-356a-7521-4b5f68c3b04d',
+	// 			'b6bff568-b730-ee0f-9049-7d57514ec76b'
+	// 		],
+	// 	},
+	// 	type: 'svf2',
+	// },
+
 };
 
 // Unicode Character “✓” (U+2713)
@@ -217,74 +220,89 @@ class PropertiesController {
 	}
 
 	public async forge_getProperties(model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/forge/${def.urn}/metadata/${guid}/properties`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-properties.forge`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} forge-properties created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} forge-properties`, PropertiesController.sortKey, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/forge/${def.urn}/metadata/${guid}/properties`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-properties.forge`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} forge-properties created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} forge-properties`, PropertiesController.sortKey, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} forge-properties error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async forge_getPropertiesRange(model: string, guid: string, dbids: number[]): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const jobs: Promise<any>[] = dbids.map((dbid: number): Promise<any> => {
-			const url: string = `/forge/${def.urn}/metadata/${guid}/properties?objectid=${dbid}`;
-			const job: any = superagent('GET', PropertiesController.makeRequestURL(url));
-			return (job);
-		});
-		const results: any[] = await Promise.all(jobs);
-		// const results: any[] = new Array(jobs.length);
-		// for (let i = 0; i < jobs.length; i++) {
-		// 	try {
-		// 		results.push(await jobs[i]);
-		// 	} catch (ex) {
-		// 		PropertiesController.console(false, `forge_getPropertiesRange(${dbids[i]}) ${i} ${ex.status} ${ex.message}`);
-		// 	}
-		// }
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const jobs: Promise<any>[] = dbids.map((dbid: number): Promise<any> => {
+				const url: string = `/forge/${def.urn}/metadata/${guid}/properties?objectid=${dbid}`;
+				const job: any = superagent('GET', PropertiesController.makeRequestURL(url));
+				return (job);
+			});
+			const results: any[] = await Promise.all(jobs);
+			// const results: any[] = new Array(jobs.length);
+			// for (let i = 0; i < jobs.length; i++) {
+			// 	try {
+			// 		results.push(await jobs[i]);
+			// 	} catch (ex) {
+			// 		PropertiesController.console(false, `forge_getPropertiesRange(${dbids[i]}) ${i} ${ex.status} ${ex.message}`);
+			// 	}
+			// }
 
-		const result: any = results[0].body;
-		for (let i = 1; i < results.length; i++)
-			result.data.collection.push(results[i].body.data.collection[0]);
+			const result: any = results[0].body;
+			for (let i = 1; i < results.length; i++)
+				result.data.collection.push(results[i].body.data.collection[0]);
 
-		const fn: string = `./data/${model}-${guid}-properties-range.forge`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result, [PropertiesController.sortKey]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result);
-			PropertiesController.console(true, `${model} ${guid} forge-properties-range created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result, json, `${model} ${guid} forge-properties-range`, PropertiesController.sortKey, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			const fn: string = `./data/${model}-${guid}-properties-range.forge`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result, [PropertiesController.sortKey]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result);
+				PropertiesController.console(true, `${model} ${guid} forge-properties-range created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result, json, `${model} ${guid} forge-properties-range`, PropertiesController.sortKey, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} forge-properties-range error!`);
+			return (null);
 		}
-		return (result.data.collection);
 	}
 
 	public async forge_getTree(model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/forge/${def.urn}/metadata/${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-tree.forge`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} forge-tree created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} forge-tree`, PropertiesController.sortByObjectID, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/forge/${def.urn}/metadata/${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-tree.forge`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} forge-tree created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} forge-tree`, PropertiesController.sortByObjectID, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.objects);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} forge-tree error!`);
+			return (null);
 		}
-		return (result.body.data.objects);
 	}
 
 	public async xxx_load(method: string, model: string, guid: string): Promise<any> {
@@ -305,136 +323,171 @@ class PropertiesController {
 			}
 			return (result.body);
 		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} load error!`);
 			return (null);
 		}
 	}
 
 	public async xxx_delete(method: string, model: string, guid: string): Promise<void> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata/delete?guid=${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata/delete?guid=${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} delete error!`);
+		}
 	}
 
 	public async xxx_getExternalIds(method: string, model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata/externalids?guid=${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-externalids.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} externalids created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} externalids`, undefined, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata/externalids?guid=${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-externalids.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} externalids created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} externalids`, undefined, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} externalids error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async xxx_getObjIds(method: string, model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata/ids?guid=${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-ids.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} ids created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} ids`, undefined, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata/ids?guid=${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-ids.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} ids created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} ids`, undefined, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} ids error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async xxx_getIdsRange(method: string, model: string, guid: string, extIds: string[]): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const bs: boolean[] = extIds.map((elt: string): boolean => elt.indexOf(',') === -1);
-		const found: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
-		const sep: string = found ? '^' : ',';
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const bs: boolean[] = extIds.map((elt: string): boolean => elt.indexOf(',') === -1);
+			const found: boolean = bs.reduce((accumulator: boolean, currentValue: boolean): boolean => accumulator || currentValue, false);
+			const sep: string = found ? '^' : ',';
 
-		extIds = extIds.map((elt: string): string => encodeURIComponent(elt));
-		const url: string = `/${method}/${def.urn}/metadata/ids?guid=${guid}&ids=${extIds.join(sep)}&sep=${sep}`;
+			extIds = extIds.map((elt: string): string => encodeURIComponent(elt));
+			const url: string = `/${method}/${def.urn}/metadata/ids?guid=${guid}&ids=${extIds.join(sep)}&sep=${sep}`;
 
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-ids-range.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} ids range created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} ids range`, undefined, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-ids-range.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} ids range created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} ids range`, undefined, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} ids range error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async xxx_GetProperties(method: string, model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata/properties?guid=${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-properties.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} properties created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} properties`, PropertiesController.sortKey, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata/properties?guid=${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-properties.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} properties created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} properties`, PropertiesController.sortKey, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} properties error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async xxx_getPropertiesRange(method: string, model: string, guid: string, dbids: number[], keepInternals: boolean): Promise<any> {
 		const num: string = keepInternals ? '-internals' : '-range';
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata/properties?guid=${guid}&ids=${encodeURIComponent(dbids.join(','))}&keephiddens=${keepInternals.toString()}&keepinternals=${keepInternals.toString()}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-properties${num}.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} properties${num} created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} properties${num}`, PropertiesController.sortKey, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata/properties?guid=${guid}&ids=${encodeURIComponent(dbids.join(','))}&keephiddens=${keepInternals.toString()}&keepinternals=${keepInternals.toString()}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-properties${num}.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortKey]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} properties${num} created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} properties${num}`, PropertiesController.sortKey, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.collection);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} properties${num} error!`);
+			return (null);
 		}
-		return (result.body.data.collection);
 	}
 
 	public async xxx_getTree(method: string, model: string, guid: string): Promise<any> {
-		const def: any = urns[model];
-		guid = guid || this.defaultGuid(def);
-		const url: string = `/${method}/${def.urn}/metadata?guid=${guid}`;
-		let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
-		const fn: string = `./data/${model}-${guid}-tree.${method}`;
-		let json: any = await PropertiesController.loadJson(fn);
-		JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
-		if (!json) {
-			await PropertiesController.saveJson(fn, result.body);
-			PropertiesController.console(true, `${model} ${guid} ${method} tree created!`);
-		} else {
-			if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} tree`, PropertiesController.sortByObjectID, false))
-				await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+		try {
+			const def: any = urns[model];
+			guid = guid || this.defaultGuid(def);
+			const url: string = `/${method}/${def.urn}/metadata?guid=${guid}`;
+			let result: any = await superagent('GET', PropertiesController.makeRequestURL(url));
+			const fn: string = `./data/${model}-${guid}-tree.${method}`;
+			let json: any = await PropertiesController.loadJson(fn);
+			JsonDiff.sortObjectProperties(result.body, [PropertiesController.sortByObjectID]);
+			if (!json) {
+				await PropertiesController.saveJson(fn, result.body);
+				PropertiesController.console(true, `${model} ${guid} ${method} tree created!`);
+			} else {
+				if (!PropertiesController.compareObjects(result.body, json, `${model} ${guid} ${method} tree`, PropertiesController.sortByObjectID, false))
+					await PropertiesController.saveJson(`${fn}.tmp`, result.body);
+			}
+			return (result.body.data.objects);
+		} catch (ex) {
+			PropertiesController.console(false, `${model} ${guid} ${method} tree error!`);
+			return (null);
 		}
-		return (result.body.data.objects);
 	}
 
-	protected guids(def: any): string[] {
+	protected guids(def: any, _3dOnly: boolean = false): string[] {
 		let guids: string[] = [];
 		def.guids['3d'] && (guids = def.guids['3d']);
-		def.guids['2d'] && (guids = [...guids, def.guids['2d']]);
+		!_3dOnly && def.guids['2d'] && (guids = [...guids, ...def.guids['2d']]);
 		return (guids);
 	}
 
@@ -590,7 +643,7 @@ class PropertiesController {
 				return;
 			}
 			const def: any = urns[fn2];
-			const guids: string[] = this.guids(def);
+			const guids: string[] = this.guids(def, true);
 			for (let i = 0; i < guids.length; i++) {
 				const guid: string = guids[i];
 				console.log(`Downloading ${fn2} .json .idx .pack files, please wait...`);
@@ -645,9 +698,12 @@ class PropertiesController {
 			const fn2: string = args[0]; // Model translated with SVF2
 			const def: any = urns[fn2];
 			const guids: string[] = this.guids(def);
+			const guids3d: string[] = this.guids(def, true);
 			for (let i = 0; i < guids.length; i++) {
 				const guid: string = guids[i];
-				const hasSVF2: boolean = def.type === 'svf2';
+				console.log(`Verifying ${fn2} using GUID ${guid}`);
+				const hasSVF2: boolean = def.type === 'svf2' && guids3d.includes(guid);
+				const idMapping: any = hasSVF2 && await this.svf2_svfTosvf2_mapping(null, fn2, guid, true); // { svf2ID: svfID }
 
 				const svfLoad: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-load.svf`);
 				const sqlLoad: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-load.sql`);
@@ -665,6 +721,7 @@ class PropertiesController {
 				const svfList: string[] = Object.values(svfExtIds.data.collection).sort() as string[];
 				const svf2List: string[] = hasSVF2 && Object.values(svf2ExtIds.data.collection).sort() as string[];
 				hasSVF2 && PropertiesController.compareObjects(svfList, svf2List, `${fn2} ${guid} svf-svf2 externalids`, undefined, false);
+				//console.log(svfList.length, svf2List.length, svfList, svf2List);
 
 				const svfIds: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-ids.svf`);
 				const sqlIds: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-ids.sql`);
@@ -683,7 +740,6 @@ class PropertiesController {
 				PropertiesController.compareObjects(svfTree, sqlTree, `${fn2} ${guid} svf-sql tree`, PropertiesController.sortByObjectID, false);
 				const svf2Tree: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-tree.svf2`);
 				//PropertiesController.compareObjects(svfTree, svf2Tree, `${fn2} ${guid} svf-svf2 tree`, PropertiesController.sortByObjectID, false); // expected to fail
-				const idMapping: any = hasSVF2 && await this.svf2_svfTosvf2_mapping(null, fn2, guid, true); // { svf2ID: svfID }
 				let node: any = hasSVF2 && svf2Tree.data.objects[0];
 				const traverseSvf2TreeNodes = (elt: any): void => {
 					elt.objectid = idMapping[elt.objectid];
@@ -694,7 +750,11 @@ class PropertiesController {
 				node = svfTree.data.objects[0];
 				const renameNodeName = (name: any): string => {
 					let regex = new RegExp('^(.*)[:#]\\d+$');
-					const r = name.match(regex);
+					let r = name.match(regex);
+					if (r !== null)
+						return (r[1]);
+					regex = new RegExp('^(.*) \\[.*\\]$');
+					r = name.match(regex);
 					if (r !== null)
 						return (r[1]);
 					return (name);
@@ -727,7 +787,7 @@ class PropertiesController {
 						elt.GLOBALID = elt.GLOBALID.sort();
 					if (elt.parent)
 						elt.parent = idMapping[elt.parent];
-					if ( elt.child)
+					if (elt.child)
 						elt.child = elt.child.map((id: number): number => idMapping[id]);
 					if (elt.properties)
 						Object.keys(elt.properties).map((category: any): void =>
@@ -839,7 +899,12 @@ class PropertiesController {
 
 		// const guid: string = '488e0550-6e79-38b3-9f56-ae8fd21416bb';
 		// result = await this.xxx_getTree('svf2', fn1, guid);
-		result = await this.xxx_getPropertiesRange('svf', fn1, guids1, [611], true);
+
+		let guid: string = '';
+		guid = '6fda4fe6-0ceb-4525-a86d-20be4000dab5';
+		//guid = '488e0550-6e79-38b3-9f56-ae8fd21416bb';
+		//result = await this.xxx_getTree('sql', fn1, guid);
+		result = await this.xxx_getTree('svf', fn1, guid);
 
 
 		console.log(result);
