@@ -124,7 +124,7 @@ const urns: any = {
 				'97e8b569-a295-8750-f788-2d5067608b9c',
 			],
 		},
-		type: 'svf',
+		type: 'svf2',
 	},
 	'4017-Forge.rvt.zip': {
 		urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6NDAxNy1mb3JnZS80MDE3LUZvcmdlLnJ2dC56aXA',

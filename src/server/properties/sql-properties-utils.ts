@@ -165,6 +165,14 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 				}
 			}
 
+			const aecEntries: any[] = PropertiesUtils.findInManifest(manifest.body, 'role', ['Autodesk.AEC.ModelData']);
+			for (let iAEC = 0; iAEC < aecEntries.length; iAEC++) {
+				const aecEntry: any = aecEntries[iAEC];
+				let dbBuffer: Forge.ApiResponse = await md.getDerivativeManifest(urn, aecEntry.urn, null, oauth.internalClient, token);
+				const aecPath: string = _path.resolve(cachePath, `${aecEntries.length > 1 ? aecEntry.guid : 'AECModelData'}.json`);
+				await Utils.fsWriteFile(aecPath, Buffer.from(JSON.stringify(dbBuffer.body, null, 4)));
+			}
+
 			const guids: any = PropertiesUtils.findViewablesInManifest(manifest.body);
 			guid = guid || PropertiesUtils.defaultGUID(guids);
 			await this.saveGuids(urn, guids);

@@ -145,7 +145,8 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 					const path: string = encodeURIComponent(`${storagepoints.version_root}${views[views_guids[i]].urn}`);
 					const modelRequest = await superagent('GET', `${endpoint}/file/${path}?acmsession=${urn}&domain=`)
 						.set({ 'Authorization': `Bearer ${token.access_token}` });
-					await Utils.fsWriteFile(_path.resolve(cachePath, `${views_guids[i]}_otg_model.json`), Buffer.from(JSON.stringify(modelRequest.body, null, 4)));
+					const outname: string = `${views_guids[i]}_${_path.basename(views[views_guids[i]].urn)}`; // `${views_guids[i]}_otg_model.json`;
+					await Utils.fsWriteFile(_path.resolve(cachePath, outname), Buffer.from(JSON.stringify(modelRequest.body, null, 4)));
 				}
 			}
 

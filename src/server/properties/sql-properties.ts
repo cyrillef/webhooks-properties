@@ -206,42 +206,46 @@ export class SqlProperties {
 	}
 
 	private _readPropertyAsString(attr: any): string | number {
-		let value: string | number = '';
-		const tp: number = attr.data_type;
-		switch (tp) {
-			case AttributeType.Unknown:
-			case AttributeType.String:
-			case AttributeType.LocalizableString:
-			case AttributeType.BLOB:
-			case AttributeType.GeoLocation: // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
-			default:
-				value = attr.value;
-				break;
-			case AttributeType.Boolean:
-				value = attr.value === 0 || attr.value === null ? 'No' : 'Yes';
-				break;
-			case AttributeType.Integer:
-				value = (attr.value !== null && attr.value.toString()) || '0';
-				break;
-			case AttributeType.Double:
-			case AttributeType.Float:
-				const precision: number = Number.parseInt(attr[AttributeFieldIndex.iDISPLAYPRECISION]) || 3;
-				//value = attr.value.toFixed(precision);
-				value = (attr.value !== null && attr.value.toFixed(3)) || '0.000';
-				break;
-			case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
-				//if (attr.flags & AttributeFlags.afDirectStorage)
-				value = (attr.value !== null && Number.parseInt(attr.value)) || 0;
-				//console.log(`AttributeType.DbKey => ${value}`);
-				break;
-			case AttributeType.DateTime: // ISO 8601 date
-				value = (attr.value !== null && attr.value.toString()) || '';
-				break;
-			case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
-				value = attr.value;
-				break;
+		try {
+			let value: string | number = '';
+			const tp: number = attr.data_type;
+			switch (tp) {
+				case AttributeType.Unknown:
+				case AttributeType.String:
+				case AttributeType.LocalizableString:
+				case AttributeType.BLOB:
+				case AttributeType.GeoLocation: // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
+				default:
+					value = attr.value;
+					break;
+				case AttributeType.Boolean:
+					value = attr.value === 0 || attr.value === null ? 'No' : 'Yes';
+					break;
+				case AttributeType.Integer:
+					value = (attr.value !== null && attr.value !== '' && attr.value.toString()) || '0';
+					break;
+				case AttributeType.Double:
+				case AttributeType.Float:
+					const precision: number = Number.parseInt(attr[AttributeFieldIndex.iDISPLAYPRECISION]) || 3;
+					//value = attr.value.toFixed(precision);
+					value = (attr.value !== null && attr.value !== '' && attr.value.toFixed(3)) || '0.000';
+					break;
+				case AttributeType.DbKey: // represents a link to another object in the database, using database internal ID
+					//if (attr.flags & AttributeFlags.afDirectStorage)
+					value = (attr.value !== null && attr.value !== '' && Number.parseInt(attr.value)) || 0;
+					//console.log(`AttributeType.DbKey => ${value}`);
+					break;
+				case AttributeType.DateTime: // ISO 8601 date
+					value = (attr.value !== null && attr.value.toString()) || '';
+					break;
+				case AttributeType.Position: // "x y z w" space separated string representing vector with 2,3 or 4 elements
+					value = attr.value;
+					break;
+			}
+			return (value);
+		} catch (ex) {
+			return('');
 		}
-		return (value);
 	}
 
 	public async findRootNodes(): Promise<number[]> {
