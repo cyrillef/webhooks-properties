@@ -64,7 +64,7 @@ export class SvfPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
+	protected async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SvfPropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);

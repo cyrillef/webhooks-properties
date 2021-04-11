@@ -142,7 +142,7 @@ export abstract class PropertiesUtils {
 		} catch (ex) { }
 	}
 
-	public abstract /*async*/ loadInCache(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
+	protected abstract /*async*/ loadInCache(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
 
 	protected abstract /*async*/ loadFromForge(urn: string, guid: string, region: string /*= Forge.DerivativesApi.RegionEnum.US*/): Promise<PropertiesCache>;
 

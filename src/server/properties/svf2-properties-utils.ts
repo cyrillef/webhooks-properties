@@ -64,7 +64,7 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
+	protected async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<Svf2PropertiesCache> {
 		const self = this;
 		try {
 			urn = Utils.makeSafeUrn(urn);
@@ -126,7 +126,10 @@ export class Svf2PropertiesUtils extends PropertiesUtils {
 			// const svf2Entry: any = manifest.body.derivatives.filter((elt: any): any => elt.outputType === 'svf2');
 			// An SVF2 entry is not really versatile, so assume the next step
 
-			const endpoint: string = 'https://cdn.derivative.autodesk.com/modeldata';
+			// prod_us_http: "https://cdn.derivative.autodesk.com",
+			// prod_eu_http: "https://cdn.derivative.autodesk.com/regions/eu",
+
+			const endpoint: string = region === Forge.DerivativesApi.RegionEnum.US ? 'https://cdn.derivative.autodesk.com/modeldata' : 'https://cdn.derivative.autodesk.com/regions/eu/modeldata';
 			const manifestRequest = await superagent('GET', `${endpoint}/manifest/${urn}?domain=`)
 				.set({ 'Authorization': `Bearer ${token.access_token}` });
 

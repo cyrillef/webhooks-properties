@@ -68,7 +68,7 @@ export class SqlPropertiesUtils extends PropertiesUtils {
 		}
 	}
 
-	public async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
+	protected async loadInCache(urn: string, guid: string, region: string = Forge.DerivativesApi.RegionEnum.US): Promise<SqlPropertiesCache> {
 		try {
 			urn = Utils.makeSafeUrn(urn);
 			const dbs: any = await this.loadDBs(urn);
