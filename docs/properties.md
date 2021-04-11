@@ -14,11 +14,13 @@ Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL 
 
 * objects_vals.json.gz {common} - Attribute Values list (JSON array), you should ignore the first element. Indexed on the ValID starting with index 1.
 
-* objects_ids.json.gz {common} - Unique ID (aka externalID) list (JSON ARRAY), you should ignore the first element. Indexed on the ObjID starting with index 1.
+* objects_ids.json.gz {common} - Unique ID (aka externalID) list (JSON array), you should ignore the first element. Indexed on the ObjID starting with index 1.
 
-* objects_avs.json.gz {view dependant} - tbd
+* objects_avs.json.gz {view dependant} - Attribute/Value pair indexes - gives you the index in the attrs and vals tables.
 
-* objects_offs.json.gz {view dependant} - tbd
+* objects_offs.json.gz {view dependant} - Index of the Attributes/Values pairs for the give object. You should ignore the first element. Indexed on the ObjID starting with index 1.
+
+***Note*** that older version may omit the display_precsion field in the attrs table.
 
 ![PropertiesJson](PropertiesJson.svg)
 
@@ -30,7 +32,11 @@ Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL 
 
   * _objects_id - Unique ID (aka externalID) / ViewableID list, you should ignore the first element. Indexed on the ObjID(id) starting with index 1.
 
-  * _objects_eav - ObjID/AttrID/ValID triplets
+  * _objects_eav - ObjID/AttrID/ValID triplets. Indexes in the attr/val/id tables.
+
+***Note*** that older version may omit the display_precsion field in the attrs table.
+
+***Note*** that older version may contains an ercv table. You can safely ignore that empty table.
 
 ![PropertiesSql](PropertiesSql.svg)
 
@@ -42,7 +48,7 @@ SVF2 is a post process of the SVF format. So under the hood the SVF format still
 
 * vals.json {common} - Attribute Values list (JSON array), you should ignore the first element. Indexed on the ValID starting with index 1.
 
-* ids.json {common} - Unique ID (aka externalID) list (JSON ARRAY), you should ignore the first element. Indexed on the ObjID starting with index 1.
+* ids.json {common} - Unique ID (aka externalID) list (JSON array), you should ignore the first element. Indexed on the ObjID starting with index 1.
 
 * avs.idx {view dependant} - Offset in pack file to retrieve attributes for a given ObjID (Uint32 array), you should ignore the first element. Indexed on the ObjID starting with index 1.
 
@@ -50,13 +56,65 @@ SVF2 is a post process of the SVF format. So under the hood the SVF format still
 
 * dbid.idx {view dependant} - SVF to SVF2 ID mapping (Uint32 array), you should ignore the first element. Indexed on the SVF ObjID starting with index 1.
 
+![PropertiesSql](PropertiesSvf2.svg)
+
 #### Attribute Definition
 
-tbd
+* id {integer} Attribute ID.
+
+* name {string} Name of the attribute.
+
+* category {string} Category in which the attribute fits. All speciall categories are surrounded by '__', ex: `__parent__`.
+
+* data_type {string}
+
+```javascript
+  enum AttributeType {
+    // Numeric types
+    Unknown = 0,
+    Boolean = 1,
+    Integer = 2, // Color
+    Double = 3,
+    Float = 4,
+
+    // Special types
+    BLOB = 10,
+    DbKey = 11, // represents a link to another object in the database, using database internal ID
+
+    // String types 
+    String = 20,
+    LocalizableString = 21,
+    DateTime = 22,// ISO 8601 date
+    GeoLocation = 23, // LatLonHeight - ISO6709 Annex H string, e.g: "+27.5916+086.5640+8850/" for Mount Everest
+    Position = 24 // "x y z w" space separated string representing vector with 2,3 or 4 elements
+  }
+```
+
+* units or data_type_context {string, nullable} Units string to append to value.
+
+* description {string, nullable} Short description for the attribute.
+
+* display_name {string, nullable} Use that string for UI display instead of field `name`.
+
+* flags {integer} Describe attrbiute behaviour.
+
+```javascript
+  enum AttributeFlags {
+    Hidden = 1 << 0, // Attribute will not be displayed in default GUI property views.
+    DontIndex = 1 << 1, // Attribute will not be indexed by the search service.
+    DirectStorage = 1 << 2, // Attribute is not worth de-duplicating (e.g. vertex data or dbId reference)
+    ReadOnly = 1 << 3 // Attribute is read-only (used when writing back to the design model, in e.g. Revit)
+  }
+```
+
+* display_precision {integer, nullable} Only exist on latest version. Prefered number of decimals for display (defaults to 3).
 
 ### ObjectID
 
-tbd
+Object ID are numbers to identify objects in a model. They are unique for a given model/version, but not guaranteed to be persistent (except for SVF2) between releases.
+
+SVF and SQL shares the same IDs. However, SVF2 object IDs are different from the SVF object IDs. SVF2 object IDs should be persistent between
+different versions of the same model. You need to use the SVF2(dbid.idx) file to map IDs between SVF and SVF2.
 
 ## API definition
 
