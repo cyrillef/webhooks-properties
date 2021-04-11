@@ -691,7 +691,7 @@ class PropertiesController {
 		}
 	}
 
-	public async checks(args?: string[]): Promise<void> {
+	public async checks2(args?: string[]): Promise<void> {
 		if (args.length < 1 || !urns.hasOwnProperty(args[0]))
 			return (this.help(args));
 		try {
@@ -720,8 +720,14 @@ class PropertiesController {
 				//PropertiesController.compareObjects(svfExtIds, svf2ExtIds, `${fn2} svf-svf2 externalids`, null); // expected to fail
 				const svfList: string[] = Object.values(svfExtIds.data.collection).sort() as string[];
 				const svf2List: string[] = hasSVF2 && Object.values(svf2ExtIds.data.collection).sort() as string[];
-				hasSVF2 && PropertiesController.compareObjects(svfList, svf2List, `${fn2} ${guid} svf-svf2 externalids`, undefined, false);
-				//console.log(svfList.length, svf2List.length, svfList, svf2List);
+				//hasSVF2 && PropertiesController.compareObjects(svfList, svf2List, `${fn2} ${guid} svf-svf2 externalids`, undefined, false);
+				let different: JsonDiff = hasSVF2 && await PropertiesController.compareObjectsWithSVF2(
+					svfList, svf2List, undefined, `${fn2} ${guid} svf-svf2 externalids`,
+					`./data/${fn2}-${guid}-externalids-svf-svf2.diff`,
+					false
+				);
+				await PropertiesController.saveJson(`data/${fn2}-${guid}-externalids-list.svf`, svfList);
+				await PropertiesController.saveJson(`data/${fn2}-${guid}-externalids-list.svf2`, svf2List);
 
 				const svfIds: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-ids.svf`);
 				const sqlIds: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-ids.sql`);
@@ -817,7 +823,7 @@ class PropertiesController {
 				hasSVF2 && JsonDiff.sortObjectProperties(svf2PropertiesInternals, [PropertiesController.sortKey]); // Sort again since we changed objectIDs
 				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-internals.svf.remapped`, svfPropertiesInternals);
 				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-internals.svf2.remapped`, svf2PropertiesInternals);
-				let different: JsonDiff = hasSVF2 && await PropertiesController.compareObjectsWithSVF2(
+				different = hasSVF2 && await PropertiesController.compareObjectsWithSVF2(
 					svfPropertiesInternals, svf2PropertiesInternals, PropertiesController.sortByObjectID, `${fn2} ${guid} svf-svf2 internal properties`,
 					`./data/${fn2}-${guid}-properties-internals-svf-svf2.diff`,
 					false
@@ -858,6 +864,176 @@ class PropertiesController {
 				);
 
 				//break;
+			}
+		} catch (ex) {
+			console.error(ex);
+		}
+	}
+
+	protected async EvalDiffWith(fn: string, guid: string, which: string, compVersion: string = 'svf-sql', key: string = undefined, bConsole: boolean = false): Promise<JsonDiff> {
+		const tp: string[] = compVersion.split('-');
+		const obj0: any = await PropertiesController.loadJson(`data/${fn}-${guid}-${which}.${tp[0]}`);
+		const obj1: any = await PropertiesController.loadJson(`data/${fn}-${guid}-${which}.${tp[1]}`);
+		let different: JsonDiff = await PropertiesController.compareObjectsWithSVF2(
+			obj0, obj1,
+			key,
+			`${fn} ${guid} ${compVersion} ${which}`,
+			`./data/${fn}-${guid}-${which}-${compVersion}.diff`,
+			bConsole
+		);
+		return (different);
+	}
+
+	protected RemapIDsInSvf2Tree(node: any, idMapping: any): void {
+		const traverseSvf2TreeNodes = (elt: any): void => {
+			if (elt.objectid)
+				elt.objectid = idMapping[elt.objectid];
+			if (elt.name)
+				elt.name = this.renameSvfNodeName(elt.name);
+			if (elt.objects && elt.objects.length)
+				elt.objects.map((subelt: any): void => traverseSvf2TreeNodes(subelt));
+		};
+		traverseSvf2TreeNodes(node);
+	}
+
+	protected RemapSvf2Properties(nodes: any[], idMapping: any): void {
+		const iterateSvf2Nodes = (elt: any): void => {
+			if (elt.objectid)
+				elt.objectid = idMapping[elt.objectid];
+			if (elt.name)
+				elt.name = this.renameSvfNodeName(elt.name);
+			if (elt.Name)
+				elt.Name = this.renameSvfNodeName(elt.Name);
+			if (elt.NAME)
+				elt.NAME = this.renameSvfNodeName(elt.NAME);
+			if (elt.GLOBALID && Array.isArray(elt.GLOBALID))
+				elt.GLOBALID = elt.GLOBALID.sort();
+			if (elt.parent)
+				elt.parent = idMapping[elt.parent];
+			if (elt.child)
+				elt.child = elt.child.map((id: number): number => idMapping[id]);
+			if (elt.properties)
+				Object.keys(elt.properties).map((category: any): void => iterateSvf2Nodes(elt.properties[category]));
+		};
+		nodes.map(iterateSvf2Nodes);
+	}
+
+	protected renameSvfNodeName(name: string): string {
+		name = name.trim();
+		//let regex = new RegExp(/^(.*)[:#]\d+$/); //new RegExp('^(.*)[:#]\\d+$');
+		let regex = new RegExp(/^(.*?(?=[:#]\d+))/);
+		let r = name.match(regex);
+		if (r !== null)
+			return (r[1]);
+		regex = new RegExp(/^(.*) \[\d+]$/); // new RegExp('^(.*) \\[.*\\]$');
+		r = name.match(regex);
+		if (r !== null)
+			return (r[1]);
+		return (name);
+	}
+
+	protected RemapNamesInSvfTree(node: any): void {
+		const traverseSvfTreeNodes = (elt: any): void => {
+			if (elt.name)
+				elt.name = this.renameSvfNodeName(elt.name);
+			if (elt.objects && elt.objects.length)
+				elt.objects.map((subelt: any): void => traverseSvfTreeNodes(subelt));
+		};
+		traverseSvfTreeNodes(node);
+	}
+
+	protected RemapSvfProperties(nodes: any[]): void {
+		const iterateSvfNodes = (elt: any): void => {
+			if (elt.name)
+				elt.name = this.renameSvfNodeName(elt.name);
+			if (elt.Name)
+				elt.Name = this.renameSvfNodeName(elt.Name);
+			if (elt.NAME)
+				elt.NAME = this.renameSvfNodeName(elt.NAME);
+			// if (elt.GUID)
+			// 	delete elt.GUID;
+			if (elt.GLOBALID && Array.isArray(elt.GLOBALID))
+				elt.GLOBALID = elt.GLOBALID.sort();
+			if (elt.properties)
+				Object.keys(elt.properties).map((category: any): void => iterateSvfNodes(elt.properties[category]));
+		};
+		nodes.map(iterateSvfNodes);
+	}
+
+	public async checks(args?: string[]): Promise<void> {
+		if (args.length < 1 || !urns.hasOwnProperty(args[0]))
+			return (this.help(args));
+		try {
+			const fn2: string = args[0]; // Model translated with SVF2
+			const def: any = urns[fn2];
+			const guids: string[] = this.guids(def);
+			const guids3d: string[] = this.guids(def, true);
+			for (let i = 0; i < guids.length; i++) {
+				const guid: string = guids[i];
+				console.log(`Verifying ${fn2} using GUID ${guid}`);
+				const hasSVF2: boolean = def.type === 'svf2' && guids3d.includes(guid);
+				const idMapping: any = hasSVF2 && await this.svf2_svfTosvf2_mapping(null, fn2, guid, true); // { svf2ID: svfID }
+
+
+				const svfLoad: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-load.svf`);
+				const sqlLoad: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-load.sql`);
+				const svf2Load: any = hasSVF2 && await PropertiesController.loadJson(`data/${fn2}-${guid}-load.svf2`);
+				PropertiesController.console(
+					svfLoad.data.maxId === sqlLoad.data.maxId && (!hasSVF2 || svfLoad.data.maxId === svf2Load.data.maxId),
+					`${fn2} ${guid} number of entries`
+				);
+
+
+				let diff: JsonDiff = await this.EvalDiffWith(fn2, guid, 'externalids', 'svf-sql', undefined, false);
+				const svfExtIds: any = await PropertiesController.loadJson(`data/${fn2}-${guid}-externalids.svf`);
+				const svfList: string[] = Object.values(svfExtIds.data.collection).sort() as string[];
+				await PropertiesController.saveJson(`data/${fn2}-${guid}-externalids-list.svf`, svfList);
+				const svf2ExtIds: any = hasSVF2 && await PropertiesController.loadJson(`data/${fn2}-${guid}-externalids.svf2`);
+				const svf2List: string[] = hasSVF2 && Object.values(svf2ExtIds.data.collection).sort() as string[];
+				hasSVF2 &&await PropertiesController.saveJson(`data/${fn2}-${guid}-externalids-list.svf2`, svf2List);
+				diff = hasSVF2 && await this.EvalDiffWith(fn2, guid, 'externalids-list', 'svf-svf2', undefined, false);
+
+
+				diff = await this.EvalDiffWith(fn2, guid, 'ids', 'svf-sql', undefined, false); // we cannot compare svf-svf2 ids
+				diff = await this.EvalDiffWith(fn2, guid, 'ids-range', 'svf-sql', undefined, false); // we cannot compare svf-svf2 ids
+
+
+				diff = await this.EvalDiffWith(fn2, guid, 'tree', 'svf-sql', PropertiesController.sortByObjectID, false);
+				const svfTree: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-tree.svf`);
+				hasSVF2 && this.RemapNamesInSvfTree(svfTree.data);
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-tree-remapped.svf`, svfTree);
+				const svf2Tree: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-tree.svf2`);
+				hasSVF2 && this.RemapIDsInSvf2Tree(svf2Tree.data, idMapping);
+				hasSVF2 && JsonDiff.sortObjectProperties(svf2Tree, [PropertiesController.sortByObjectID]); // Sort again since we changed objectIDs
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-tree-remapped.svf2`, svf2Tree);
+				diff = hasSVF2 && await this.EvalDiffWith(fn2, guid, 'tree-remapped', 'svf-svf2', PropertiesController.sortByObjectID, false);
+
+
+				diff = await this.EvalDiffWith(fn2, guid, 'properties-internals', 'svf-sql', PropertiesController.sortByObjectID, false);
+				const svfPropertiesInternals: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-properties-internals.svf`);
+				hasSVF2 && this.RemapSvfProperties(svfPropertiesInternals.data.collection);
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-internals-remapped.svf`, svfPropertiesInternals);
+				const svf2PropertiesInternals: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-properties-internals.svf2`);
+				hasSVF2 && this.RemapSvf2Properties(svf2PropertiesInternals.data.collection, idMapping);
+				hasSVF2 && JsonDiff.sortObjectProperties(svf2PropertiesInternals, [PropertiesController.sortKey]); // Sort again since we changed objectIDs
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-internals-remapped.svf2`, svf2PropertiesInternals);
+				diff = hasSVF2 && await this.EvalDiffWith(fn2, guid, 'properties-internals-remapped', 'svf-svf2', PropertiesController.sortByObjectID, false);
+
+				diff = await this.EvalDiffWith(fn2, guid, 'properties', 'svf-sql', PropertiesController.sortByObjectID, false);
+				const svfProperties: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-properties.svf`);
+				hasSVF2 && this.RemapSvfProperties(svfProperties.data.collection);
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-remapped.svf`, svfProperties);
+				const svf2Properties: any = hasSVF2 && await PropertiesController.loadJson(`./data/${fn2}-${guid}-properties.svf2`);
+				hasSVF2 && this.RemapSvf2Properties(svf2Properties.data.collection, idMapping);
+				hasSVF2 && JsonDiff.sortObjectProperties(svf2Properties, [PropertiesController.sortKey]); // Sort again since we changed objectIDs
+				hasSVF2 && await PropertiesController.saveJson(`./data/${fn2}-${guid}-properties-remapped.svf2`, svf2Properties);
+				diff = hasSVF2 && await this.EvalDiffWith(fn2, guid, 'properties-remapped', 'svf-svf2', PropertiesController.sortByObjectID, false);
+
+
+				// Now compare with Forge
+				diff = await this.EvalDiffWith(fn2, guid, 'tree', 'svf-forge', PropertiesController.sortByObjectID, false);
+				diff = await this.EvalDiffWith(fn2, guid, 'properties', 'svf-forge', PropertiesController.sortByObjectID, false);
+
 			}
 		} catch (ex) {
 			console.error(ex);

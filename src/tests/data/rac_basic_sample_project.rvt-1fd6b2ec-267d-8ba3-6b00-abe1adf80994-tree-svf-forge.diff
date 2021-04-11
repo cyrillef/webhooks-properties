@@ -1,0 +1,13 @@
+{
+    "//data/objects/[objectid=1]objects/[objectid=62]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=791]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=2496]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=3317]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=3379]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=4478]objects/[objectid=4479]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=4478]objects/": "warning: arrays do not have the same length",
+    "//data/objects/[objectid=1]objects/[objectid=4540]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=4696]": "missing on right",
+    "//data/objects/[objectid=1]objects/[objectid=4723]": "missing on right",
+    "//data/objects/[objectid=1]objects/": "warning: arrays do not have the same length"
+}

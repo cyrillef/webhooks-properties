@@ -152,12 +152,19 @@ export class SvfPropertiesController implements Controller {
 			// await propsDb.load(dbBuffers);
 			const propsDb: string[] = await Utils.jsonGzRoot(dbBuffers.objects_ids)
 
-			const ids: { [index: string]: number } = {};
-			if (externalIds && externalIds.length)
-				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
-			else
-				propsDb.slice(1).map((extId: string): any => ids[extId.trim()] = propsDb.indexOf(extId));
 
+			let ids: { [index: string]: number } = {};
+			if (externalIds && externalIds.length) {
+				externalIds.map((extid: string): any => ids[extid] = propsDb.indexOf(extid.trim()));
+			} else {
+				//propsDb.slice(1).map((extId: string, ind: number): any => ids[extId.trim()] = ind) ; // propsDb.indexOf(extId)); // too slow for large models
+
+				const arr: any[] = new Array(propsDb.length - 1);
+				for (let i = 1; i < propsDb.length; i++)
+					arr[i - 1] = [propsDb[i].trim(), i];
+				const map: Map<string, number> = new Map<string, number>(arr);
+				ids = Object.fromEntries(map);
+			}
 			response.json({
 				data: {
 					collection: ids,
@@ -220,7 +227,7 @@ export class SvfPropertiesController implements Controller {
 			}
 			trees.sort((a: any, b: any): number => (a.objectid > b.objectid) ? 1 : ((b.objectid > a.objectid) ? -1 : 0));
 			trees = trees.filter((elt: any): boolean => elt.objectid != 0);
-			
+
 			response.json({
 				data: {
 					collection: trees,
@@ -320,9 +327,9 @@ export class SvfPropertiesController implements Controller {
 				keys.map((key: string): void => {
 					const values: string[] = key.split('.');
 					const attrID: number = values.length === 2 ?
-						  propsDb.attrs.findIndex((elt: any): boolean => elt[1] === values[0] && elt[5] === values[1])
+						propsDb.attrs.findIndex((elt: any): boolean => elt[1] === values[0] && elt[5] === values[1])
 						: propsDb.attrs.findIndex((elt: any): boolean => elt[5] === values[0]);
-					const avsIDs: number[] = propsDb.avs.map((elt: number, index: number): number | string => elt === attrID && (index % 2 === 0)? index / 2 : '').filter(String);
+					const avsIDs: number[] = propsDb.avs.map((elt: number, index: number): number | string => elt === attrID && (index % 2 === 0) ? index / 2 : '').filter(String);
 					dbIds = avsIDs.map((elt: number): number => propsDb.offs.filter((offset: number): boolean => offset <= elt).length - 1);
 					dbIds.map((id: number): Set<number> => idSet.add(id));
 				});
