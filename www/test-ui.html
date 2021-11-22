@@ -31,26 +31,28 @@
 	<script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
 	<link href="/styles/viewer.css" rel="stylesheet" />
 
-	<script src="/js/main.js"></script>
+	<script src="/js/ForgeViewer.js"></script>
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
 	<link href="/styles/dashboard.css" rel="stylesheet" />
 
 	<script>
 		// US
 		const urn_urbanhouse = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ';
-		const urn_rac =
-		'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA'; // <<- with AEC data
+		const urn_rac = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA'; // <<- with AEC data
+		
 		const urn_pier9 = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0';
 		const pier9_config = {
 			urn: urn_pier9,
 			ids: [3147]
 		};
+
 		const urn_bauma = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0';
 		const bauma_config = {
 			urn: urn_bauma,
 			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
 			offset: new THREE.Vector3(0, 5, 7),
 		};
+
 		// EMEA (seed and derivative)
 		const urn_specoffice = 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0';
 		const specoffice_config = {
@@ -66,17 +68,17 @@
 		const region = 'US';
 		let myViewer = null;
 
-		$(document).ready(function () {
-			//myViewer = new LocalViewer('myViewer', urn_pier9, '/token', region);
-			//myViewer = new LocalViewer('myViewer', pier9_config, '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
-			//myViewer = new LocalViewer('myViewer', bauma_config, '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
-			myViewer = new LocalViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_specoffice], '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_urbanhouse], '/token', region);
-			//myViewer = new LocalViewer('myViewer', [urn_rac], '/token', region); // <<- with AEC data
+		$(document).ready(() => {
+			//myViewer = new ForgeViewer('myViewer', urn_pier9, '/token', region);
+			//myViewer = new ForgeViewer('myViewer', pier9_config, '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_pier9, urn_bauma], '/token', region);
+			//myViewer = new ForgeViewer('myViewer', bauma_config, '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_pier9, bauma_config], '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_pier9, bauma_config, specoffice_config], '/token', region);
+			myViewer = new ForgeViewer('myViewer', [urn_pier9, specoffice_config], '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_specoffice], '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_urbanhouse], '/token', region);
+			//myViewer = new ForgeViewer('myViewer', [urn_rac], '/token', region); // <<- with AEC data
 			myViewer.setModelBrowserExcludeRoot(false);
 			myViewer.configureExtensions([
 				{

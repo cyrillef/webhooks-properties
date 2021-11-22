@@ -70,7 +70,7 @@ class TransformTool {
 		return (false);
 	}
 
-	protected onItemSelected(event: any) {
+	protected onItemSelected(event: any): void {
 		this._selectedFragProxyMap = {};
 		if (!event.fragIdsArray.length) {
 			this._hitPoint = null;

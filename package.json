@@ -1,44 +1,43 @@
 {
-  "name": "webhoob-properties",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/start.ts",
-  "scripts": {},
-  "author": "Cyrille Fauvel",
-  "license": "MIT",
-  "dependencies": {
-    "body-parser": "^1.19.0",
-    "chalk": "^2.4.2",
-    "compression": "^1.7.4",
-    "ejs": "^3.1.5",
-    "express": "^4.17.1",
-    "express-session": "^1.17.1",
-    "forge-apis": "^0.8.4",
-    "mkdirp": "^1.0.4",
-    "moment": "^2.29.1",
-    "rimraf": "^3.0.2",
-    "sequelize": "^6.5.0",
-    "spdy": "^4.0.2",
-    "sqlite3": "^5.0.2",
-    "superagent": "^6.1.0"
-  },
-  "devDependencies": {
-    "@types/chalk": "^2.2.0",
-    "@types/compression": "^1.7.0",
-    "@types/ejs": "^3.0.5",
-    "@types/express": "^4.17.11",
-    "@types/forge-apis": "^0.7.3",
-    "@types/forge-viewer": "^7.35.0",
-    "@types/mkdirp": "^1.0.1",
-    "@types/moment": "^2.13.0",
-    "@types/node": "^14.14.22",
-    "@types/rimraf": "^3.0.0",
-    "@types/sequelize": "^4.28.9",
-    "@types/spdy": "^3.4.4",
-    "@types/sqlite3": "^3.1.7",
-    "@types/superagent": "^4.1.10"
-  },
-  "prettier": {
-    "singleQuote": true
-  }
+	"name": "webhoob-properties",
+	"version": "1.0.0",
+	"description": "",
+	"main": "src/start.ts",
+	"scripts": {},
+	"author": "Cyrille Fauvel",
+	"license": "MIT",
+	"dependencies": {
+		"body-parser": "^1.19.0",
+		"chalk": "^4.1.2",
+		"compression": "^1.7.4",
+		"ejs": "^3.1.6",
+		"express": "^4.17.1",
+		"express-session": "^1.17.2",
+		"forge-apis": "^0.8.6",
+		"mkdirp": "^1.0.4",
+		"moment": "^2.29.1",
+		"rimraf": "^3.0.2",
+		"sequelize": "^6.9.0",
+		"spdy": "^4.0.2",
+		"sqlite3": "^4.2.0",
+		"superagent": "^6.1.0"
+	},
+	"devDependencies": {
+		"@types/compression": "^1.7.2",
+		"@types/ejs": "^3.1.0",
+		"@types/express": "^4.17.13",
+		"@types/forge-apis": "^0.8.2",
+		"@types/forge-viewer": "^7.55.1",
+		"@types/jquery": "^3.5.8",
+		"@types/mkdirp": "^1.0.2",
+		"@types/node": "^16.11.7",
+		"@types/rimraf": "^3.0.2",
+		"@types/sequelize": "^4.28.10",
+		"@types/spdy": "^3.4.5",
+		"@types/sqlite3": "^3.1.7",
+		"@types/superagent": "^4.1.13"
+	},
+	"prettier": {
+		"singleQuote": true
+	}
 }

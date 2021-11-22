@@ -1,14 +1,15 @@
 /// <reference types="forge-viewer" />
 declare type Region = 'US' | 'EMEA';
 declare type ResourceType = 'svf' | 'svf2' | 'otg' | 'svf_local' | 'svf2_local' | 'otg_local';
-interface URN_Config {
+interface ModelURN {
     urn: string;
     view?: Autodesk.Viewing.BubbleNodeSearchProps;
+    region?: Region;
     xform?: THREE.Matrix4;
     offset?: THREE.Vector3;
     ids?: number[];
 }
-declare function isURN_Config(object: any): object is URN_Config;
+declare function isModelURN(object: any): object is ModelURN;
 declare enum SelectionType {
     MIXED = 1,
     REGULAR = 2,
@@ -100,12 +101,12 @@ interface UIButtonDefinition {
     index?: number;
     children?: UIButtonDefinition[];
     bistate?: BistateButtonOptions;
-    onClick?: (event: Event) => void;
-    onMouseOut?: (event: Event) => void;
-    onMouseOver?: (event: Event) => void;
-    onVisibiltyChanged?: (event: Event) => void;
-    onStateChanged?: (event: Event) => void;
-    onCollapseChanged?: (event: Event) => void;
+    onClick?: Autodesk.Viewing.ViewerEvent;
+    onMouseOut?: Autodesk.Viewing.ViewerEvent;
+    onMouseOver?: Autodesk.Viewing.ViewerEvent;
+    onVisibiltyChanged?: Autodesk.Viewing.ViewerEvent;
+    onStateChanged?: Autodesk.Viewing.ViewerEvent;
+    onCollapseChanged?: Autodesk.Viewing.ViewerEvent;
 }
 interface ControlEvent {
     target: Autodesk.Viewing.UI.Control;
@@ -119,6 +120,9 @@ declare class BistateButton extends Autodesk.Viewing.UI.Button {
 }
 interface UIConfiguration {
     [key: string]: UIToolbarDefinition;
+}
+interface UIConfigurationHandlers {
+    [index: string]: Autodesk.Viewing.ViewerEvent;
 }
 declare type UnitType = 'decimal-ft' | 'ft' | 'ft-and-decimal-in' | 'decimal-in' | 'fractional-in' | 'm' | 'cm' | 'mm' | 'm-and-cm';
 interface VisualClustersExtensionOptions {
@@ -175,11 +179,10 @@ interface ViewerConstructorOptions {
     theme?: 'dark-theme' | 'light-theme' | string;
     [key: string]: any;
 }
-declare class LocalViewer {
+declare class ForgeViewer {
     private div;
-    private urn;
+    private urns;
     private getAccessToken;
-    private region;
     private endpoint;
     private proxy;
     private viewer;
@@ -189,6 +192,7 @@ declare class LocalViewer {
     private disabledExtensions;
     private ui_definition;
     private ui_references;
+    private ui_handlers;
     private viewerAggregateMode;
     private documents;
     private models;
@@ -206,22 +210,22 @@ declare class LocalViewer {
      * @param region {Region?} (Optional) Region in which the resource is located. Defaults to US. Possible values are US | EMEA
      * @param endpoint {string?} (Optional) When using OTG|SVF2 with a local server, provide the endpoint to use to access the OTG|SVF2 CDN server
      */
-    constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string);
-    configureExtensions(extensions: (string | ViewerExtensionsConfiguration)[], disabledExtensions?: {
+    constructor(div: HTMLElement | string, urn: string | ModelURN | (string | ModelURN)[], getAccessToken: Function | string, endpoint?: string);
+    configureExtensions(extensions: string | (string | ViewerExtensionsConfiguration)[], disabledExtensions?: {
         [index: string]: boolean;
     }): void;
     private loadExtensions;
     private reconfigureExtensions;
-    configureUI(ui: UIConfiguration): void;
+    configureUI(ui: string | UIConfiguration, uiHandlers?: UIConfigurationHandlers): Promise<void>;
     enableWorkersDebugging(): void;
     setModelBrowserExcludeRoot(flag?: boolean): void;
+    setOptions(evt: any): void;
     start(config?: ResourceType, enableInlineWorker?: boolean): void;
     protected loadModels(): Promise<void>;
     protected addViewable(urn: string, view?: Autodesk.Viewing.BubbleNodeSearchProps, xform?: THREE.Matrix4, offset?: THREE.Vector3, ids?: number[]): Promise<Autodesk.Viewing.Model>;
     protected onModelsLoaded(models: Autodesk.Viewing.Model[]): void;
     switchToDarkMode(): void;
     protected unloadModel(model: Autodesk.Viewing.Model): void;
-    setOptions(evt: any): void;
     private getAccessTokenFct;
     useProxy(path?: string, mode?: string): void;
     private activateProxy;
@@ -560,16 +564,27 @@ declare class LocalViewer {
     getGroupCtrl(tb: Autodesk.Viewing.UI.ToolBar, id: string): Autodesk.Viewing.UI.ControlGroup;
     protected createControlGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.ControlGroup;
     protected createRadioButtonGroup(viewerToolbar: Autodesk.Viewing.UI.ToolBar, groupName: string): Autodesk.Viewing.UI.RadioButtonGroup;
-    protected createButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
-    protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button;
+    private static string2ButtonState;
+    private static string2CodeOrFunction;
+    protected createButton(id: string, def: UIButtonDefinition, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.Button;
+    protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.Button;
     protected assignComboButton(combo: Autodesk.Viewing.UI.ComboButton, button: Autodesk.Viewing.UI.Button): void;
     protected onClickComboChild(evt: Event): void;
     getUI(): string[];
     getControls(searchpath: string | string[]): Autodesk.Viewing.UI.Control[];
     getControl(idpath: string): Autodesk.Viewing.UI.Control;
     protected _dumb_(evt: Event): void;
-    buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[];
+    buildUI(ui_definition?: UIConfiguration, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.ToolBar[];
     moveCtrl(ctrl: string | Autodesk.Viewing.UI.Control, parent: string | Autodesk.Viewing.UI.ControlGroup | Autodesk.Viewing.UI.ToolBar, options?: Autodesk.Viewing.UI.AddControlOptions): void;
     moveToolBar(tb?: string | Autodesk.Viewing.UI.ToolBar, docking?: ToolBarDockingSite, offset?: string): void;
+    getVizExtension(): Autodesk.Extensions.DataVisualization;
+    createSpriteStyle(color?: string | number | THREE.Color, spriteIconUrl?: string, highlightedColor?: THREE.Color, highlightedUrl?: string, animatedUrls?: string[]): Autodesk.DataVisualization.Core.ViewableStyle;
+    createSprites(positions: {
+        dbId: number;
+        position: THREE.Vector3;
+        style: Autodesk.DataVisualization.Core.ViewableStyle;
+    }[], defaultStyle: Autodesk.DataVisualization.Core.ViewableStyle, spriteSize?: number): Autodesk.DataVisualization.Core.ViewableData;
+    addSpritesToScene(sprites: Autodesk.DataVisualization.Core.ViewableData): Promise<void>;
+    setSpritesVisbility(showSprites?: boolean): Promise<void>;
     private options;
 }

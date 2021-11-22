@@ -9,5 +9,5 @@
 	},
 	"include": [
 		"./**/*.ts"
-	]
+, "js/wolfgang-ext1.ts.src", "extensions/transform-tool.ts.src"	]
 }

@@ -20,7 +20,7 @@ Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL 
 
 * objects_offs.json.gz {view dependant} - Index of the Attributes/Values pairs for the give object. You should ignore the first element. Indexed on the ObjID starting with index 1.
 
-***Note*** that older version may omit the display_precsion field in the attrs table.
+***Note*** that older version may omit the display_precision field in the attrs table.
 
 ![PropertiesJson](PropertiesJson.svg)
 
@@ -42,7 +42,7 @@ Support SVF, SQL, and SVF2 formats - SVF (.json.gz Viewer optimized files), SQL 
 
 #### SVF2
 
-SVF2 is a post process of the SVF format. So under the hood the SVF format still exists, and can be retrieved from the OTG manifest (SVF2 manifest). Remeber SVF is for 3D view only, so SVF2 covers 3D views only as well. The SVF2 Property Database is composed of 3 common files, and 3 view dependant files.
+SVF2 is a post process of the SVF format. So under the hood the SVF format still exists, and can be retrieved from the OTG manifest (SVF2 manifest). Remember SVF is for 3D view only, so SVF2 covers 3D views only as well. The SVF2 Property Database is composed of 3 common files, and 3 view dependant files.
 
 * attrs.json {common} - Attribute Definition list (JSON array), you should ignore the first element. Indexed on the AttrID starting with index 1. For Attribute Definition details see below.
 

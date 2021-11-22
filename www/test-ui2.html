@@ -31,165 +31,48 @@
 	<script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
 	<link href="/styles/viewer.css" rel="stylesheet" />
 
-	<script src="/js/main.js"></script>
+	<script src="/js/ForgeViewer.js"></script>
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
 	<link href="/styles/dashboard.css" rel="stylesheet" />
-
-	<script src="/js/wolfgang-ext1.js"></script>
-	<script src="/js/wolfgang-ext2.js"></script>
 
 	<script>
 		const region = 'US';
 		let myViewer = null;
 
-		// US
-		const pier9 = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
-			ids: [3147],
-			region: 'US',
-		}
-		const urbanhouse = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ',
-			region: 'US',
-		};
-		const rac = { // <<- with AEC data
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA',
-			region: 'US',
-		};
-		const bauma = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0',
-			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
-			offset: new THREE.Vector3(0, 5, 7),
-			region: 'US',
-		};
-		// EMEA (seed and derivative)
-		const specoffice = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0',
-			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
-			offset: new THREE.Vector3(-100, 80, 5),
-			view: {
-				guid: '071c5bcb-a8bb-a538-8b19-b08d814609d2',
-				/*role type*/
-			},
-			region: 'EMEA',
-		};
+		const logEvent = (evt) => console.log(evt);
 
-		class myDerivedViewer extends LocalViewer {
+		$(document).ready(async () => {
+			let models = await fetch('/support/models.json');
+			models = await models.json();
 
-			constructor(div, urn, getAccessToken, region = undefined, endpoint = undefined) {
-				urn =
-					// Single Model
-					pier9.urn;
-				//pier9;
-				//bauma;
-				//specoffice.urn;
-				//urbanhouse.urn;
-				//rac.urn;
+			myViewer = new ForgeViewer(
+				'myViewer', 
+
+				// Single Model
+				//models[region][3].urn, /* 0 - 3 */
+				//{ urn: models[region][0].urn, region: region },
+				models[region][3], /* 0 - 3 */
+				//models['EMEA'][0],
 
 				// Multi Models
-				//[pier9.urn, bauma.urn];
-				//[pier9.urn, bauma];
-				//[pier9.urn, bauma, specoffice];
-				//[pier9.urn, specoffice];
+				//[models[region][2], models[region][3]],
+				//[models[region][2], models[region][3]],
+				//[models[region][2], models[region][3], models['EMEA'][0]],
+				//[models['EMEA'][0], models[region][2], models[region][3]],
+				//[models[region][2], models['EMEA'][0]],
 
-				super(div, urn, getAccessToken, region, endpoint);
-
-				this.setModelBrowserExcludeRoot(false);
-				this.configureExtensions([
-					'Autodesk.DocumentBrowser',
-					//'Autodesk.Measure',
-					{
-						id: 'Autodesk.Measure',
-						options: {
-							units: 'mm',
-							precision: 2,
-						},
-						//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
-					},
-				]);
-				this.configureUI({
-					leftToolbar: {
-						isVertical: true,
-						docking: 'left', // top / bottom / right
-						leftGroup1: [{
-								id: 'mybutton1',
-								iconClass: ['fa', 'fa-fire'],
-								tooltip: 'my button 1',
-								onClick: (evt) => this.fireButton(evt)
-							},
-							{
-								id: 'mybutton5',
-								iconClass: ['fa', 'fa-fighter-jet'],
-								tooltip: 'my button 5',
-								onClick: (evt) => this.fighterJetButon(evt)
-							},
-						],
-					},
-				});
-			}
-
-			async fireButton(evt) {
-				console.log(evt);
-				let ext1 = this.viewer.getExtension('Autodesk.MyExtension1') || await this.viewer.loadExtension('Autodesk.MyExtension1');
-				ext1.getPanel();
-
-			}
-
-			async fighterJetButon(evt) {
-				console.log(evt);
-				//let ext2 = this.viewer.getExtension('Autodesk.MyExtension2') || await this.viewer.loadExtension('Autodesk.MyExtension2');
-				//ext2.getPanel();
-				//let result = this.viewer.unloadDocumentNode(manifestNode: any/*BubbleNode*/);
-
-				// const _conf = this.viewer.config;
-				// this.viewer.tearDown();
-				// this.viewer.setUp(_conf);
-				
-
-				Autodesk.Viewing.Document.load(
-					'urn:' + bauma.urn,
-					(doc) => {
-						const viewable = doc.getRoot().getDefaultGeometry();
-						let options = {
-							preserveView: false,
-							keepCurrentModels: false
-						};
-						this.viewer.loadDocumentNode(doc, viewable, options);
-					},
-					(code) => console.error(`Could not load document (${code}).`)
-				);
-
-			}
-
-			onExtensionActivated(extensionInfo) {
-				console.log('onExtensionActivated', extensionInfo);
-			}
-			onExtensionDeactivated(extensionInfo) {
-				console.log('onExtensionDeactivated', extensionInfo);
-			}
-			onExtensionLoaded(extensionInfo) {
-				console.log('onExtensionLoaded', extensionInfo);
-			}
-			onExtensionPreActivated(extensionInfo) {
-				console.log('onExtensionPreActivated', extensionInfo);
-			}
-			onExtensionPreDeactivated(extensionInfo) {
-				console.log('onExtensionPreDeactivated', extensionInfo);
-			}
-			onExtensionPreLoaded(extensionInfo) {
-				console.log('onExtensionPreLoaded', extensionInfo);
-			}
-			onExtensionPreUnloaded(extensionInfo) {
-				console.log('onExtensionPreUnloaded', extensionInfo);
-			}
-			onExtensionUnloaded(extensionInfo) {
-				console.log('onExtensionUnloaded', extensionInfo);
-			}
-
-		}
-
-		$(document).ready(function () {
-			myViewer = new myDerivedViewer('myViewer', null, '/token', region);
+				'/token'
+			);
+			myViewer.setModelBrowserExcludeRoot(false);
+			myViewer.configureExtensions('/support/ext2.json');
+			await myViewer.configureUI(
+				'/support/ui2.json',
+				{
+					logEvent,
+					'myViewer.onMyButton': myViewer.onMyButton,
+					'myViewer.onMyButton2': (evt) => console.log(evt)
+				}
+			);
 			myViewer.start('svf');
 		});
 	</script>

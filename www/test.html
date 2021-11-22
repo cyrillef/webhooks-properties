@@ -31,85 +31,49 @@
 	<script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
 	<link href="/styles/viewer.css" rel="stylesheet" />
 
-	<script src="/js/main.js"></script>
+	<script src="/js/ForgeViewer.js"></script>
 	<link href="/styles/dark-mode.css" rel="stylesheet" />
 	<link href="/styles/dashboard.css" rel="stylesheet" />
+
+	<script src="/js/THREE.MeshLine.r71.js"></script>
+	<script src="/extensions/Autodesk.DataVisualization.Admin.js"></script>
 
 	<script>
 		const region = 'US';
 		let myViewer = null;
 
-		// US
-		const pier9 = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0',
-			ids: [3147],
-			region: 'US',
-		}
-		const urbanhouse = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ',
-			region: 'US',
-		};
-		const rac = { // <<- with AEC data
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA',
-			region: 'US',
-		};
-		const bauma = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0',
-			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
-			offset: new THREE.Vector3(0, 5, 7),
-			region: 'US',
-		};
-		// EMEA (seed and derivative)
-		const specoffice = {
-			urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0',
-			xform: (new THREE.Matrix4()).makeScale(1, 1, 1),
-			offset: new THREE.Vector3(-100, 80, 5),
-			view: {
-				guid: '071c5bcb-a8bb-a538-8b19-b08d814609d2',
-				/*role type*/
-			},
-			region: 'EMEA',
-		};
+		class myDerivedViewer extends ForgeViewer {
 
-		class myDerivedViewer extends LocalViewer {
-
-			constructor(div, urn, getAccessToken, region = undefined, endpoint = undefined) {
-				urn =
-				// Single Model
-				pier9.urn;
-				//pier9;
-				//bauma;
-				//specoffice.urn;
-				//urbanhouse.urn;
-				//rac.urn;
-
-				// Multi Models
-				//[pier9.urn, bauma.urn];
-				//[pier9.urn, bauma];
-				//[pier9.urn, bauma, specoffice];
-				//[pier9.urn, specoffice];
-
-				super(div, urn, getAccessToken, region, endpoint);
-
+			constructor(div, urn, getAccessToken, endpoint = undefined) {
+				super(div, urn, getAccessToken, endpoint);
 				this.setModelBrowserExcludeRoot(false);
-				this.configureExtensions([
-					'Autodesk.DocumentBrowser',
-					//'Autodesk.Measure',
-					{
-						id: 'Autodesk.Measure',
-						options: {
-							units: 'mm',
-							precision: 2,
-						},
-						//event: Autodesk.Viewing.MODEL_ROOT_LOADED_EVENT,
-					},
-				]);
+				this.configureExtensions('/support/extDataViz.json');
 			}
 
 		}
 
-		$(document).ready(function () {
-			myViewer = new myDerivedViewer('myViewer', null, '/token', region);
+		$(document).ready(async () => {
+			let models = await fetch('/support/models.json');
+			models = await models.json();
+
+			myViewer = new myDerivedViewer(
+				'myViewer', 
+				
+				// Single Model
+				models[region][4].urn, /* 0 - 4 */
+				//{ urn: models[region][0].urn, region: region },
+				//models[region][3], /* 0 - 4 */
+				//models['EMEA'][0],
+
+				// Multi Models
+				//[models[region][2], models[region][3]],
+				//[models[region][2], models[region][3]],
+				//[models[region][2], models[region][3], models['EMEA'][0]],
+				//[models['EMEA'][0], models[region][2], models[region][3]],
+				//[models[region][2], models['EMEA'][0]],
+
+				'/token');
+
 			myViewer.start('svf');
 		});
 	</script>

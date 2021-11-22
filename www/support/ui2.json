@@ -1,0 +1,298 @@
+{
+	"default": {
+		"myTools": [
+			{
+				"id": "mybutton10",
+				"iconClass": [
+					"fa",
+					"fa-bus"
+				],
+				"tooltip": "my button 10",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton11",
+				"iconClass": [
+					"fa",
+					"fa-taxi"
+				],
+				"tooltip": "my button 11",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton12",
+				"iconClass": [
+					"fa",
+					"fa-eraser"
+				],
+				"tooltip": "my button 12",
+				"onClick": "logEvent"
+			}
+		],
+		"navTools": [
+			{
+				"id": "mybutton0",
+				"iconClass": [
+					"fa",
+					"fa-asterisk"
+				],
+				"tooltip": "my button 0",
+				"onClick": "myViewer.onMyButton"
+			},
+			{
+				"id": "mybutton00",
+				"iconClass": [
+					"fa",
+					"fa-asterisk"
+				],
+				"tooltip": "my button 00",
+				"onClick": "myViewer.onMyButton2"
+			}
+		]
+	},
+	"rightToolbar": {
+		"isVertical": true,
+		"docking": "right",
+		"rightGroup1": [
+			{
+				"id": "mybutton1",
+				"iconClass": [
+					"fa",
+					"fa-fire"
+				],
+				"tooltip": "my button 1",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton2",
+				"iconClass": [
+					"fa",
+					"fa-bullhorn"
+				],
+				"tooltip": "my button 2",
+				"onClick": "logEvent",
+				"children": [
+					{
+						"id": "mybutton3",
+						"iconClass": [
+							"fa",
+							"fa-bug"
+						],
+						"tooltip": "my button 3",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton4",
+						"iconClass": [
+							"fa",
+							"fa-car"
+						],
+						"tooltip": "my button 4",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton5",
+						"iconClass": [
+							"fa",
+							"fa-fighter-jet"
+						],
+						"tooltip": "my button 5",
+						"onClick": "logEvent"
+					}
+				]
+			},
+			{
+				"id": "mybutton6",
+				"iconClass": [
+					"fa",
+					"fa-bell"
+				],
+				"tooltip": "my button 6",
+				"onClick": "logEvent"
+			}
+		]
+	},
+	"leftToolbar": {
+		"isVertical": true,
+		"docking": "left",
+		"leftGroup1": [
+			{
+				"id": "mybutton21",
+				"children": [
+					{
+						"id": "mybutton231",
+						"iconClass": [
+							"fa",
+							"fa-bug"
+						],
+						"tooltip": "my button 231",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton241",
+						"iconClass": [
+							"fa",
+							"fa-car"
+						],
+						"tooltip": "my button 241",
+						"onClick": "logEvent",
+						"visible": false
+					},
+					{
+						"id": "mybutton251",
+						"iconClass": [
+							"fa",
+							"fa-fighter-jet"
+						],
+						"tooltip": "my button 251",
+						"onClick": "logEvent",
+						"state": "Autodesk.Viewing.UI.Button.State.ACTIVE"
+					}
+				]
+			},
+			{
+				"id": "mybutton22",
+				"iconClass": [
+					"fa",
+					"fa-question"
+				],
+				"children": [
+					{
+						"id": "mybutton23",
+						"iconClass": [
+							"fa",
+							"fa-bug"
+						],
+						"tooltip": "my button 23",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton24",
+						"iconClass": [
+							"fa",
+							"fa-car"
+						],
+						"tooltip": "my button 24",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton25",
+						"iconClass": [
+							"fa",
+							"fa-fighter-jet"
+						],
+						"buttonClass": [
+							"custom-button"
+						],
+						"tooltip": "my button 25",
+						"onClick": "logEvent"
+					}
+				]
+			},
+			{
+				"id": "mybutton26",
+				"iconClass": [
+					"fa",
+					"fa-bell"
+				],
+				"buttonClass": [
+					"custom-button"
+				],
+				"tooltip": "my button 26",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton261",
+				"iconClass": [
+					"fa",
+					"fa-fighter-jet"
+				],
+				"tooltip": "my button 261",
+				"onClick": "logEvent",
+				"state": "Autodesk.Viewing.UI.Button.State.ACTIVE",
+				"bistate": true
+			},
+			{
+				"id": "mybutton271",
+				"iconClass": [
+					"fa",
+					"fa-fighter-jet"
+				],
+				"tooltip": "my button 271",
+				"onClick": "logEvent",
+				"bistate": {
+					"iconClass": [
+						"fa-fighter-jet",
+						"fa-car"
+					],
+					"buttonClass": [
+						"empty-style",
+						"custom-button"
+					]
+				}
+			}
+		]
+	},
+	"topToolbar": {
+		"isVertical": false,
+		"docking": "top",
+		"topGroup1": [
+			{
+				"id": "mybutton41",
+				"iconClass": [
+					"fa",
+					"fa-fire"
+				],
+				"tooltip": "my button 41",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton42",
+				"iconClass": [
+					"fa",
+					"fa-bullhorn"
+				],
+				"tooltip": "my button 42",
+				"onClick": "logEvent",
+				"children": [
+					{
+						"id": "mybutton43",
+						"iconClass": [
+							"fa",
+							"fa-bug"
+						],
+						"tooltip": "my button 43",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton44",
+						"iconClass": [
+							"fa",
+							"fa-car"
+						],
+						"tooltip": "my button 44",
+						"onClick": "logEvent"
+					},
+					{
+						"id": "mybutton45",
+						"iconClass": [
+							"fa",
+							"fa-fighter-jet"
+						],
+						"tooltip": "my button 45",
+						"onClick": "logEvent"
+					}
+				]
+			},
+			{
+				"id": "mybutton46",
+				"iconClass": [
+					"fa",
+					"fa-bell"
+				],
+				"tooltip": "my button 46",
+				"onClick": "logEvent"
+			}
+		]
+	}
+}

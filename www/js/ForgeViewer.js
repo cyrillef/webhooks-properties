@@ -75,7 +75,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-function isURN_Config(object) {
+function isModelURN(object) {
     return ('urn' in object);
 }
 /*export*/ var SelectionType;
@@ -129,7 +129,11 @@ var AggregateMode;
     AggregateMode[AggregateMode["Auto"] = 0] = "Auto";
     AggregateMode[AggregateMode["Aggregated"] = 1] = "Aggregated";
 })(AggregateMode || (AggregateMode = {}));
-var LocalViewer = /** @class */ (function () {
+// #endregion
+// #region ForgeViewer
+var ForgeViewer = /** @class */ (function () {
+    // #endregion
+    // #region Constructor
     /**
      *
      * @param div {HTMLElement|string} Point to the HTML element hosting the viewer
@@ -138,7 +142,7 @@ var LocalViewer = /** @class */ (function () {
      * @param region {Region?} (Optional) Region in which the resource is located. Defaults to US. Possible values are US | EMEA
      * @param endpoint {string?} (Optional) When using OTG|SVF2 with a local server, provide the endpoint to use to access the OTG|SVF2 CDN server
      */
-    function LocalViewer(div, urn, getAccessToken, region, endpoint) {
+    function ForgeViewer(div, urn, getAccessToken, endpoint) {
         this.proxy = null;
         this.viewer = null;
         this.configuration = null;
@@ -147,6 +151,7 @@ var LocalViewer = /** @class */ (function () {
         this.disabledExtensions = null;
         this.ui_definition = null;
         this.ui_references = {};
+        this.ui_handlers = null;
         this.viewerAggregateMode = AggregateMode.Auto;
         this.documents = {};
         this.models = null;
@@ -154,58 +159,100 @@ var LocalViewer = /** @class */ (function () {
         this.darkmode = null; // dark-theme, light-theme, bim-theme, acs-theme
         this.div = div;
         var temp = Array.isArray(urn) ? urn : [urn];
-        this.urn = temp.map(function (elt) { return typeof elt === 'string' ? { urn: elt } : (isURN_Config(elt) ? elt : null); });
-        this.urn = this.urn.filter(function (elt) { return elt !== null; });
+        this.urns = temp.map(function (elt) { return typeof elt === 'string' ? { urn: elt } : (isModelURN(elt) ? elt : null); });
+        this.urns = this.urns.filter(function (elt) { return elt !== null; });
         this.getAccessToken = getAccessToken;
-        this.region = region || 'US';
         this.endpoint = endpoint || '';
-        // BIM360 override
-        if (this.region === 'US' // this is the default value
-            && atob(this.urn[0].urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1)
-            this.region = 'EMEA';
+        // Assign Region and BIM360 override
+        this.urns = this.urns.map(function (elt) {
+            if (atob(elt.urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1)
+                elt.region = 'EMEA';
+            else
+                elt.region = elt.region || 'US';
+            if (Array.isArray(elt.xform))
+                elt.xform = (new THREE.Matrix4()).makeScale(elt.xform[0], elt.xform[1], elt.xform[2]);
+            else if (typeof elt.xform === 'number')
+                elt.xform = (new THREE.Matrix4()).makeScale(elt.xform, elt.xform, elt.xform);
+            if (Array.isArray(elt.offset))
+                elt.offset = new THREE.Vector3(elt.offset[0], elt.offset[1], elt.offset[2]);
+            else if (typeof elt.offset === 'number')
+                elt.offset = new THREE.Vector3(elt.offset, elt.offset, elt.offset);
+            return (elt);
+        });
     }
-    LocalViewer.prototype.configureExtensions = function (extensions, disabledExtensions) {
+    // #endregion
+    // #region Viewer Configuration
+    ForgeViewer.prototype.configureExtensions = function (extensions, disabledExtensions) {
         this.extensions = extensions;
         this.disabledExtensions = disabledExtensions || {};
     };
-    LocalViewer.prototype.loadExtensions = function () {
-        var self = this;
-        this.extensions.map(function (elt) {
-            if (typeof elt === 'string') {
-                self.viewer.loadExtension(elt);
-            }
-            else {
-                switch (elt.id) {
-                    case 'Autodesk.Debug': {
-                        //(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
-                        if (elt.options && elt.options.DEFAULT_DEBUG_URL)
-                            Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
-                    }
+    ForgeViewer.prototype.loadExtensions = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var self, res, _a, ex_1;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        self = this;
+                        if (!(typeof this.extensions === 'string')) return [3 /*break*/, 5];
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch(this.extensions)];
+                    case 2:
+                        res = _b.sent();
+                        _a = this;
+                        return [4 /*yield*/, res.json()];
+                    case 3:
+                        _a.extensions = _b.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        ex_1 = _b.sent();
+                        console.error(ex_1);
+                        return [3 /*break*/, 5];
+                    case 5:
+                        this.extensions.map(function (elt) {
+                            if (typeof elt === 'string') {
+                                var pr = self.viewer.loadExtension(elt);
+                                // pr
+                                // 	.then((ext: Autodesk.Extensions.Measure.MeasureExtension): void => { ext.activate(''); })
+                                // 	.catch((reason: any): void => { });
+                            }
+                            else {
+                                switch (elt.id) {
+                                    case 'Autodesk.Debug': {
+                                        //(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+                                        if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+                                            Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+                                    }
+                                }
+                                var pr = self.viewer.loadExtension(elt.id, elt.options);
+                                switch (elt.id) {
+                                    case 'Autodesk.Measure': {
+                                        pr
+                                            .then(function (ext) {
+                                            ext.setUnits(elt.options.units);
+                                            ext.setPrecision(elt.options.precision);
+                                        })
+                                            .catch(function (reason) { });
+                                    }
+                                    // case 'Autodesk.Debug': {
+                                    // 	pr
+                                    // 		.then((ext: any): void => {
+                                    // 			//(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
+                                    // 			if (elt.options && elt.options.DEFAULT_DEBUG_URL)
+                                    // 				Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
+                                    // 		})
+                                    // 		.catch((reason: any): void => { });
+                                    // }
+                                }
+                            }
+                        });
+                        return [2 /*return*/];
                 }
-                var pr = self.viewer.loadExtension(elt.id, elt.options);
-                switch (elt.id) {
-                    case 'Autodesk.Measure': {
-                        pr
-                            .then(function (ext) {
-                            ext.setUnits(elt.options.units);
-                            ext.setPrecision(elt.options.precision);
-                        })
-                            .catch(function (reason) { });
-                    }
-                    // case 'Autodesk.Debug': {
-                    // 	pr
-                    // 		.then((ext: any): void => {
-                    // 			//(Autodesk.Viewing.Extensions as any).Debug.DEFAULT_DEBUG_URL = elt.options.DEFAULT_DEBUG_URL;
-                    // 			if (elt.options && elt.options.DEFAULT_DEBUG_URL)
-                    // 				Autodesk.Viewing.Private.LocalStorage.setItem('lmv_debug_host', elt.options.DEFAULT_DEBUG_URL);
-                    // 		})
-                    // 		.catch((reason: any): void => { });
-                    // }
-                }
-            }
+            });
         });
     };
-    LocalViewer.prototype.reconfigureExtensions = function (extensionInfo) {
+    ForgeViewer.prototype.reconfigureExtensions = function (extensionInfo) {
         if (extensionInfo && extensionInfo.extensionId !== 'Autodesk.Measure')
             return;
         var result = this.extensions.filter(function (elt) { return typeof elt !== 'string' && elt.id === 'Autodesk.Measure'; });
@@ -220,24 +267,61 @@ var LocalViewer = /** @class */ (function () {
             //}, 1000);
         }
     };
-    LocalViewer.prototype.configureUI = function (ui) {
-        this.ui_definition = ui;
+    ForgeViewer.prototype.configureUI = function (ui, uiHandlers) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res, _a, ex_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!(typeof ui === 'string')) return [3 /*break*/, 6];
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch(ui)];
+                    case 2:
+                        res = _b.sent();
+                        _a = this;
+                        return [4 /*yield*/, res.json()];
+                    case 3:
+                        _a.ui_definition = _b.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        ex_2 = _b.sent();
+                        console.error(ex_2);
+                        return [3 /*break*/, 5];
+                    case 5: return [3 /*break*/, 7];
+                    case 6:
+                        this.ui_definition = ui;
+                        _b.label = 7;
+                    case 7:
+                        if (uiHandlers)
+                            this.ui_handlers = uiHandlers;
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
-    LocalViewer.prototype.enableWorkersDebugging = function () {
+    ForgeViewer.prototype.enableWorkersDebugging = function () {
         Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = false;
     };
-    LocalViewer.prototype.setModelBrowserExcludeRoot = function (flag) {
+    ForgeViewer.prototype.setModelBrowserExcludeRoot = function (flag) {
         if (flag === void 0) { flag = true; }
         this.modelBrowserExcludeRoot = flag;
     };
-    LocalViewer.prototype.start = function (config, enableInlineWorker) {
+    ForgeViewer.prototype.setOptions = function (evt) {
+        //this.viewer[evt.name](evt.checked);
+    };
+    // #endregion
+    // #region Start / Loading
+    ForgeViewer.prototype.start = function (config, enableInlineWorker) {
         if (config === void 0) { config = 'svf'; }
-        this.configuration = this.options(config);
+        var region = this.urns && this.urns.length > 0 ? this.urns[0].region || 'US' : 'US';
+        this.configuration = this.options(config, region);
         //(Autodesk.Viewing.Private as any).ENABLE_DEBUG = true;
         Autodesk.Viewing.Private.ENABLE_INLINE_WORKER = enableInlineWorker ? enableInlineWorker : true;
         Autodesk.Viewing.Initializer(this.configuration, this.loadModels.bind(this));
     };
-    LocalViewer.prototype.loadModels = function () {
+    ForgeViewer.prototype.loadModels = function () {
         return __awaiter(this, void 0, void 0, function () {
             var self, darkmode, jobs, models;
             var _this = this;
@@ -255,6 +339,7 @@ var LocalViewer = /** @class */ (function () {
                         this.viewer = new Autodesk.Viewing.GuiViewer3D(typeof this.div === 'string' ?
                             document.getElementById(this.div)
                             : this.div, this.configuration);
+                        this.viewer._viewerController_ = this;
                         this.viewer.start();
                         if (darkmode) {
                             setTimeout(function () {
@@ -300,7 +385,7 @@ var LocalViewer = /** @class */ (function () {
                         if (this.proxy !== null)
                             this.activateProxy();
                         this.startAt = new Date();
-                        jobs = this.urn.map(function (elt) { return _this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids); });
+                        jobs = this.urns.map(function (elt) { return _this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids); });
                         return [4 /*yield*/, Promise.all(jobs)];
                     case 1:
                         models = _a.sent();
@@ -315,7 +400,7 @@ var LocalViewer = /** @class */ (function () {
             });
         });
     };
-    LocalViewer.prototype.addViewable = function (urn, view, xform, offset, ids) {
+    ForgeViewer.prototype.addViewable = function (urn, view, xform, offset, ids) {
         return __awaiter(this, void 0, void 0, function () {
             var self;
             return __generator(this, function (_a) {
@@ -355,7 +440,7 @@ var LocalViewer = /** @class */ (function () {
             });
         });
     };
-    LocalViewer.prototype.onModelsLoaded = function (models) {
+    ForgeViewer.prototype.onModelsLoaded = function (models) {
         var endAt = (new Date().getTime() - this.startAt.getTime()) / 1000;
         console.log("(" + models.length + ") models loaded => " + endAt);
         this.models = models;
@@ -368,7 +453,7 @@ var LocalViewer = /** @class */ (function () {
         this.viewer.setSelectionColor(new THREE.Color(0xEBB30B), /*Autodesk.Viewing.*/ SelectionType.MIXED);
         this.viewer.autocam.toPerspective();
     };
-    LocalViewer.prototype.switchToDarkMode = function () {
+    ForgeViewer.prototype.switchToDarkMode = function () {
         var darkmode = localStorage.getItem('darkSwitch') !== null &&
             localStorage.getItem('darkSwitch') === 'dark';
         this.viewer.setLightPreset(0);
@@ -389,14 +474,13 @@ var LocalViewer = /** @class */ (function () {
         });
         this.darkmode.observe(document.body, { attributes: true, childList: false, subtree: false });
     };
-    LocalViewer.prototype.unloadModel = function (model) {
+    ForgeViewer.prototype.unloadModel = function (model) {
         // The list of currently loaded models can be obtained via viewer.getVisibleModels() or viewer.getHiddenModels()
         this.viewer.unloadModel(model);
     };
-    LocalViewer.prototype.setOptions = function (evt) {
-        //this.viewer[evt.name](evt.checked);
-    };
-    LocalViewer.prototype.getAccessTokenFct = function (onGetAccessToken) {
+    // #endregion
+    // #region OAuth / Proxy
+    ForgeViewer.prototype.getAccessTokenFct = function (onGetAccessToken) {
         //onGetAccessToken('<%= access_token %>', 82000);
         var options = this;
         fetch(options.tokenURL)
@@ -407,15 +491,16 @@ var LocalViewer = /** @class */ (function () {
         })
             .then(function (bearer) { return onGetAccessToken(bearer.access_token, bearer.expires_in); });
     };
-    LocalViewer.prototype.useProxy = function (path, mode) {
+    ForgeViewer.prototype.useProxy = function (path, mode) {
         if (path === void 0) { path = '/forge-proxy'; }
         if (mode === void 0) { mode = 'modelDerivativeV2'; }
         this.proxy = { path: path, mode: mode };
     };
-    LocalViewer.prototype.activateProxy = function () {
+    ForgeViewer.prototype.activateProxy = function () {
         Autodesk.Viewing.endpoint.setEndpointAndApi(window.location.origin + this.proxy.path, this.proxy.mode);
     };
-    // Events
+    // #endregion
+    // #region Events
     // AGGREGATE_FIT_TO_VIEW_EVENT
     // AGGREGATE_HIDDEN_CHANGED_EVENT
     // AGGREGATE_ISOLATION_CHANGED_EVENT
@@ -473,44 +558,45 @@ var LocalViewer = /** @class */ (function () {
     // VIEW_CUBE_CREATED_EVENT
     // WEBGL_CONTEXT_LOST_EVENT
     // WEBGL_CONTEXT_RESTORED_EVENT
-    LocalViewer.prototype.onGeometryLoaded = function (info) { };
-    LocalViewer.prototype.onObjectTreeCreated = function (tree, info) { };
-    LocalViewer.prototype.onToolbarCreatedInternal = function (info) {
-        var toolbars = this.buildUI(this.ui_definition);
+    ForgeViewer.prototype.onGeometryLoaded = function (info) { };
+    ForgeViewer.prototype.onObjectTreeCreated = function (tree, info) { };
+    ForgeViewer.prototype.onToolbarCreatedInternal = function (info) {
+        var toolbars = this.buildUI(this.ui_definition, this.ui_handlers);
         this.onToolbarCreated(__assign(__assign({}, info), { toolbars: toolbars }));
     };
-    LocalViewer.prototype.onToolbarCreated = function (info) { };
-    LocalViewer.prototype.onModelAddedInternal = function (modelInfo) {
+    ForgeViewer.prototype.onToolbarCreated = function (info) { };
+    ForgeViewer.prototype.onModelAddedInternal = function (modelInfo) {
         this.models.push(modelInfo.model);
         this.onModelAdded(modelInfo);
     };
-    LocalViewer.prototype.onModelAdded = function (modelInfo) { };
-    LocalViewer.prototype.onModelRemovedInternal = function (modelInfo) {
+    ForgeViewer.prototype.onModelAdded = function (modelInfo) { };
+    ForgeViewer.prototype.onModelRemovedInternal = function (modelInfo) {
         var lastModelRemoved = !this.viewer.getVisibleModels().length;
         this.models = this.models.filter(function (elt) { return elt !== modelInfo.model; });
         this.onModelRemoved(modelInfo);
     };
-    LocalViewer.prototype.onModelRemoved = function (modelInfo) { };
-    LocalViewer.prototype.onModelRootLoadedInternal = function (modelInfo) {
+    ForgeViewer.prototype.onModelRemoved = function (modelInfo) { };
+    ForgeViewer.prototype.onModelRootLoadedInternal = function (modelInfo) {
         //this.reconfigureExtensions();
         this.onModelRootLoaded(modelInfo);
     };
-    LocalViewer.prototype.onModelRootLoaded = function (modelInfo) { };
-    LocalViewer.prototype.onExtensionActivatedInternal = function (extensionInfo) {
+    ForgeViewer.prototype.onModelRootLoaded = function (modelInfo) { };
+    ForgeViewer.prototype.onExtensionActivatedInternal = function (extensionInfo) {
         this.reconfigureExtensions(extensionInfo);
         this.onExtensionActivated(extensionInfo);
     };
-    LocalViewer.prototype.onExtensionActivated = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionDeactivated = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionLoaded = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionPreActivated = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionPreDeactivated = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionPreLoaded = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionPreUnloaded = function (extensionInfo) { };
-    LocalViewer.prototype.onExtensionUnloaded = function (extensionInfo) { };
-    LocalViewer.prototype.onPrefChanged = function (event) { };
-    // Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
-    LocalViewer.prototype.throwObjectTreeError = function (errorCode, errorMsg, statusCode, statusText) { throw new Error(errorMsg); };
+    ForgeViewer.prototype.onExtensionActivated = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionDeactivated = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionLoaded = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionPreActivated = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionPreDeactivated = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionPreLoaded = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionPreUnloaded = function (extensionInfo) { };
+    ForgeViewer.prototype.onExtensionUnloaded = function (extensionInfo) { };
+    ForgeViewer.prototype.onPrefChanged = function (event) { };
+    // #endregion
+    // #region Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
+    ForgeViewer.prototype.throwObjectTreeError = function (errorCode, errorMsg, statusCode, statusText) { throw new Error(errorMsg); };
     ;
     /**
      * Finds all scene objects on specific X,Y position on the canvas.
@@ -529,13 +615,13 @@ var LocalViewer = /** @class */ (function () {
      *   }
      * });
      */
-    LocalViewer.prototype.rayCast = function (x, y) {
+    ForgeViewer.prototype.rayCast = function (x, y) {
         var intersections = [];
         this.viewer.impl.castRayViewport(this.viewer.impl.clientToViewport(x, y), false, null, null, intersections);
         return (intersections);
     };
-    Object.defineProperty(LocalViewer.prototype, "aggregateMode", {
-        // Aggregate - Multi-Model utilities
+    Object.defineProperty(ForgeViewer.prototype, "aggregateMode", {
+        // #region Aggregate - Multi-Model utilities
         get: function () { return (this.viewerAggregateMode); },
         set: function (newAggragteMode) { this.viewerAggregateMode = newAggragteMode; },
         enumerable: false,
@@ -548,7 +634,7 @@ var LocalViewer = /** @class */ (function () {
      *
      * @returns {Promise<{ model: Autodesk.Viewing.Model, dbids: number[] }[]>} Promise that will be resolved with a list of IDs per Models,
      */
-    LocalViewer.prototype.aggregateSearch = function (text) {
+    ForgeViewer.prototype.aggregateSearch = function (text) {
         var viewer = this.viewer;
         return (new Promise(function (resolve, reject) {
             var results = [];
@@ -562,10 +648,10 @@ var LocalViewer = /** @class */ (function () {
             });
         }));
     };
-    LocalViewer.prototype.getAggregateSelection = function () {
+    ForgeViewer.prototype.getAggregateSelection = function () {
         return (this.viewer.getAggregateSelection());
     };
-    LocalViewer.prototype.setAggregateSelection = function (selection) {
+    ForgeViewer.prototype.setAggregateSelection = function (selection) {
         var ss = selection.map(function (elt) {
             if (elt.selection && !elt.ids) {
                 elt.ids = elt.selection;
@@ -575,32 +661,33 @@ var LocalViewer = /** @class */ (function () {
         });
         this.viewer.impl.selector.setAggregateSelection(ss);
     };
-    LocalViewer.prototype.aggregateSelect = function (selection) {
+    ForgeViewer.prototype.aggregateSelect = function (selection) {
         this.setAggregateSelection(selection);
     };
-    LocalViewer.prototype.getAggregateIsolation = function () {
+    ForgeViewer.prototype.getAggregateIsolation = function () {
         return (this.viewer.getAggregateIsolation());
     };
-    LocalViewer.prototype.setAggregateIsolation = function (isolateAggregate, hideLoadedModels) {
+    ForgeViewer.prototype.setAggregateIsolation = function (isolateAggregate, hideLoadedModels) {
         if (hideLoadedModels === void 0) { hideLoadedModels = false; }
         this.viewer.impl.visibilityManager.aggregateIsolate(isolateAggregate, { hideLoadedModels: hideLoadedModels });
     };
-    LocalViewer.prototype.aggregateIsolate = function (isolateAggregate, hideLoadedModels) {
+    ForgeViewer.prototype.aggregateIsolate = function (isolateAggregate, hideLoadedModels) {
         if (hideLoadedModels === void 0) { hideLoadedModels = false; }
         this.setAggregateIsolation(isolateAggregate, hideLoadedModels);
     };
-    LocalViewer.prototype.getAggregateHiddenNodes = function () {
+    ForgeViewer.prototype.getAggregateHiddenNodes = function () {
         return (this.viewer.getAggregateHiddenNodes());
     };
-    LocalViewer.prototype.setAggregateHiddenNodes = function (hideAggregate) {
+    ForgeViewer.prototype.setAggregateHiddenNodes = function (hideAggregate) {
         this.viewer.impl.visibilityManager.aggregateHide(hideAggregate);
     };
-    LocalViewer.prototype.aggregateHide = function (hideAggregate) {
+    ForgeViewer.prototype.aggregateHide = function (hideAggregate) {
         this.setAggregateHiddenNodes(hideAggregate);
     };
-    // Injection
+    // #endregion
+    // #region Injection
     // https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
-    LocalViewer.prototype.injectShaderMaterial = function (materialName, shaderDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
+    ForgeViewer.prototype.injectShaderMaterial = function (materialName, shaderDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
         if (supportsMrtNormals === void 0) { supportsMrtNormals = true; }
         if (skipSimplPhongHeuristics === void 0) { skipSimplPhongHeuristics = true; }
         //https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
@@ -610,7 +697,7 @@ var LocalViewer = /** @class */ (function () {
         this.viewer.impl.matman().addMaterial(materialName, customMaterial, skipSimplPhongHeuristics);
         return (customMaterial);
     };
-    LocalViewer.prototype.injectPhongMaterial = function (materialName, phongDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
+    ForgeViewer.prototype.injectPhongMaterial = function (materialName, phongDefinition, supportsMrtNormals, skipSimplPhongHeuristics) {
         if (supportsMrtNormals === void 0) { supportsMrtNormals = true; }
         if (skipSimplPhongHeuristics === void 0) { skipSimplPhongHeuristics = true; }
         //https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
@@ -620,7 +707,7 @@ var LocalViewer = /** @class */ (function () {
         this.viewer.impl.matman().addOverrideMaterial(materialName, customMaterial);
         return (customMaterial);
     };
-    LocalViewer.prototype.assignMaterialToObjects = function (material, ids, model) {
+    ForgeViewer.prototype.assignMaterialToObjects = function (material, ids, model) {
         ids = ids || this.viewer.getSelection();
         model = model || this.viewer.model;
         model.unconsolidate(); // If the model is consolidated, material changes won't have any effect
@@ -634,13 +721,14 @@ var LocalViewer = /** @class */ (function () {
             });
         }
     };
-    LocalViewer.prototype.aggregateAssignMaterialToObjects = function (material, selection) {
+    ForgeViewer.prototype.aggregateAssignMaterialToObjects = function (material, selection) {
         var _this = this;
         selection.forEach(function (elt) {
             _this.assignMaterialToObjects(material, elt.ids, elt.model);
         });
     };
-    // Utilities
+    // #endregion
+    // #region Utilities
     /**
      * Enumerates IDs of objects in the scene.
      *
@@ -665,7 +753,7 @@ var LocalViewer = /** @class */ (function () {
      *   }
      * });
      */
-    LocalViewer.prototype.enumerateNodes = function (callback, recursive, parentId) {
+    ForgeViewer.prototype.enumerateNodes = function (callback, recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var proceed = function (tree) {
             if (typeof parentId === 'undefined')
@@ -689,7 +777,7 @@ var LocalViewer = /** @class */ (function () {
      *   console.log('Object IDs', ids);
      * });
      */
-    LocalViewer.prototype.listNodes = function (recursive, parentId) {
+    ForgeViewer.prototype.listNodes = function (recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var viewer = this.viewer;
         return (new Promise(function (resolve, reject) {
@@ -727,7 +815,7 @@ var LocalViewer = /** @class */ (function () {
      *   }
      * });
      */
-    LocalViewer.prototype.enumerateLeafNodes = function (callback, recursive, parentId) {
+    ForgeViewer.prototype.enumerateLeafNodes = function (callback, recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var proceed = function (tree) {
             if (typeof parentId === 'undefined')
@@ -752,7 +840,7 @@ var LocalViewer = /** @class */ (function () {
      *   console.log('Leaf object IDs', ids);
      * });
      */
-    LocalViewer.prototype.listLeafNodes = function (recursive, parentId) {
+    ForgeViewer.prototype.listLeafNodes = function (recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var viewer = this.viewer;
         return (new Promise(function (resolve, reject) {
@@ -791,7 +879,7 @@ var LocalViewer = /** @class */ (function () {
      *   }
      * });
      */
-    LocalViewer.prototype.enumerateFragments = function (callback, recursive, parentId) {
+    ForgeViewer.prototype.enumerateFragments = function (callback, recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var proceed = function (tree) {
             if (typeof parentId === 'undefined')
@@ -816,7 +904,7 @@ var LocalViewer = /** @class */ (function () {
      *   console.log('Fragment IDs', ids);
      * });
      */
-    LocalViewer.prototype.listFragments = function (recursive, parentId) {
+    ForgeViewer.prototype.listFragments = function (recursive, parentId) {
         if (recursive === void 0) { recursive = true; }
         var viewer = this.viewer;
         return (new Promise(function (resolve, reject) {
@@ -840,7 +928,7 @@ var LocalViewer = /** @class */ (function () {
      * @returns {THREE.Box3} Transformation {@link https://threejs.org/docs/#api/en/math/Box3|Box3}.
      * @throws Exception when the fragments are not yet available.
      */
-    LocalViewer.prototype.getFragmentBounds = function (model, fragId, bounds) {
+    ForgeViewer.prototype.getFragmentBounds = function (model, fragId, bounds) {
         if (bounds === void 0) { bounds = null; }
         // if (!this.viewer.model)
         // 	throw new Error('Fragments not yet available. Wait for Autodesk.Viewing.FRAGMENTS_LOADED_EVENT event.');
@@ -866,7 +954,7 @@ var LocalViewer = /** @class */ (function () {
      *     console.log('Original fragment transform', transform);
      * });
      */
-    LocalViewer.prototype.getFragmentOrigTransform = function (model, fragId, transform) {
+    ForgeViewer.prototype.getFragmentOrigTransform = function (model, fragId, transform) {
         if (transform === void 0) { transform = null; }
         var frags = model.getFragmentList();
         frags.getOriginalWorldMatrix(fragId, transform || new THREE.Matrix4());
@@ -898,7 +986,7 @@ var LocalViewer = /** @class */ (function () {
      *   console.log('Position', position);
      * });
      */
-    LocalViewer.prototype.getFragmentAuxTransform = function (model, fragId, scale, rotation, position) {
+    ForgeViewer.prototype.getFragmentAuxTransform = function (model, fragId, scale, rotation, position) {
         if (scale === void 0) { scale = null; }
         if (rotation === void 0) { rotation = null; }
         if (position === void 0) { position = null; }
@@ -929,7 +1017,7 @@ var LocalViewer = /** @class */ (function () {
      *   utils.setFragmentAuxTransform(fragId, scale, null, position);
      * });
      */
-    LocalViewer.prototype.setFragmentAuxTransform = function (model, fragId, scale, rotation, position) {
+    ForgeViewer.prototype.setFragmentAuxTransform = function (model, fragId, scale, rotation, position) {
         if (scale === void 0) { scale = null; }
         if (rotation === void 0) { rotation = null; }
         if (position === void 0) { position = null; }
@@ -960,7 +1048,7 @@ var LocalViewer = /** @class */ (function () {
      *   }
      * });
      */
-    LocalViewer.prototype.getFragmentTransform = function (model, fragId, transform) {
+    ForgeViewer.prototype.getFragmentTransform = function (model, fragId, transform) {
         if (transform === void 0) { transform = null; }
         // if (!this.viewer.model)
         // 	throw new Error('Fragments not yet available. Wait for Autodesk.Viewing.FRAGMENTS_LOADED_EVENT event.');
@@ -973,15 +1061,16 @@ var LocalViewer = /** @class */ (function () {
      * when absolutely needed, for example after updating aux. transforms
      * of multiple fragments using {@link setFragmentAuxiliaryTransform}.
      */
-    LocalViewer.prototype.refresh = function () {
+    ForgeViewer.prototype.refresh = function () {
         this.viewer.impl.invalidate(true, true, true);
     };
-    // UI
-    LocalViewer.prototype.getToolbar = function (id) {
+    // #endregion
+    // #region UI
+    ForgeViewer.prototype.getToolbar = function (id) {
         if (id === void 0) { id = 'default'; }
         return (id === 'default' || id === 'guiviewer3d-toolbar' ? this.viewer.getToolbar(true) : this.ui_references[id]);
     };
-    LocalViewer.prototype.createToolbar = function (id, def) {
+    ForgeViewer.prototype.createToolbar = function (id, def) {
         if (this.ui_references[id])
             return this.ui_references[id];
         var tb = new Autodesk.Viewing.UI.ToolBar(id);
@@ -1013,10 +1102,10 @@ var LocalViewer = /** @class */ (function () {
         this.ui_references[id] = tb;
         return (tb);
     };
-    LocalViewer.prototype.getGroupCtrl = function (tb, id) {
+    ForgeViewer.prototype.getGroupCtrl = function (tb, id) {
         return tb.getControl(id);
     };
-    LocalViewer.prototype.createControlGroup = function (viewerToolbar, groupName) {
+    ForgeViewer.prototype.createControlGroup = function (viewerToolbar, groupName) {
         if (viewerToolbar.getControl(groupName))
             return viewerToolbar.getControl(groupName);
         var groupCtrl = new Autodesk.Viewing.UI.ControlGroup(groupName);
@@ -1026,7 +1115,7 @@ var LocalViewer = /** @class */ (function () {
         this.ui_references[groupName] = groupCtrl;
         return (groupCtrl);
     };
-    LocalViewer.prototype.createRadioButtonGroup = function (viewerToolbar, groupName) {
+    ForgeViewer.prototype.createRadioButtonGroup = function (viewerToolbar, groupName) {
         if (viewerToolbar.getControl(groupName))
             return viewerToolbar.getControl(groupName);
         var groupCtrl = new Autodesk.Viewing.UI.RadioButtonGroup(groupName);
@@ -1035,7 +1124,41 @@ var LocalViewer = /** @class */ (function () {
         this.ui_references[groupName] = groupCtrl;
         return (groupCtrl);
     };
-    LocalViewer.prototype.createButton = function (id, def) {
+    ForgeViewer.string2ButtonState = function (state) {
+        if (typeof state === 'string') {
+            switch (state) {
+                case 'ACTIVE':
+                case 'Autodesk.Viewing.UI.Button.State.ACTIVE':
+                    state = Autodesk.Viewing.UI.Button.State.ACTIVE;
+                    break;
+                default:
+                case 'INACTIVE':
+                case 'Autodesk.Viewing.UI.Button.State.INACTIVE':
+                    state = Autodesk.Viewing.UI.Button.State.INACTIVE;
+                    break;
+                case 'DISABLED':
+                case 'Autodesk.Viewing.UI.Button.State.DISABLED':
+                    state = Autodesk.Viewing.UI.Button.State.DISABLED;
+                    break;
+            }
+        }
+        return state;
+    };
+    ForgeViewer.string2CodeOrFunction = function (ref, uiHandlers) {
+        if (typeof ref === 'string') {
+            var fn = ((uiHandlers && uiHandlers[ref])
+                || (window && window[ref])
+                || (self && self[ref])
+            //|| (global && (global as any)[ref as any])
+            );
+            if (fn)
+                ref = fn;
+            else
+                ref = null;
+        }
+        return ref;
+    };
+    ForgeViewer.prototype.createButton = function (id, def, uiHandlers) {
         var _this = this;
         var self = this;
         var ctrl = def.children ?
@@ -1053,19 +1176,19 @@ var LocalViewer = /** @class */ (function () {
         //(def.buttonClass || []).forEach((elt: string): void => ctrl.addClass(elt));
         (def.buttonClass || []).forEach(function (elt) { return ctrl.container.classList.add(elt); });
         ctrl.setVisible(def.visible !== undefined ? def.visible : true);
-        ctrl.setState(def.state !== undefined ? def.state : Autodesk.Viewing.UI.Button.State.INACTIVE);
-        ctrl.onClick = def.onClick || this._dumb_.bind(this);
-        ctrl.onMouseOut = def.onMouseOut || this._dumb_.bind(this);
-        ctrl.onMouseOver = def.onMouseOver || this._dumb_.bind(this);
+        ctrl.setState(def.state !== undefined ? ForgeViewer.string2ButtonState(def.state) : Autodesk.Viewing.UI.Button.State.INACTIVE);
+        ctrl.onClick = ForgeViewer.string2CodeOrFunction(def.onClick, uiHandlers) || this._dumb_.bind(this);
+        ctrl.onMouseOut = ForgeViewer.string2CodeOrFunction(def.onMouseOut, uiHandlers) || this._dumb_.bind(this);
+        ctrl.onMouseOver = ForgeViewer.string2CodeOrFunction(def.onMouseOver, uiHandlers) || this._dumb_.bind(this);
         if (def.onVisibiltyChanged)
-            ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
+            ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, ForgeViewer.string2CodeOrFunction(def.onVisibiltyChanged, uiHandlers));
         if (def.onStateChanged)
-            ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, def.onStateChanged);
+            ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, ForgeViewer.string2CodeOrFunction(def.onStateChanged, uiHandlers));
         if (def.onCollapseChanged)
-            ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
+            ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, ForgeViewer.string2CodeOrFunction(def.onCollapseChanged, uiHandlers));
         if (def.children) {
             var combo_1 = ctrl;
-            var ctrls = def.children.map(function (child) { return (_this.createButton(child.id, child)); });
+            var ctrls = def.children.map(function (child) { return (_this.createButton(child.id, child, uiHandlers)); });
             ctrls.map(function (button) { return combo_1.addControl(button); });
             ctrls.map(function (button) {
                 button._clientOnClick = button.onClick;
@@ -1079,12 +1202,12 @@ var LocalViewer = /** @class */ (function () {
         this.ui_references[id] = ctrl;
         return (ctrl);
     };
-    LocalViewer.prototype.createButtonInGroup = function (groupCtrl, id, def) {
-        var button = this.createButton(id, def);
+    ForgeViewer.prototype.createButtonInGroup = function (groupCtrl, id, def, uiHandlers) {
+        var button = this.createButton(id, def, uiHandlers);
         groupCtrl.addControl(button, { index: (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
         return (button);
     };
-    LocalViewer.prototype.assignComboButton = function (combo, button) {
+    ForgeViewer.prototype.assignComboButton = function (combo, button) {
         combo.setToolTip(button.getToolTip() || '');
         combo.setVisible(button.isVisible());
         combo.setState(button.getState());
@@ -1095,7 +1218,7 @@ var LocalViewer = /** @class */ (function () {
         button.container.classList.forEach(function (element) { return combo.container.classList.add(element); });
         combo._activeButton = button;
     };
-    LocalViewer.prototype.onClickComboChild = function (evt) {
+    ForgeViewer.prototype.onClickComboChild = function (evt) {
         var button = this.ui_references[evt.currentTarget.id];
         var radioCtrl = button.parent;
         var combo = button._parentCtrl;
@@ -1104,7 +1227,7 @@ var LocalViewer = /** @class */ (function () {
         if (button._clientOnClick)
             button._clientOnClick.call(self, evt);
     };
-    LocalViewer.prototype.getUI = function () {
+    ForgeViewer.prototype.getUI = function () {
         var toolbars = new Set([this.viewer.getToolbar(true)]);
         Object.values(this.ui_references)
             .filter(function (elt) { return elt instanceof Autodesk.Viewing.UI.ToolBar; })
@@ -1138,7 +1261,7 @@ var LocalViewer = /** @class */ (function () {
         });
         return (ids);
     };
-    LocalViewer.prototype.getControls = function (searchpath) {
+    ForgeViewer.prototype.getControls = function (searchpath) {
         var self = this;
         if (typeof searchpath === 'string')
             searchpath = [searchpath];
@@ -1155,7 +1278,7 @@ var LocalViewer = /** @class */ (function () {
         var all = new Set(ctrls.flat());
         return (Array.from(all));
     };
-    LocalViewer.prototype.getControl = function (idpath) {
+    ForgeViewer.prototype.getControl = function (idpath) {
         var _this = this;
         var ids = idpath.split('/').slice(2); // remove '//'
         var ctrl = null;
@@ -1182,30 +1305,32 @@ var LocalViewer = /** @class */ (function () {
         });
         return (ctrl);
     };
-    LocalViewer.prototype._dumb_ = function (evt) { };
-    LocalViewer.prototype.buildUI = function (ui_definition) {
+    ForgeViewer.prototype._dumb_ = function (evt) { };
+    ForgeViewer.prototype.buildUI = function (ui_definition, uiHandlers) {
+        ui_definition = ui_definition || this.ui_definition;
+        uiHandlers = uiHandlers || this.ui_handlers;
         if (!ui_definition)
             return (null);
-        var self = this;
+        var that = this;
         var toolbars = new Set([this.viewer.getToolbar(true)]);
         Object.keys(ui_definition).map(function (tbId) {
-            var tbDef = self.ui_definition[tbId];
-            var tb = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+            var tbDef = that.ui_definition[tbId];
+            var tb = that.getToolbar(tbId) || that.createToolbar(tbId, tbDef);
             Object.keys(tbDef).map(function (grpId) {
                 var grpDef = tbDef[grpId];
                 if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
                     return;
-                var groupCtrl = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+                var groupCtrl = that.getGroupCtrl(tb, grpId) || that.createControlGroup(tb, grpId);
                 Object.values(grpDef).map(function (ctrlDef) {
                     //const ctrlDef: any = grpDef[ctrlId];
-                    var ctrl = groupCtrl.getControl(ctrlDef.id) || self.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef);
+                    var ctrl = groupCtrl.getControl(ctrlDef.id) || that.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef, uiHandlers);
                 });
             });
             toolbars.add(tb);
         });
         return (Array.from(toolbars));
     };
-    LocalViewer.prototype.moveCtrl = function (ctrl, parent, options) {
+    ForgeViewer.prototype.moveCtrl = function (ctrl, parent, options) {
         ctrl = typeof ctrl === 'string' ? this.getControl(ctrl) : ctrl;
         parent = typeof parent === 'string' ? this.getControl(parent) : parent;
         if (parent instanceof Autodesk.Viewing.UI.ControlGroup === false)
@@ -1214,7 +1339,7 @@ var LocalViewer = /** @class */ (function () {
         currentParent.removeControl(ctrl);
         parent.addControl(ctrl, options);
     };
-    LocalViewer.prototype.moveToolBar = function (tb, docking, offset) {
+    ForgeViewer.prototype.moveToolBar = function (tb, docking, offset) {
         if (tb === void 0) { tb = 'default'; }
         if (docking === void 0) { docking = ToolBarDockingSite.Bottom; }
         if (offset === void 0) { offset = undefined; }
@@ -1248,15 +1373,64 @@ var LocalViewer = /** @class */ (function () {
             tb.container.style.left = 'unset';
         }
     };
-    // Viewer options
-    LocalViewer.prototype.options = function (config) {
+    // #endregion
+    // #region Data Visualization
+    ForgeViewer.prototype.getVizExtension = function () {
+        return this.viewer.getExtension('Autodesk.DataVisualization');
+    };
+    ForgeViewer.prototype.createSpriteStyle = function (color, spriteIconUrl, highlightedColor, highlightedUrl, animatedUrls) {
+        if (color === void 0) { color = 0xffffff; }
+        if (spriteIconUrl === void 0) { spriteIconUrl = '/images/circle.svg'; }
+        return (new Autodesk.DataVisualization.Core.ViewableStyle(Autodesk.DataVisualization.Core.ViewableType.SPRITE, new THREE.Color(color), spriteIconUrl, new THREE.Color(highlightedColor), highlightedUrl, animatedUrls));
+    };
+    ForgeViewer.prototype.createSprites = function (positions, defaultStyle, spriteSize) {
+        if (spriteSize === void 0) { spriteSize = 24; }
+        var viewableData = new Autodesk.DataVisualization.Core.ViewableData();
+        viewableData.spriteSize = spriteSize; // Sprites as points of size 24 x 24 pixels
+        positions.forEach(function (data, index) {
+            var viewable = new Autodesk.DataVisualization.Core.SpriteViewable(data.position, data.style || defaultStyle, data.dbId);
+            viewableData.addViewable(viewable);
+        });
+        return (viewableData);
+    };
+    ForgeViewer.prototype.addSpritesToScene = function (sprites) {
+        return __awaiter(this, void 0, void 0, function () {
+            var ext;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, sprites.finish()];
+                    case 1:
+                        _a.sent();
+                        ext = this.getVizExtension();
+                        ext.addViewables(sprites);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ForgeViewer.prototype.setSpritesVisbility = function (showSprites) {
+        if (showSprites === void 0) { showSprites = true; }
+        return __awaiter(this, void 0, void 0, function () {
+            var ext;
+            return __generator(this, function (_a) {
+                ext = this.getVizExtension();
+                ext.showHideViewables(showSprites, true);
+                return [2 /*return*/];
+            });
+        });
+    };
+    // #endregion
+    // #endregion
+    // #region Viewer Endpoints Options
+    ForgeViewer.prototype.options = function (config, region) {
+        if (region === void 0) { region = 'US'; }
         var getAccessToken = typeof this.getAccessToken === 'string' ?
             this.getAccessTokenFct
             : this.getAccessToken;
         var options = {
             svf: {
                 env: 'AutodeskProduction',
-                api: 'derivativeV2' + (this.region === 'EMEA' ? '_EU' : ''),
+                api: 'derivativeV2' + (region === 'EMEA' ? '_EU' : ''),
                 useCookie: false,
                 useCredentials: true,
                 //acmSessionId: urn,
@@ -1264,7 +1438,7 @@ var LocalViewer = /** @class */ (function () {
                 tokenURL: (getAccessToken === this.getAccessTokenFct ? this.getAccessToken : null),
             },
             otg: {
-                env: 'FluentProduction' + (this.region === 'EMEA' ? 'EU' : ''),
+                env: 'FluentProduction' + (region === 'EMEA' ? 'EU' : ''),
                 api: 'fluent',
                 useCookie: false,
                 useCredentials: true,
@@ -1273,7 +1447,7 @@ var LocalViewer = /** @class */ (function () {
                 tokenURL: (getAccessToken === this.getAccessTokenFct ? this.getAccessToken : null),
             },
             svf2: {
-                env: (this.region === 'EMEA' ? 'MD20ProdEU' : 'MD20ProdUS'),
+                env: (region === 'EMEA' ? 'MD20ProdEU' : 'MD20ProdUS'),
                 api: 'D3S',
                 //useCookie: false, // optional for Chrome browser
                 //useCredentials: true,
@@ -1311,10 +1485,11 @@ var LocalViewer = /** @class */ (function () {
         return (options[config]);
     };
     ;
-    LocalViewer.NAVTOOLBAR = 'navTools';
-    LocalViewer.MEASURETOOLBAR = 'measureTools';
-    LocalViewer.MODELTOOLBAR = 'modelTools';
-    LocalViewer.SETTINGSTOOLBAR = 'settingsTools';
-    return LocalViewer;
+    ForgeViewer.NAVTOOLBAR = 'navTools';
+    ForgeViewer.MEASURETOOLBAR = 'measureTools';
+    ForgeViewer.MODELTOOLBAR = 'modelTools';
+    ForgeViewer.SETTINGSTOOLBAR = 'settingsTools';
+    return ForgeViewer;
 }());
-//# sourceMappingURL=main.js.map
+// #endregion
+//# sourceMappingURL=ForgeViewer.js.map

@@ -1,0 +1,12 @@
+[
+	"Autodesk.DocumentBrowser",
+	{
+		"id": "Autodesk.Measure",
+		"options": {
+			"units": "mm",
+			"precision": 2
+		}
+	},
+	"Autodesk.AEC.LevelsExtension",
+	"Autodesk.AEC.Minimap3DExtension"
+]

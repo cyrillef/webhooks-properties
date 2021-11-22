@@ -1,0 +1,36 @@
+{
+	"rightToolbar": {
+		"isVertical": true,
+		"docking": "right",
+		"DataVizSetup": [
+			{
+				"id": "mybutton10",
+				"iconClass": [
+					"fa",
+					"fa-bus"
+				],
+				"tooltip": "my button 10",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton11",
+				"iconClass": [
+					"fa",
+					"fa-taxi"
+				],
+				"tooltip": "my button 11",
+				"onClick": "logEvent"
+			},
+			{
+				"id": "mybutton12",
+				"iconClass": [
+					"fa",
+					"fa-eraser"
+				],
+				"tooltip": "my button 12",
+				"onClick": "logEvent"
+			}
+		]
+	}
+}
+		

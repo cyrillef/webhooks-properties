@@ -16,15 +16,16 @@
 //
 
 /* TODOs
-   Load models from different regions / different clientID / different repo BIM360 / OSS
+   different clientID / different repo BIM360
    SVF2 socket proxy
    all events
    inject material meshes properties
    overlays
-   viewer options
 */
 
 //import * as THREE from 'three';
+
+// #region Enums / Interfaces / Types
 
 /*export*/ type Region =
 	| 'US'
@@ -38,14 +39,16 @@
 	| 'svf2_local'
 	| 'otg_local';
 
-interface URN_Config {
+interface ModelURN {
 	urn: string;
 	view?: Autodesk.Viewing.BubbleNodeSearchProps,
+	region?: Region,
 	xform?: THREE.Matrix4;
 	offset?: THREE.Vector3;
 	ids?: number[];
 }
-function isURN_Config(object: any): object is URN_Config {
+
+function isModelURN(object: any): object is ModelURN {
 	return ('urn' in object);
 }
 
@@ -155,13 +158,13 @@ interface UIButtonDefinition {
 	 */
 	bistate?: BistateButtonOptions,
 
-	onClick?: (event: Event) => void,
-	onMouseOut?: (event: Event) => void,
-	onMouseOver?: (event: Event) => void,
+	onClick?: Autodesk.Viewing.ViewerEvent,
+	onMouseOut?: Autodesk.Viewing.ViewerEvent,
+	onMouseOver?: Autodesk.Viewing.ViewerEvent,
 
-	onVisibiltyChanged?: (event: Event) => void,
-	onStateChanged?: (event: Event) => void,
-	onCollapseChanged?: (event: Event) => void,
+	onVisibiltyChanged?: Autodesk.Viewing.ViewerEvent,
+	onStateChanged?: Autodesk.Viewing.ViewerEvent,
+	onCollapseChanged?: Autodesk.Viewing.ViewerEvent,
 }
 
 interface ControlEvent {
@@ -210,6 +213,10 @@ class BistateButton extends Autodesk.Viewing.UI.Button {
 
 interface UIConfiguration {
 	[key: string]: UIToolbarDefinition;
+}
+
+interface UIConfigurationHandlers {
+	[index: string]: Autodesk.Viewing.ViewerEvent;
 }
 
 /*export*/ type UnitType =
@@ -291,22 +298,26 @@ interface ViewerConstructorOptions {
 	[key: string]: any;
 }
 
-class LocalViewer {
+// #endregion
 
+// #region ForgeViewer
+class ForgeViewer {
+
+	// #region Properties
 	private div: HTMLElement | string;
-	private urn: URN_Config[];
+	private urns: ModelURN[];
 	private getAccessToken: Function | string;
-	private region: Region;
 	private endpoint: string;
 	private proxy: { path: string, mode: string } = null;
 
 	private viewer: Autodesk.Viewing.GuiViewer3D = null;
 	private configuration: any = null;
 	private modelBrowserExcludeRoot: boolean = true;
-	private extensions: (string | ViewerExtensionsConfiguration)[] = null;
+	private extensions: string | (string | ViewerExtensionsConfiguration)[] = null;
 	private disabledExtensions: ViewerExtensionsActivation = null;
 	private ui_definition: UIConfiguration = null;
 	private ui_references: { [index: string]: Autodesk.Viewing.UI.Control | Autodesk.Viewing.UI.ToolBar } = {};
+	private ui_handlers: UIConfigurationHandlers = null;
 	private viewerAggregateMode: AggregateMode = AggregateMode.Auto;
 
 	private documents: { [index: string]: Autodesk.Viewing.Document } = {};
@@ -319,6 +330,9 @@ class LocalViewer {
 	public static MODELTOOLBAR: string = 'modelTools';
 	public static SETTINGSTOOLBAR: string = 'settingsTools';
 
+	// #endregion
+
+	// #region Constructor
 	/**
 	 * 
 	 * @param div {HTMLElement|string} Point to the HTML element hosting the viewer
@@ -327,33 +341,59 @@ class LocalViewer {
 	 * @param region {Region?} (Optional) Region in which the resource is located. Defaults to US. Possible values are US | EMEA
 	 * @param endpoint {string?} (Optional) When using OTG|SVF2 with a local server, provide the endpoint to use to access the OTG|SVF2 CDN server
 	 */
-	constructor(div: HTMLElement | string, urn: string | URN_Config | (string | URN_Config)[], getAccessToken: Function | string, region?: Region, endpoint?: string) {
+	constructor(div: HTMLElement | string, urn: string | ModelURN | (string | ModelURN)[], getAccessToken: Function | string, endpoint?: string) {
 		this.div = div;
-		const temp: (string | URN_Config)[] = Array.isArray(urn) ? urn : [urn];
-		this.urn = temp.map((elt: string | URN_Config): any => typeof elt === 'string' ? { urn: elt } : (isURN_Config(elt) ? elt : null));
-		this.urn = this.urn.filter((elt: string | URN_Config): boolean => elt !== null);
+		const temp: (string | ModelURN)[] = Array.isArray(urn) ? urn : [urn];
+		this.urns = temp.map((elt: string | ModelURN): ModelURN => typeof elt === 'string' ? { urn: elt } : (isModelURN(elt) ? elt : null));
+		this.urns = this.urns.filter((elt: ModelURN): boolean => elt !== null);
 		this.getAccessToken = getAccessToken;
-		this.region = region || 'US';
 		this.endpoint = endpoint || '';
 
-		// BIM360 override
-		if (
-			this.region === 'US' // this is the default value
-			&& atob(this.urn[0].urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1
-		)
-			this.region = 'EMEA';
+		// Assign Region and BIM360 override
+		this.urns = this.urns.map((elt: ModelURN): ModelURN => {
+			if (atob(elt.urn.replace('_', '/').replace('-', '+')).indexOf('emea') > -1)
+				elt.region = 'EMEA';
+			else
+				elt.region = elt.region || 'US';
+
+			if (Array.isArray(elt.xform))
+				elt.xform = (new THREE.Matrix4()).makeScale(elt.xform[0], elt.xform[1], elt.xform[2]);
+			else if (typeof elt.xform === 'number')
+				elt.xform = (new THREE.Matrix4()).makeScale(elt.xform, elt.xform, elt.xform);
+			if (Array.isArray(elt.offset))
+				elt.offset = new THREE.Vector3(elt.offset[0], elt.offset[1], elt.offset[2]);
+			else if (typeof elt.offset === 'number')
+				elt.offset = new THREE.Vector3(elt.offset, elt.offset, elt.offset);
+
+			return (elt);
+		});
 	}
 
-	public configureExtensions(extensions: (string | ViewerExtensionsConfiguration)[], disabledExtensions?: { [index: string]: boolean }) {
+	// #endregion
+
+	// #region Viewer Configuration
+
+	public configureExtensions(extensions: string | (string | ViewerExtensionsConfiguration)[], disabledExtensions?: { [index: string]: boolean }) {
 		this.extensions = extensions;
 		this.disabledExtensions = disabledExtensions || {};
 	}
 
-	private loadExtensions() {
+	private async loadExtensions() {
 		const self = this;
-		this.extensions.map((elt: string | { id: string, options: any }): any => {
+		if (typeof this.extensions === 'string') {
+			try {
+				const res: any = await fetch(this.extensions);
+				this.extensions = await res.json();
+			} catch (ex) {
+				console.error(ex);
+			}
+		}
+		(this.extensions as any[]).map((elt: string | { id: string, options: any }): any => {
 			if (typeof elt === 'string') {
-				self.viewer.loadExtension(elt);
+				const pr = self.viewer.loadExtension(elt);
+				// pr
+				// 	.then((ext: Autodesk.Extensions.Measure.MeasureExtension): void => { ext.activate(''); })
+				// 	.catch((reason: any): void => { });
 			} else {
 				switch (elt.id) {
 					case 'Autodesk.Debug': {
@@ -389,7 +429,7 @@ class LocalViewer {
 	private reconfigureExtensions(extensionInfo?: ExtensionInfo) {
 		if (extensionInfo && extensionInfo.extensionId !== 'Autodesk.Measure')
 			return;
-		const result = this.extensions.filter((elt: string | { id: string, options: object }): boolean => typeof elt !== 'string' && elt.id === 'Autodesk.Measure');
+		const result = (this.extensions as any[]).filter((elt: string | { id: string, options: object }): boolean => typeof elt !== 'string' && elt.id === 'Autodesk.Measure');
 		if (result && result.length === 1) {
 			const ext: Autodesk.Extensions.Measure.MeasureExtension = this.viewer.getExtension('Autodesk.Measure') as Autodesk.Extensions.Measure.MeasureExtension;
 			if (!ext)
@@ -402,8 +442,19 @@ class LocalViewer {
 		}
 	}
 
-	public configureUI(ui: UIConfiguration) {
-		this.ui_definition = ui;
+	public async configureUI(ui: string | UIConfiguration, uiHandlers?: UIConfigurationHandlers) {
+		if (typeof ui === 'string') {
+			try {
+				const res: any = await fetch(ui as string);
+				this.ui_definition = await res.json();
+			} catch (ex) {
+				console.error(ex);
+			}
+		} else {
+			this.ui_definition = ui as UIConfiguration;
+		}
+		if (uiHandlers)
+			this.ui_handlers = uiHandlers;
 	}
 
 	public enableWorkersDebugging(): void {
@@ -414,8 +465,16 @@ class LocalViewer {
 		this.modelBrowserExcludeRoot = flag;
 	}
 
+	public setOptions(evt: any) {
+		//this.viewer[evt.name](evt.checked);
+	}
+
+	// #endregion
+
+	// #region Start / Loading
 	public start(config: ResourceType = 'svf', enableInlineWorker?: boolean): void {
-		this.configuration = this.options(config);
+		const region: Region = this.urns && this.urns.length > 0 ? this.urns[0].region || 'US' : 'US';
+		this.configuration = this.options(config, region);
 		//(Autodesk.Viewing.Private as any).ENABLE_DEBUG = true;
 		(Autodesk.Viewing.Private as any).ENABLE_INLINE_WORKER = enableInlineWorker ? enableInlineWorker : true;
 		Autodesk.Viewing.Initializer(this.configuration, this.loadModels.bind(this));
@@ -439,6 +498,7 @@ class LocalViewer {
 				: this.div,
 			this.configuration
 		);
+		(this.viewer as any)._viewerController_ = this;
 		this.viewer.start();
 
 		if (darkmode) {
@@ -491,7 +551,7 @@ class LocalViewer {
 			this.activateProxy();
 
 		this.startAt = new Date();
-		const jobs = this.urn.map((elt: URN_Config): Promise<Autodesk.Viewing.Model> => this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids));
+		const jobs = this.urns.map((elt: ModelURN): Promise<Autodesk.Viewing.Model> => this.addViewable(elt.urn, elt.view, elt.xform, elt.offset, elt.ids));
 		const models = await Promise.all(jobs);
 		this.onModelsLoaded(models);
 
@@ -587,10 +647,9 @@ class LocalViewer {
 		this.viewer.unloadModel(model);
 	}
 
-	public setOptions(evt: any) {
-		//this.viewer[evt.name](evt.checked);
-	}
+	// #endregion
 
+	// #region OAuth / Proxy
 	private getAccessTokenFct(onGetAccessToken: Function): void {
 		//onGetAccessToken('<%= access_token %>', 82000);
 		const options: any = this;
@@ -611,7 +670,9 @@ class LocalViewer {
 		Autodesk.Viewing.endpoint.setEndpointAndApi(window.location.origin + this.proxy.path, this.proxy.mode);
 	}
 
-	// Events
+	// #endregion
+
+	// #region Events
 	// AGGREGATE_FIT_TO_VIEW_EVENT
 	// AGGREGATE_HIDDEN_CHANGED_EVENT
 	// AGGREGATE_ISOLATION_CHANGED_EVENT
@@ -673,7 +734,7 @@ class LocalViewer {
 	public onGeometryLoaded(info: ModelLoadingInfo): void { }
 	public onObjectTreeCreated(tree: Autodesk.Viewing.InstanceTree, info: ModelLoadingInfo): void { }
 	private onToolbarCreatedInternal(info: BasicInfo): void {
-		const toolbars: Autodesk.Viewing.UI.ToolBar[] = this.buildUI(this.ui_definition);
+		const toolbars: Autodesk.Viewing.UI.ToolBar[] = this.buildUI(this.ui_definition, this.ui_handlers);
 		this.onToolbarCreated({ ...info, toolbars: toolbars });
 	}
 	public onToolbarCreated(info: BasicInfo): void { }
@@ -707,7 +768,9 @@ class LocalViewer {
 	public onExtensionUnloaded(extensionInfo: ExtensionInfo): void { }
 	public onPrefChanged(event?: any): void { }
 
-	// Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
+	// #endregion
+
+	// #region Utilities ( https://github.com/petrbroz/forge-viewer-utils/blob/develop/src/Utilities.js )
 
 	private throwObjectTreeError(errorCode: number, errorMsg: string, statusCode: number, statusText: string): void { throw new Error(errorMsg); };
 
@@ -734,7 +797,7 @@ class LocalViewer {
 		return (intersections);
 	}
 
-	// Aggregate - Multi-Model utilities
+	// #region Aggregate - Multi-Model utilities
 
 	public get aggregateMode(): AggregateMode { return (this.viewerAggregateMode); }
 	public set aggregateMode(newAggragteMode: AggregateMode) { this.viewerAggregateMode = newAggragteMode }
@@ -808,7 +871,9 @@ class LocalViewer {
 		this.setAggregateHiddenNodes(hideAggregate);
 	}
 
-	// Injection
+	// #endregion
+
+	// #region Injection
 
 	// https://github.com/petrbroz/forge-basic-app/blob/custom-shader-material/public/HeatmapExtension.js
 	public injectShaderMaterial(materialName: string, shaderDefinition: THREE.ShaderMaterialParameters, supportsMrtNormals: boolean = true, skipSimplPhongHeuristics: boolean = true): THREE.ShaderMaterial {
@@ -849,7 +914,9 @@ class LocalViewer {
 		});
 	}
 
-	// Utilities
+	// #endregion
+
+	// #region Utilities
 
 	/**
 	 * Enumerates IDs of objects in the scene.
@@ -1194,7 +1261,9 @@ class LocalViewer {
 		this.viewer.impl.invalidate(true, true, true);
 	}
 
-	// UI
+	// #endregion
+
+	// #region UI
 
 	public getToolbar(id: string = 'default'): Autodesk.Viewing.UI.ToolBar {
 		return (id === 'default' || id === 'guiviewer3d-toolbar' ? this.viewer.getToolbar(true) : this.ui_references[id] as Autodesk.Viewing.UI.ToolBar);
@@ -1259,7 +1328,44 @@ class LocalViewer {
 		return (groupCtrl);
 	}
 
-	protected createButton(id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button {
+	private static string2ButtonState(state: string | Autodesk.Viewing.UI.Button.State): Autodesk.Viewing.UI.Button.State {
+		if (typeof state === 'string') {
+			switch (state) {
+				case 'ACTIVE':
+				case 'Autodesk.Viewing.UI.Button.State.ACTIVE':
+					state = Autodesk.Viewing.UI.Button.State.ACTIVE;
+					break;
+				default:
+				case 'INACTIVE':
+				case 'Autodesk.Viewing.UI.Button.State.INACTIVE':
+					state = Autodesk.Viewing.UI.Button.State.INACTIVE;
+					break;
+				case 'DISABLED':
+				case 'Autodesk.Viewing.UI.Button.State.DISABLED':
+					state = Autodesk.Viewing.UI.Button.State.DISABLED;
+					break;
+			}
+		}
+		return (state as Autodesk.Viewing.UI.Button.State);
+	}
+
+	private static string2CodeOrFunction(ref: string | Autodesk.Viewing.ViewerEvent, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.ViewerEvent {
+		if (typeof ref === 'string') {
+			const fn: Function = (
+				(uiHandlers && uiHandlers[ref])
+				|| (window && window[ref as any])
+				|| (self && self[ref as any])
+				//|| (global && (global as any)[ref as any])
+			) as any;
+			if (fn)
+				ref = fn as Autodesk.Viewing.ViewerEvent;
+			else
+				ref = null;
+		}
+		return (ref as Autodesk.Viewing.ViewerEvent);
+	}
+
+	protected createButton(id: string, def: UIButtonDefinition, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.Button {
 		const self = this;
 
 		const ctrl: Autodesk.Viewing.UI.Button = def.children ?
@@ -1279,22 +1385,22 @@ class LocalViewer {
 		(def.buttonClass || []).forEach((elt: string): void => (ctrl as any).container.classList.add(elt));
 
 		ctrl.setVisible(def.visible !== undefined ? def.visible : true);
-		ctrl.setState(def.state !== undefined ? def.state : Autodesk.Viewing.UI.Button.State.INACTIVE);
+		ctrl.setState(def.state !== undefined ? ForgeViewer.string2ButtonState(def.state) : Autodesk.Viewing.UI.Button.State.INACTIVE);
 
-		ctrl.onClick = def.onClick || this._dumb_.bind(this);
-		ctrl.onMouseOut = def.onMouseOut || this._dumb_.bind(this);
-		ctrl.onMouseOver = def.onMouseOver || this._dumb_.bind(this);
+		ctrl.onClick = ForgeViewer.string2CodeOrFunction(def.onClick, uiHandlers) || this._dumb_.bind(this);
+		ctrl.onMouseOut = ForgeViewer.string2CodeOrFunction(def.onMouseOut, uiHandlers) || this._dumb_.bind(this);
+		ctrl.onMouseOver = ForgeViewer.string2CodeOrFunction(def.onMouseOver, uiHandlers) || this._dumb_.bind(this);
 
 		if (def.onVisibiltyChanged)
-			ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, def.onVisibiltyChanged);
+			ctrl.addEventListener(Autodesk.Viewing.UI.VISIBILITY_CHANGED, ForgeViewer.string2CodeOrFunction(def.onVisibiltyChanged, uiHandlers));
 		if (def.onStateChanged)
-			ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, def.onStateChanged);
+			ctrl.addEventListener(Autodesk.Viewing.UI.STATE_CHANGED, ForgeViewer.string2CodeOrFunction(def.onStateChanged, uiHandlers));
 		if (def.onCollapseChanged)
-			ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, def.onCollapseChanged);
+			ctrl.addEventListener(Autodesk.Viewing.UI.COLLAPSED_CHANGED, ForgeViewer.string2CodeOrFunction(def.onCollapseChanged, uiHandlers));
 
 		if (def.children) {
 			const combo: Autodesk.Viewing.UI.ComboButton = ctrl as Autodesk.Viewing.UI.ComboButton;
-			const ctrls: Autodesk.Viewing.UI.Button[] = def.children.map((child: UIButtonDefinition): Autodesk.Viewing.UI.Button => { return (this.createButton(child.id, child)); });
+			const ctrls: Autodesk.Viewing.UI.Button[] = def.children.map((child: UIButtonDefinition): Autodesk.Viewing.UI.Button => { return (this.createButton(child.id, child, uiHandlers)); });
 			ctrls.map((button: Autodesk.Viewing.UI.Button): void => combo.addControl(button));
 			ctrls.map((button: Autodesk.Viewing.UI.Button): void => {
 				(button as any)._clientOnClick = button.onClick;
@@ -1312,8 +1418,8 @@ class LocalViewer {
 		return (ctrl);
 	}
 
-	protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition): Autodesk.Viewing.UI.Button {
-		const button: Autodesk.Viewing.UI.Button = this.createButton(id, def);
+	protected createButtonInGroup(groupCtrl: Autodesk.Viewing.UI.ControlGroup, id: string, def: UIButtonDefinition, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.Button {
+		const button: Autodesk.Viewing.UI.Button = this.createButton(id, def, uiHandlers);
 		groupCtrl.addControl(button, { index: (def.index || groupCtrl.getNumberOfControls()) }); // bug in type definition (aka interface AddControlOptions)
 		return (button);
 	}
@@ -1424,22 +1530,24 @@ class LocalViewer {
 
 	protected _dumb_(evt: Event): void { }
 
-	public buildUI(ui_definition: UIConfiguration): Autodesk.Viewing.UI.ToolBar[] {
+	public buildUI(ui_definition?: UIConfiguration, uiHandlers?: UIConfigurationHandlers): Autodesk.Viewing.UI.ToolBar[] {
+		ui_definition = ui_definition || this.ui_definition;
+		uiHandlers = uiHandlers || this.ui_handlers;
 		if (!ui_definition)
 			return (null);
-		const self = this;
+		const that = this;
 		const toolbars: Set<Autodesk.Viewing.UI.ToolBar> = new Set<Autodesk.Viewing.UI.ToolBar>([this.viewer.getToolbar(true)]);
 		Object.keys(ui_definition as any).map((tbId: string): void => {
-			const tbDef: UIToolbarDefinition = self.ui_definition[tbId];
-			const tb: Autodesk.Viewing.UI.ToolBar = self.getToolbar(tbId) || self.createToolbar(tbId, tbDef);
+			const tbDef: UIToolbarDefinition = that.ui_definition[tbId];
+			const tb: Autodesk.Viewing.UI.ToolBar = that.getToolbar(tbId) || that.createToolbar(tbId, tbDef);
 			Object.keys(tbDef as any).map((grpId: string): void => {
 				const grpDef: any = tbDef[grpId];
 				if (['top', 'left', 'bottom', 'right', 'docking', 'isVertical'].indexOf(grpId) > -1)
 					return;
-				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = self.getGroupCtrl(tb, grpId) || self.createControlGroup(tb, grpId);
+				const groupCtrl: Autodesk.Viewing.UI.ControlGroup = that.getGroupCtrl(tb, grpId) || that.createControlGroup(tb, grpId);
 				Object.values(grpDef as any).map((ctrlDef: any): void => {
 					//const ctrlDef: any = grpDef[ctrlId];
-					const ctrl = groupCtrl.getControl(ctrlDef.id) || self.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef);
+					const ctrl = groupCtrl.getControl(ctrlDef.id) || that.createButtonInGroup(groupCtrl, ctrlDef.id, ctrlDef, uiHandlers);
 				});
 			});
 			toolbars.add(tb);
@@ -1490,15 +1598,59 @@ class LocalViewer {
 		}
 	}
 
-	// Viewer options
-	private options(config: ResourceType): object {
+	// #endregion
+
+	// #region Data Visualization
+
+	public getVizExtension(): Autodesk.Extensions.DataVisualization {
+		return (this.viewer.getExtension('Autodesk.DataVisualization') as Autodesk.Extensions.DataVisualization);
+	}
+
+	public createSpriteStyle(color: string | number | THREE.Color = 0xffffff, spriteIconUrl: string = '/images/circle.svg', highlightedColor?: THREE.Color, highlightedUrl?: string, animatedUrls?: string[]): Autodesk.DataVisualization.Core.ViewableStyle {
+		return (new Autodesk.DataVisualization.Core.ViewableStyle(
+			Autodesk.DataVisualization.Core.ViewableType.SPRITE,
+			new THREE.Color(color),
+			spriteIconUrl,
+			new THREE.Color(highlightedColor),
+			highlightedUrl,
+			animatedUrls
+		));
+	}
+
+	public createSprites(positions: { dbId: number, position: THREE.Vector3, style: Autodesk.DataVisualization.Core.ViewableStyle }[], defaultStyle: Autodesk.DataVisualization.Core.ViewableStyle, spriteSize: number = 24): Autodesk.DataVisualization.Core.ViewableData {
+		const viewableData: Autodesk.DataVisualization.Core.ViewableData = new Autodesk.DataVisualization.Core.ViewableData();
+		viewableData.spriteSize = spriteSize; // Sprites as points of size 24 x 24 pixels
+		positions.forEach((data: { dbId: number, position: THREE.Vector3, style: Autodesk.DataVisualization.Core.ViewableStyle }, index: number): void => {
+			const viewable = new Autodesk.DataVisualization.Core.SpriteViewable(data.position, data.style || defaultStyle, data.dbId);
+			viewableData.addViewable(viewable);
+		});
+		return (viewableData);
+	}
+
+	public async addSpritesToScene(sprites: Autodesk.DataVisualization.Core.ViewableData): Promise<void> {
+		await sprites.finish();
+		const ext: Autodesk.Extensions.DataVisualization = this.getVizExtension();
+		ext.addViewables(sprites);
+	}
+
+	public async setSpritesVisbility(showSprites: boolean = true) {
+		const ext: Autodesk.Extensions.DataVisualization = this.getVizExtension();
+		ext.showHideViewables(showSprites, true);
+	}
+
+	// #endregion
+
+	// #endregion
+
+	// #region Viewer Endpoints Options
+	private options(config: ResourceType, region: Region = 'US'): object {
 		const getAccessToken = typeof this.getAccessToken === 'string' ?
 			this.getAccessTokenFct
 			: this.getAccessToken;
 		const options: { [index: string]: any } = {
 			svf: {
 				env: 'AutodeskProduction',
-				api: 'derivativeV2' + (this.region === 'EMEA' ? '_EU' : ''), // derivativeV2/derivativeV2_EU
+				api: 'derivativeV2' + (region === 'EMEA' ? '_EU' : ''), // derivativeV2/derivativeV2_EU
 				useCookie: false, // optional for Chrome browser
 				useCredentials: true,
 				//acmSessionId: urn,
@@ -1507,7 +1659,7 @@ class LocalViewer {
 				//accessToken: '',
 			},
 			otg: {
-				env: 'FluentProduction' + (this.region === 'EMEA' ? 'EU' : ''), // FluentProduction/FluentProductionEU
+				env: 'FluentProduction' + (region === 'EMEA' ? 'EU' : ''), // FluentProduction/FluentProductionEU
 				api: 'fluent',
 				useCookie: false, // optional for Chrome browser
 				useCredentials: true,
@@ -1519,7 +1671,7 @@ class LocalViewer {
 				//disableIndexedDb: true, // on url param
 			},
 			svf2: {
-				env: (this.region === 'EMEA' ? 'MD20ProdEU' : 'MD20ProdUS'),
+				env: (region === 'EMEA' ? 'MD20ProdEU' : 'MD20ProdUS'),
 				api: 'D3S',
 				//useCookie: false, // optional for Chrome browser
 				//useCredentials: true,
@@ -1561,4 +1713,8 @@ class LocalViewer {
 		return (options[config])
 	};
 
+	// #endregion
+
 }
+
+// #endregion

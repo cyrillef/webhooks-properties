@@ -1,0 +1,40 @@
+{
+	"US": [
+		{ 
+			"name": "urbanhouse",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvVXJiYW5Ib3VzZS5ydnQ"
+		},
+		{
+			"name": "rac",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvcmFjX2FkdmFuY2VkX3NhbXBsZV9wcm9qZWN0LnJ2dA",
+			"hasAECData": true
+		},
+		{
+			"name": "pier9",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvUDlfTWFjaGluZVNob3BfRmluYWwucnZ0",
+			"ids": [ 3147 ]
+		},
+		{
+			"name": "bauma",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQkFVTUEtRFdHMlJWVC1sb3cucnZ0",
+			"xform": [1, 1, 1],
+			"offset": [0, 5, 7] 
+		},
+		{
+			"name": "Au",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS1tb2RlbHMvQXUub2Jq"
+		}
+	],
+	"EMEA": [
+		{
+			"name": "specoffice",
+			"urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Y3lyaWxsZS0yMDIwMTAyNi1lbWVhL1NwZWNPZmZpY2UucnZ0",
+			"xform": [1, 1, 1],
+			"offset": [-100, 80, 5],
+			"view": {
+				"guid": "071c5bcb-a8bb-a538-8b19-b08d814609d2"
+			},
+			"region": "EMEA"
+		}
+	]
+}

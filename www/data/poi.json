@@ -1,0 +1,40 @@
+{
+	"b0b448bf5d87": {
+		"name": "25 Haas-VF-2TR",
+		"icon": "/images/25-Haas-VF-2TR-icon128.png",
+		"iconClass": "medium",
+		"image": "/images/25-Haas-VF-2TR-.png",
+		"url": "https://www.haascnc.com/mt_spec1.asp?id=VF-2TR&webID=5AXIS_VMC#gsc.tab=0",
+		"position": {
+			"x": -16.64604377746582,
+			"y": -5.687160968780518,
+			"z": -8.083726167678833
+		},
+		"target": {
+			"x": -27.604378700256348,
+			"y": -5.687160968780518,
+			"z": -8.083726167678833
+		},
+		"id": "qVEOCTAfSEivYD2J1wdcyQ",
+		"sensors": {
+			"id": "",
+			"dbid": 7592,
+			"position": {
+				"x": -21.64604377746582,
+				"y": -5.687160968780518,
+				"z": -8.083726167678833
+			},
+			"viewfrom": {
+				"x": -16.64604377746582,
+				"y": -5.687160968780518,
+				"z": -8.083726167678833
+			},
+			"scale": 0.01,
+			"rotation": {
+				"x": 0,
+				"y": 1.5707963267948966,
+				"z": 0
+			}
+		}
+	}
+}
